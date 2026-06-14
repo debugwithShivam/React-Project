@@ -1,0 +1,136 @@
+.everyPages-Btn {
+    width: 100%;
+    display: flex;
+    justify-content: start;
+    padding: .4rem;
+    height: 100%;
+    align-items: center;
+    gap: 10px;
+}
+
+.everyPages-Btn button {
+    border: none;
+    background: none;
+    color: whitesmoke;
+    background-color: rgba(0, 0, 0, 0.778);
+    font-size: large;
+    font-family: Verdana, Geneva, Tahoma, sans-serif;
+    border-radius: .4rem;
+    padding: .5rem;
+}
+
+.everyPages-Search-bar {
+    padding: .4rem;
+    height: 100%;
+    width: 100%;
+    display: flex;
+    justify-content: end;
+    align-items: center;
+}
+
+.everyPages-Search-bar input {
+    border: none;
+    background: none;
+    color: whitesmoke;
+    padding: .5rem;
+    background-color: rgba(0, 0, 0, 0.778);
+    border-radius: .4rem;
+}
+
+
+.everyPages-Search-bar input::placeholder {
+    color: whitesmoke;
+}
+
+.create-todo-pages {
+    background: radial-gradient(circle at top left,
+            #f7efe5,
+            #e4d2c1);
+            width: 110%;
+            height: 100vh;
+}
+
+.page-details {
+    display: flex;
+    background-color: #1e1e2ff3;
+    color: whitesmoke;
+    padding: .5rem;
+    height: 80px;
+    padding-left: 1rem;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+.todo-header-for-everyPage {
+    display: flex;
+    /* height: 50px; */
+    justify-content: space-between;
+    align-items: center;
+}
+
+.container-for-every-todos-page {
+    /* margin: 10px; */
+    padding: 10px;
+    height: 65vh;
+    overflow-x: hidden;
+    overflow-y: auto;
+}
+
+.add-todos-for-everyPages {
+    margin: 10px;
+    /* padding: 5px; */
+    display: flex;
+    justify-content: space-between;
+}
+
+.add-todos-for-everyPages form input {
+    border: none;
+    background: none;
+    background-color: rgba(0, 0, 0, 0.753);
+    color: whitesmoke;
+    border-radius: .4rem;
+    padding: .4rem;
+    width: 100%;
+    height: 100%;
+    padding-left: 10px;
+    font-size: large;
+    font-family: Verdana, Geneva, Tahoma, sans-serif;
+}
+
+.add-todos-for-everyPages form {
+    width: 100%;
+}
+
+.add-todos-for-everyPages form input::placeholder {
+    color: whitesmoke;
+}
+
+.every-pages-todos-paused {
+    width: 45px;
+    padding: .6rem;
+}
+
+.every-pages-todos-completed {
+    width: 45px;
+    padding: .6rem;
+}
+
+.task_title {
+    display: flex;
+}
+
+.task_title input {
+    border: none;
+    background: none;
+    color: whitesmoke;
+    font-size: large;
+    outline: none;
+    border-bottom: 2px solid whitesmoke;
+}
+
+.paused {
+    margin-left: 10px;
+    border-radius: .4rem;
+    color: whitesmoke;
+    background-color: teal;
+    padding: .4rem;
+}
