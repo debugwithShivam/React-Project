@@ -5,9 +5,23 @@ import morgan from "morgan";
 import config from "./config/EVConfig.js";
 import { errorHandler, notFoundHandler } from "./middleware/errorHandler.js";
 import appRouter from "./router/router.js";
+import connectDB from "./db/DatabaseConnection.js";
+import dns from "node:dns";
+
+dns.setServers(["8.8.8.8", "8.8.4.4"]);
+
+
+dns.resolveSrv(
+  "_mongodb._tcp.cluster0.inxslpo.mongodb.net",
+  (err, records) => {
+    console.log(err);
+    console.log(records);
+  }
+);
 
 const app = express();
 
+connectDB()
 app.disable("x-powered-by");
 app.use(
   cors({
