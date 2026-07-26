@@ -1,9 +1,9 @@
-import React from 'react'
+import { Link } from "react-router-dom";
 
-export default function Singin() {
+export default function Signin() {
   return (
-    <div>
-      
-    </div>
-  )
+  <>
+  <h1>Sigin</h1>
+  </>
+  );
 }

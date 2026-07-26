@@ -1,9 +1,11 @@
-import React from 'react'
+import { useEffect, useState } from "react";
+
 
 export default function Timer() {
+  
   return (
-    <div>
-      <h1>Timer</h1>
-    </div>
-  )
+   <>
+   <h1>Timer</h1>
+   </>
+  );
 }

@@ -1,9 +1,12 @@
-import Music from "../component/Music";
-import Notes from "../component/Notes";
-import Timer from "../component/Timer";
-import Todo from "../component/Todo";
+import Music from "../component/Music.jsx";
+import NotFound from "../component/NotFound.jsx";
+import Notes from "../component/Notes.jsx";
+import Timer from "../component/Timer.jsx";
+import Todo from "../component/Todo.jsx";
+import Login from "../auth/Login.jsx";
+import Signin from "../auth/Singin.jsx";
 import { createBrowserRouter } from "react-router-dom";
-import Layout from "./Layout";
+import Layout from "./Layout.jsx";
 
 const router = createBrowserRouter([
   {
@@ -11,21 +14,24 @@ const router = createBrowserRouter([
     element: <Layout />,
     children: [
       {
-        path: "/",
+        index: true,
         element: <Notes />,
       },
       {
-        path: "/Timer",
+        path: "timer",
         element: <Timer />,
       },
       {
-        path: "/Music",
+        path: "music",
         element: <Music />,
       },
       {
-        path: "/Todo",
+        path: "tasks",
         element: <Todo />,
       },
+      { path: "login", element: <Login /> },
+      { path: "signup", element: <Signin /> },
+      { path: "*", element: <NotFound /> },
     ],
   },
 ]);
