@@ -24,4 +24,4 @@ const config = Object.freeze({
   corsOrigins: allowedOrigins,
 });
 
-export default config;
+export default config; 

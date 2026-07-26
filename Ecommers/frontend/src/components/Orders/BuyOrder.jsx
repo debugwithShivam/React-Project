@@ -75,10 +75,8 @@ export default function BuyOrder() {
 
   const handleSubmit = () => {
     if (activeStep === 1) {
-      // Step 1: sirf validation + agle step par jao, koi API call nahi
       setActiveStep(2);
     } else if (activeStep === 2) {
-      // Step 2: yahi par sirf ek baar order place karo
       insertProduct.mutate(
         {
           username: fromData.name,
