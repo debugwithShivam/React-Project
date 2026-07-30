@@ -5,6 +5,7 @@ import cors from 'cors'
 import cookieParser from 'cookie-parser'
 import {db} from './db/dataBase.js';
 import path from 'path'
+import './cron/orderCron.js'
 
 let app = express();
 

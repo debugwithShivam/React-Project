@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
-import { Navigate, useNavigate } from "react-router-dom";
+import { Navigate, Outlet, useNavigate } from "react-router-dom";
 
 export default function ProtectedRoute({ children }) {
   const navigate = useNavigate();
@@ -18,25 +18,22 @@ export default function ProtectedRoute({ children }) {
 
         const isAuthenticated = response.data.authenticated;
         localStorage.setItem("authStatus", JSON.stringify(isAuthenticated));
-        setAuthStatus(isAuthenticated);
+         setAuthStatus(response.data.authenticated);
       } catch (err) {
         localStorage.setItem("authStatus", JSON.stringify(false));
         setAuthStatus(false);
       }
     }
 
-    if (authStatus === null) {
       checkAuth();
-    }
   }, []);
 
   if (authStatus === null) {
     return <h1>Loading...</h1>;
   }
 
-  if (!authStatus) {
-    return <Navigate to="/login" replace />;
-  }
+return authStatus ? <Outlet/> : <Navigate to="/login" replace />;
+  
 
   return children;
 }

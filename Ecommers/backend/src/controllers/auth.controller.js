@@ -11,11 +11,11 @@ export default async function singIn(req, res) {
         
         const query = "INSERT INTO users(firstName,lastName,email,password)VALUES (?,?,?,?)";
         
-        console.log(firstName,lastName,email,password);
+       
         db.query(query, [firstName, lastName, email, hashedPassword], (err, result) => {
-            console.log("inside callback");
+            
             if (err) {
-                console.log("MYSQL ERROR:", err);
+                
                 return res.status(500).json(err)
             };
 

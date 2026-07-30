@@ -22,6 +22,14 @@ const config = Object.freeze({
   port: parsePort(process.env.PORT),
   mongoUri: process.env.MONGODB,
   corsOrigins: allowedOrigins,
+  ACCESSTOKEN:process.env.JWTACCESS,
+  REFRESHTOKEN:process.env.JWTREFRESH,
+  EMAIL:process.env.EMAIL,
+  PASS:process.env.PASS
 });
 
 export default config; 
+
+console.log(config)
+console.log(process.env.JWTACCESS)
+console.log(process.env.JWTREFRESH)

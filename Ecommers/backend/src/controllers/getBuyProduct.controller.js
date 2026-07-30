@@ -5,7 +5,6 @@ function getBuyProductdata(req, res) {
 
         Buyproduct.query(query, (err, result) => {
             if (err) {
-                console.log("MYSQL ERROR:", err);
                 return res.status(500).json({ error: err });
             }
 
@@ -13,7 +12,6 @@ function getBuyProductdata(req, res) {
         });
 
     } catch (error) {
-        console.log(error);
         return res.status(500).json({
             message: "Request Failed",
             error

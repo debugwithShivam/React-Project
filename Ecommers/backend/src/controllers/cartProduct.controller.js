@@ -11,7 +11,7 @@ function cartProduct(req, res) {
     const query = "INSERT INTO CartOrders(user_id,product_id,quantity,product_name,product_price,image,category)VALUES (?,?,?,?,?,?,?)"
     productOrder.query(query, [userId, product_id, quantity, product_name, product_price, image, category], (err, result) => {
         if (err) {
-            console.log("MYSQL ERROR:", err);
+            
             return res.status(500).json(err)
         }
 

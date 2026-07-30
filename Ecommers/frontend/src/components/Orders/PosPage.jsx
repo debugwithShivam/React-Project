@@ -23,7 +23,7 @@ import OrdereProduct from "./OrdereProduct.jsx";
 
 async function getOrderdata() {
   try {
-    let response = await axios.get("http://localhost:4876/auth/getCartProduct");
+    let response = await axios.get("http://localhost:4876/auth/getCartProduct",{withCredentials:true});
     return response.data.data;
   } catch (error) {
     console.error(error);
@@ -53,10 +53,10 @@ const SIDEBAR_ITEMS = [
 function ProductCard({ product }) {
   const queryClint = useQueryClient();
   const deleteMutation = useMutation({
-    mutationFn: (product_id) =>
+    mutationFn: (order_id) =>
       axios.post(`http://localhost:4876/auth/deleteCart`, {
-        product_id,
-      }),
+        order_id,
+      },{withCredentials:true}),
     onSuccess: () => {
       queryClint.invalidateQueries({
         queryKey: ["cartdata"],
@@ -97,7 +97,7 @@ function ProductCard({ product }) {
         <div className="flex w-20 h-full items-center justify-center border-l border-neutral-900">
           <span
             className="h-3 w-3 rounded-full bg-red-500"
-            onClick={() => deleteMutation.mutate(product.product_id)}
+            onClick={() => deleteMutation.mutate(product.order_id)}
           />
         </div>
       </div>
@@ -106,10 +106,9 @@ function ProductCard({ product }) {
 }
 
 function ProductGrid({ category }) {
-  console.log(category);
-  const [viewAll, setViewAll] = useState(true);
+  
+  const [viewAll, setViewAll] = useState(false);
   const { data } = cardData();
-  console.log(data);
   return (
     <>
       <div className="grid grid-cols-2 gap-3 px-6 py-5 sm:grid-cols-4 lg:grid-cols-7">

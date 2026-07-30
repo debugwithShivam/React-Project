@@ -10,19 +10,23 @@ const logo = path.join(__dirname, "../src/image/logo.png");
 console.log(logo);
 
 function createWindow() {
-    const win = new BrowserWindow({
-        width: 700,
-        height: 500,
-        icon:logo,
-        webPreferences: {
-            preload: path.join(__dirname, "preload.js")
-        }
-    });
+const win = new BrowserWindow({
+  width: 700,
+  height: 500,
+  minWidth: 500,
+  minHeight: 450,
+  resizable: true,
+  icon: logo,
+  webPreferences: {
+    preload: path.join(__dirname, "preload.js"),
+    webSecurity:false
+  },
+});
 
-    win.webContents.openDevTools()
 
     Menu.setApplicationMenu(null)
     win.loadURL("http://localhost:5173/");
+    win.webContents.openDevTools()
 }
 
 app.whenReady().then(createWindow);

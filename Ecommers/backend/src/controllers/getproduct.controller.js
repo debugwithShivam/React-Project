@@ -6,7 +6,6 @@ export default function getproductController(req,res) {
         const query = "select * from productsTable "
         productsDb.query(query,(err,result)=>{
                if (err) {
-                console.log("MYSQL ERROR:", err);
                 return res.status(500).json(err)
             };
             res.status(201).json({data:result})

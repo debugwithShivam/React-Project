@@ -10,7 +10,7 @@ import ProtectedRoute from "./ProtectedRoute";
 import ChooseProduct from "../components/ChooseProduct/ChooseProduct";
 import BuyOrder from "../components/Orders/BuyOrder";
 import { useProducts } from "../CenterProductData";
-
+import OrderTracker from "../components/Orders/OrderTracker";
 
 const router = createBrowserRouter([
   {
@@ -18,36 +18,46 @@ const router = createBrowserRouter([
     element: <Layout />,
     children: [
       {
-        path: "/",
-        element: <Home />,
-      },
-      {
-        path: "/BuyOrder",
-        element: <BuyOrder />,
-      },
-      {
-        path: "/Product",
-        element: <Product />,
-      },
-      {
-        path: "/Order",
-        element: <Order />,
-      },
-      {
-        path: "/ChooseProduct",
-        element: <ChooseProduct />,
-      },
-      {
-        path: "/login",
-        element: <LoginPage />,
-      },
-      {
-        path: "/setting",
-        element: (
-          <ProtectedRoute>
-            <Setting />
-          </ProtectedRoute>
-        ),
+        element: <ProtectedRoute />,
+        children: [
+          {
+            element: <ProtectedRoute />,
+            children: [
+              {
+                path: "/",
+                element: <Home />,
+              },
+              {
+                path: "/BuyOrder",
+                element: <BuyOrder />,
+              },
+              {
+                path: "/Product",
+                element: <Product />,
+              },
+              {
+                path: "/Order",
+                element: <Order />,
+              },
+              {
+                path: "/ChooseProduct",
+                element: <ChooseProduct />,
+              },
+              {
+                path: "/login",
+                element: <LoginPage />,
+              },
+              {
+                path: "/setting",
+                element: <Setting />,
+              },
+              {
+                path: "/OrderTracker",
+                element: <OrderTracker />,
+              },
+            ],
+          },
+        ],
       },
     ],
   },

@@ -1,10 +1,11 @@
 import { productOrder } from "../db/dataBase.js";
 
 function deleteOrder(req, res) {
-    let {product_id}=req.body
+    let {order_id}=req.body
+    console.log(order_id)
     try {
-        const query = "delete from  CartOrders where product_id = ?;";
-        productOrder.query(query,[product_id], (err, result) => {
+        const query = "delete from  CartOrders where order_id = ?;";
+        productOrder.query(query,[order_id], (err, result) => {
             if (err) {
                 console.log("MYSQL ERROR:", err);
                 return res.status(500).json({ error: err });

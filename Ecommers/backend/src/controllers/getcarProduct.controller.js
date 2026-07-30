@@ -12,7 +12,6 @@ function getCartProductdata(req, res) {
 
         productOrder.query(query, [userId], (err, result) => {
             if (err) {
-                console.log("MYSQL ERROR:", err);
                 return res.status(500).json({ error: err });
             }
 
@@ -20,7 +19,6 @@ function getCartProductdata(req, res) {
         });
 
     } catch (error) {
-        console.log(error);
         return res.status(500).json({
             message: "Request Failed",
             error

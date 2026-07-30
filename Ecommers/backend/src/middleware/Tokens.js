@@ -19,6 +19,7 @@ async function tookenChecker(req, res, next) {
             return next();
         } catch (error) {
             if (!(error instanceof jwt.JsonWebTokenError) && !(error instanceof jwt.TokenExpiredError)) {
+                console.log(error)
                 return res.status(401).json({ message: 'Invalid token' });
             }
         }

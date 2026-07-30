@@ -3,6 +3,7 @@ import { Truck, MapPin, Phone, CreditCard, Trash2 } from "lucide-react";
 import OrderProduct from "./Orderproductdata";
 import { Barcode } from "lucide-react";
 import { useQueryClient, useMutation } from "@tanstack/react-query";
+import {Link} from 'react-router-dom'
 import axios from "axios";
 
 const STATUS_STYLES = {
@@ -17,12 +18,13 @@ function OrderCard({ order }) {
     STATUS_STYLES[order.order_status] ||
     "bg-neutral-100 text-neutral-700 border-neutral-300";
 
+
   const queryClint = useQueryClient();
   const onDelete = useMutation({
     mutationFn: (order_id) =>
       axios.post(`http://localhost:4876/auth/deleteBuyOrder`, {
         order_id,
-      }),
+      },{withCredentials:true}),
     onSuccess: () => {
       queryClint.invalidateQueries({
         queryKey: ["deleteBuyOrder"],
@@ -30,7 +32,28 @@ function OrderCard({ order }) {
     },
   });
 
+  let trackOrder = {
+    order_date:order.order_date,
+    order_id:order.order_id,
+    product_name:order.product_name,
+    catogary:order.catogary,
+    quantity:order.quantity,
+    product_price:order.product_price,
+    total_price:order.total_price,
+    order_status:order.order_status,
+    username:order.username,
+    Phone_number:order.Phone_number,
+    email_Address:order.email_Address,
+    address_line2:order.address_line2,
+    city:order.city,
+    state:order.state,
+    pin_code:order.pin_code,
+    payment_method:order.payment_method,
+    delivery_estimate:order.delivery_estimate,
+  }
+
   return (
+    <Link to='/OrderTracker' onClick={()=>{localStorage.setItem('order',JSON.stringify(order))}}>
     <div className="flex flex-col border border-neutral-900 bg-white text-neutral-900">
       {/* Header */}
       <div className="flex items-stretch justify-between border-b border-neutral-900">
@@ -40,10 +63,9 @@ function OrderCard({ order }) {
             {order.product_name}
           </p>
         </div>
-
         <div
           className={`flex w-28 items-center justify-center border-l border-neutral-900 p-2 text-xs font-semibold ${statusClass}`}
-        >
+          >
           {order.order_status}
         </div>
       </div>
@@ -54,7 +76,7 @@ function OrderCard({ order }) {
           src={order.image}
           className="object-contain w-30 h-full"
           alt={order.product_name}
-        />
+          />
       </div>
 
       {/* Price / Qty */}
@@ -118,20 +140,20 @@ function OrderCard({ order }) {
         <button
           onClick={() => onDelete.mutate(order.order_id)}
           className="flex w-full items-center justify-center gap-2 border border-red-600 bg-red-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-red-700 active:scale-[0.98]"
-        >
+          >
           <Trash2 size={16} />
           Delete Order
         </button>
       </div>
     </div>
+</Link>
   );
 }
 
 export default function OrdereProduct({ category }) {
-  console.log(category);
-  const [viewAll, setViewAll] = useState(true);
+
+  const [viewAll, setViewAll] = useState(false);
   const { data, isLoading } = OrderProduct();
-  console.log(data);
   if (isLoading) {
     return (
       <p className="px-6 py-10 text-sm text-neutral-400">Loading orders…</p>
