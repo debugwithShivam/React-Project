@@ -9,9 +9,13 @@ import EmailVerifyOTP from "../auth/EmailVerifyOTP.jsx";
 import { createBrowserRouter } from "react-router-dom";
 import Layout from "./Layout.jsx";
 import ProtectedRoutes from "../auth/ProtectedRoutes.jsx";
-
+import StickyNotes from "../page/Notes/StickyNotes.jsx";
 
 const router = createBrowserRouter([
+  {
+    path: "sticky",
+    element: <StickyNotes />,
+  },
   {
     path: "/",
     element: <Layout />,
