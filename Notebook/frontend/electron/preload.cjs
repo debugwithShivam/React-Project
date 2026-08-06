@@ -1,7 +1,13 @@
-const {contextBridge,exposeInMainWorld,ipcRenderer} = require('electron')
+const {contextBridge,exposeInMainWorld,ipcRenderer} = require('electron');
+
 
 contextBridge.exposeInMainWorld("electron", {
   openNoteWindow: () => ipcRenderer.send("open-note-window"),
+  noteCreated:()=>ipcRenderer.send("note-create"),
+  onNoteCreated:(callback)=>ipcRenderer.on("note-create",callback),
+  UpdateNotes:(id)=>ipcRenderer.send('UpdateNotes',id),
+  ViewNotes:(id)=>ipcRenderer.send('ViewNotes',id),
+  closeNoteWindow: () => ipcRenderer.send("closeNoteWindow"),
 });
 
 

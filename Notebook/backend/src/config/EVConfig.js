@@ -30,6 +30,3 @@ const config = Object.freeze({
 
 export default config; 
 
-console.log(config)
-console.log(process.env.JWTACCESS)
-console.log(process.env.JWTREFRESH)

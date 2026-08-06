@@ -11,7 +11,16 @@ const transporter = nodemailer.createTransport({
   }
 })
 
+transporter.verify((error, success) => {
+  if (error) {
+    console.log(error);
+  } else {
+    console.log("SMTP is ready");
+  }
+});
+
 async function authorization(req, res) {
+  console.log(config)
   const { name, email, password } = req.body
 
   if (!name || !email || !password) {
@@ -125,6 +134,7 @@ async function authorization(req, res) {
     res.status(201).json({ message: 'User registered successfully' });
 
   } catch (error) {
+    console.log(error)
     res.status(500).json({ message: 'Server error', error: error.message });
   }
 }

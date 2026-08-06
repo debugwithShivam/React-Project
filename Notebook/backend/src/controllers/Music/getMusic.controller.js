@@ -1,12 +1,13 @@
-import Note from "../../module/sticky-note.schema.js";
+import Music from "../../module/music.schema.js";
+import config from "../../config/EVConfig.js";
 
-async function getNotes(req,res){
+async function  getMusic(req,res) {
     try{
-        let notesData = await  Note.find()
+        let musicData = await  Music.find()
        return  res.status(200).json({
             success:true,
             message:"Data Was Found",
-            data:notesData,
+            data:musicData,
         })
     }catch(error){
      return res.status(500).json({
@@ -16,4 +17,4 @@ async function getNotes(req,res){
     }
 }
 
-export default getNotes
+export default getMusic

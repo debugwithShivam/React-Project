@@ -1,4 +1,6 @@
+import React from 'react'
 import { useSelector, useDispatch } from "react-redux";
+import { useParams } from 'react-router-dom'
 import Editor from "@monaco-editor/react";
 import {
   ToggleBolde,
@@ -11,37 +13,41 @@ import {
   ToggleFullScreen,
   ToggleClose,
   SetSrcDoc,
+
 } from "../../Redux/Slice";
 import { useState } from "react";
+import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query'
+import axios from 'axios'
 
-export default function StickyNotes() {
+export default function UpdateNotes() {
   const [showMenu, setShowMenu] = useState(false);
+  const [title, setTitle] = useState("");
+  const [titleShow, setTitleShow] = useState(false);
+  const [text, setText] = useState("");
+  const [htmlCode, setHtmlCode] = useState("");
+  const [cssCode, setCssCode] = useState("");
+  const [jsCode, setJsCode] = useState("");
+  const [language, setLanguage] = useState("");
 
-  const [htmlCode, setHtmlCode] = useState(`<!-- Write HTML -->`);
-  const [cssCode, setCssCode] = useState(`/* Write CSS */`);
-  const [jsCode, setJsCode] = useState(`console.log("Hello")`);
 
   const runCode = () => {
     dispatch(
       SetSrcDoc(`
-<!DOCTYPE html>
-<html>
-<head>
-<style>
-${cssCode}
-</style>
-</head>
-<body>
-
-${htmlCode}
-
-<script>
-${jsCode}
-<\/script>
-
-</body>
-</html>
-`),
+     <!DOCTYPE html>
+     <html>
+    <head>
+    <style>
+    ${cssCode}
+    </style>
+    </head>
+    <body>
+    ${htmlCode}
+    <script>
+    ${jsCode}
+    <\/script>
+    </body>
+    </html>
+    `),
     );
   };
 
@@ -61,36 +67,81 @@ ${jsCode}
   const setCode = (value) => {
     switch (language) {
       case "html":
-        setHtmlCode(value);
+        setHtmlCode(value || "");
         break;
       case "css":
-        setCssCode(value);
+        setCssCode(value || "");
         break;
       case "javascript":
-        setJsCode(value);
+        setJsCode(value || "");
         break;
     }
   };
 
   const dispatch = useDispatch();
   const note = useSelector((state) => state.state);
-  const { mode, language, run, fullScreen, close, srcDoc } = note;
+  const { mode, run, fullScreen, close, srcDoc } = note;
+
+  const { id } = useParams()
+
+
+  const queryClient = useQueryClient();
+
+  async function getNotesData(id) {
+    try {
+      let response = await axios.get(`http://localhost:5000/authRouter/noteDataGetById/${id}`, { withCredentials: true })
+      setText(response.data.data.content);
+      setHtmlCode(response.data.data.html);
+      setCssCode(response.data.data.css);
+      setJsCode(response.data.data.javascript);
+      return response.data.data
+    } catch (error) {
+      console.log(error)
+    }
+  }
+
+
+
+  const { data, isLoading } = useQuery({
+    queryKey: ['insertNotes', id],
+    queryFn: () => getNotesData(id),
+    enabled: !!id,
+  })
+
+
+
+
+  const UpdateNote = useMutation({
+    mutationFn: (data) =>
+      axios.patch('http://localhost:5000/authRouter/updateNotes', data, {
+        withCredentials: true
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: ['insertNotes']
+      })
+      window.electron.noteCreated();
+    }
+
+  })
+  if (isLoading) return <h1>Loading...</h1>
+
 
   return (
     <div className="flex h-screen flex-col bg-black/80">
-      <div className="flex flex-1">
+      <div className="flex flex-1 relative">
         <div
           className={`
-border-r border-zinc-700
-
-${fullScreen ? "hidden" : run ? "w-1/2" : "w-full"}
-`}
+           border-r border-zinc-700 ${fullScreen ? "w-3" : "w-screen"}`}
         >
           {mode == "note" && (
             <textarea
+              value={text}
+              onChange={(e)=>setText(e.target.value)}
               placeholder="Write your note..."
               className={`
             h-full
+            w-screen
             resize-none
             p-3
             outline-none
@@ -119,33 +170,14 @@ ${fullScreen ? "hidden" : run ? "w-1/2" : "w-full"}
         </div>
         {mode === "code" && run && (
           <>
-            <div
-              className={`
-bg-white
-
-${fullScreen ? "w-full" : "w-1/2"}
-`}
-            >
+            <div className={`bg-white ${fullScreen ? "w-screen" : "w-1/2"}`}>
               <div className="bg-black text-white p-1 flex gap-5">
-                <h1
-                  className="cursor-default"
-                  onClick={() => {
-                    dispatch(Toggleclose());
-
-                    if (fullScreen) {
-                      dispatch(ToggleFullScreen());
-                    }
-                  }}
-                >
-                  close
-                </h1>
                 <h1
                   onClick={() => dispatch(ToggleFullScreen())}
                   className="cursor-default"
                 >
                   &lt;&gt;
                 </h1>
-                <h1 className="cursor-default">RUN JS</h1>
               </div>
               <iframe
                 title="preview"
@@ -158,7 +190,7 @@ ${fullScreen ? "w-full" : "w-1/2"}
         )}
       </div>
 
-      <div className="flex items-center justify-center gap-6 border-t border-white bg-zinc-800 p-3 text-white">
+      <div className="flex items-center justify-center gap-6 border-t border-white bg-zinc-800 p-3 text-white z-50">
         <button
           className={`${note.bold ? "text-yellow-400" : ""} font-bold`}
           onClick={() => dispatch(ToggleBolde())}
@@ -185,7 +217,7 @@ ${fullScreen ? "w-full" : "w-1/2"}
             className="bg-yellow-500 p-1 rounded-full w-15"
             onClick={() => {
               runCode();
-
+              dispatch(ToggleFullScreen());
               if (!run) {
                 dispatch(ToggleRun());
               }
@@ -203,12 +235,13 @@ ${fullScreen ? "w-full" : "w-1/2"}
         )}
 
         <button onClick={() => setShowMenu((prev) => !prev)}>&lt;&gt;</button>
+
         {showMenu && (
-          <div className="absolute w-full bottom-16 bg-zinc-900 rounded-lg p-2 flex flex-col  justify-start">
+          <div className="z-50 absolute w-full bottom-16 bg-zinc-900 rounded-lg p-2 flex flex-col  justify-start">
             <button
               onClick={() => {
                 dispatch(SetMode("code"));
-                dispatch(SetLanguage("html"));
+                setLanguage("html");
                 setShowMenu(false);
               }}
             >
@@ -218,7 +251,7 @@ ${fullScreen ? "w-full" : "w-1/2"}
             <button
               onClick={() => {
                 dispatch(SetMode("code"));
-                dispatch(SetLanguage("css"));
+                setLanguage("css");
                 setShowMenu(false);
               }}
             >
@@ -228,7 +261,7 @@ ${fullScreen ? "w-full" : "w-1/2"}
             <button
               onClick={() => {
                 dispatch(SetMode("code"));
-                dispatch(SetLanguage("javascript"));
+                setLanguage("javascript");
                 setShowMenu(false);
               }}
             >
@@ -241,15 +274,24 @@ ${fullScreen ? "w-full" : "w-1/2"}
                 if (run) {
                   dispatch(ToggleRun());
                 }
-                setRun(false);
               }}
             >
               TextArea
             </button>
           </div>
         )}
-        <button className="bg-yellow-500 p-1 rounded-full w-15">Send</button>
+        <button className="bg-blue-500 p-1 rounded-full w-15" onClick={() => {
+          const data = {
+            id,
+            text,
+            htmlCode,
+            cssCode,
+            jsCode,
+          };
+
+          UpdateNote.mutate(data);
+        }} >Update</button>
       </div>
     </div>
-  );
+  )
 }

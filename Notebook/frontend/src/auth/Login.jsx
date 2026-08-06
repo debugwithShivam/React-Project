@@ -51,7 +51,7 @@ export default function Login() {
   return (
     <>
       <div className="w-full h-screen flex items-center justify-center  sm:p-5">
-        <div className="w-full max-w-5xl min-h-[420px] flex flex-col md:flex-row overflow-hidden rounded-2xl shadow-2xl">
+        <div className="w-full h-10 max-w-4xl min-h-[420px] flex flex-col md:flex-row overflow-hidden rounded-2xl shadow-2xl">
           {/* Left */}
           <div className="w-full md:w-1/2 bg-black/80 text-white p-5 flex flex-col justify-between">
             {/* Heading */}

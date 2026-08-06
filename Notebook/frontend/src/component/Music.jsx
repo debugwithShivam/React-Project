@@ -1,11 +1,11 @@
 import { useState } from "react";
-
+import MusicPage from "../page/Music/MusicPage";
 
 export default function Music() {
 
   return (
    <>
-   <h1>Music</h1>
+   <MusicPage/>
    </>
   );
 }

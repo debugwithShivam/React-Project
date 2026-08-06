@@ -9,12 +9,22 @@ import EmailVerifyOTP from "../auth/EmailVerifyOTP.jsx";
 import { createBrowserRouter } from "react-router-dom";
 import Layout from "./Layout.jsx";
 import ProtectedRoutes from "../auth/ProtectedRoutes.jsx";
-import StickyNotes from "../page/Notes/StickyNotes.jsx";
+import CreateNotes from "../page/Notes/CreateNotes.jsx";
+import UpdateNotes from "../page/Notes/UpdateNotes.jsx";
+import ViewNotes from "../page/Notes/ViewNotes.jsx";
 
 const router = createBrowserRouter([
   {
-    path: "sticky",
-    element: <StickyNotes />,
+    path: "CreateNotes",
+    element: <CreateNotes />,
+  },
+  {
+    path: "UpdateNotes/:id",
+    element: <UpdateNotes/>,
+  },
+  {
+    path: "ViewNotes/:id",
+    element: <ViewNotes/>,
   },
   {
     path: "/",

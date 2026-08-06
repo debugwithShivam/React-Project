@@ -11,19 +11,23 @@ let mainWindow;
 
 function createWindow() {
   mainWindow = new BrowserWindow({
-    width: 700,
-    height: 500,
-    icon:logo,
+    width: 800,
+    height: 650,
+    icon: logo,
     webPreferences: {
       preload: preloadPath,
-    contextIsolation: true,
-    nodeIntegration: false,
+      contextIsolation: true,
+      nodeIntegration: false,
       webSecurity: false,
     },
   });
 
+  ipcMain.on("note-create", () => {
+    mainWindow.webContents.send("note-create");
+  });
+
   Menu.setApplicationMenu(null);
-  // mainWindow.webContents.openDevTools()
+  mainWindow.webContents.openDevTools()
   mainWindow.loadURL("http://localhost:5173/");
 }
 
@@ -32,18 +36,61 @@ ipcMain.on("open-note-window", () => {
     width: 450,
     height: 450,
     // parent: mainWindow,
-    icon:stickyNotes,
+    icon: stickyNotes,
     // resizable: false,
     webPreferences: {
       preload: preloadPath,
-    contextIsolation: true,
-    nodeIntegration: false,
+      contextIsolation: true,
+      nodeIntegration: false,
       webSecurity: false,
     },
   });
-
   // child.webContents.openDevTools()
-  child.loadURL("http://localhost:5173/sticky");
+  child.loadURL("http://localhost:5173/CreateNotes");
+});
+
+ipcMain.on("UpdateNotes", (event,id) => {
+  const updateNote = new BrowserWindow({
+    width: 450,
+    height: 450,
+    // parent: mainWindow,
+    icon: stickyNotes,
+    // resizable: false,
+    webPreferences: {
+      preload: preloadPath,
+      contextIsolation: true,
+      nodeIntegration: false,
+      webSecurity: false,
+    },
+  });
+  // updateNote.webContents.openDevTools()
+  updateNote.loadURL(`http://localhost:5173/UpdateNotes/${id}`);
+});
+
+ipcMain.on("ViewNotes", (event,id) => {
+  const updateNote = new BrowserWindow({
+     width: 450,
+    height: 450,
+    icon: stickyNotes,
+    alwaysOnTop: true,        
+    frame: false,  
+    movable:true,
+    transparent:true,
+    webPreferences: {
+      preload: preloadPath,
+      contextIsolation: true,
+      nodeIntegration: false,
+      webSecurity: false,
+    },
+  });
+   updateNote.setAlwaysOnTop(true, "screen-saver");
+  // updateNote.webContents.openDevTools()
+  updateNote.loadURL(`http://localhost:5173/viewNotes/${id}`);
+});
+
+ipcMain.on("closeNoteWindow", (event) => {
+  const win = BrowserWindow.fromWebContents(event.sender);
+  if (win) win.close();
 });
 
 app.whenReady().then(createWindow);

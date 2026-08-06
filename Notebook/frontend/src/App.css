@@ -1,1 +1,20 @@
 @import "tailwindcss";
+
+/* Window ko drag karne ke liye */
+.drag-region {
+  -webkit-app-region: drag;
+}
+
+/* Buttons/tabs/content area par click/scroll normal kaam kare */
+.no-drag {
+  -webkit-app-region: no-drag;
+}
+
+/* Scrollbar hide karo, scroll functional rahe */
+.hide-scrollbar {
+  scrollbar-width: none;       /* Firefox */
+  -ms-overflow-style: none;    /* IE/Edge */
+}
+.hide-scrollbar::-webkit-scrollbar {
+  display: none;               /* Chrome, Safari, Electron */
+}

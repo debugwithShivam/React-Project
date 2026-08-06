@@ -1,8 +1,10 @@
 import Note from "../../module/sticky-note.schema.js";
 
-async function getNotes(req,res){
+async function noteDataGetById(req,res){
+    const { id } = req.params; 
+    console.log(id)
     try{
-        let notesData = await  Note.find()
+        let notesData = await  Note.findById(id)
        return  res.status(200).json({
             success:true,
             message:"Data Was Found",
@@ -16,4 +18,4 @@ async function getNotes(req,res){
     }
 }
 
-export default getNotes
+export default noteDataGetById
