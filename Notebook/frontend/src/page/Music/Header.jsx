@@ -87,7 +87,7 @@ export default function Header() {
             Add Music
           </button>
           <button
-            onClick={() => dispatch(ToggleMusicAddForm())}
+          onClick={()=>window.electron.openCustomMusicPlayer()}
             style={{
               display: "flex",
               alignItems: "center",

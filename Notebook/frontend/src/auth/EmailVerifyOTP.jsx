@@ -1,8 +1,11 @@
 import { useState } from "react";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
+import { setIsAuthenticated } from "../Redux/Slice";
+import { useDispatch } from "react-redux";
 
 export default function EmailVerifyOTP() {
+  const dispatch = useDispatch()
   const navigate = useNavigate();
   const [otp, setOtp] = useState("");
 
@@ -27,6 +30,7 @@ export default function EmailVerifyOTP() {
 
       console.log(response)
       if (response.data.success) {
+        dispatch(setIsAuthenticated(true))
         navigate("/");
       }
     } catch (error) {

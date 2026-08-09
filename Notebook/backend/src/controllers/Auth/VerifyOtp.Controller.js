@@ -7,7 +7,7 @@ async function verifyOtp(req, res) {
         const { email, otp } = req.body;
 
         if (!email || !otp) {
-            return res.status(400).json({
+            return res.status(401).json({
                 success: false,
                 message: "Email and OTP are required"
             });
@@ -16,28 +16,28 @@ async function verifyOtp(req, res) {
         const user = await userAuth.findOne({ email });
 
         if (!user) {
-            return res.status(404).json({
+            return res.status(402).json({
                 success: false,
                 message: "User not found"
             });
         }
 
         if (user.isVerified) {
-            return res.status(400).json({
+            return res.status(403).json({
                 success: false,
                 message: "Email already verified"
             });
         }
 
         if (new Date() > user.otpExpire) {
-            return res.status(400).json({
+            return res.status(404).json({
                 success: false,
                 message: "OTP Expired"
             });
         }
 
         if (String(user.otp) !== String(otp)) {
-            return res.status(400).json({
+            return res.status(405).json({
                 success: false,
                 message: "Invalid OTP"
             });

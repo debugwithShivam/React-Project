@@ -1,7 +1,6 @@
 import React from "react";
 import { Link, NavLink, Outlet } from "react-router-dom";
 import imageConfig from "../config/imageConfig";
-import { useSelector } from "react-redux";
 import { useState, useEffect } from "react";
 import axios from "axios";
 import {
@@ -10,34 +9,14 @@ import {
   Timer,
   CheckSquare,
   Settings,
+  Search
 } from "lucide-react";
+import { useSelector } from "react-redux";
 
 export default function Layout() {
-  const [loading, setLoading] = useState(true);
-  const [isAuthenticated, setAuthenticated] = useState(false);
-
-  useEffect(() => {
-    async function check() {
-      try {
-        const res = await axios.get(
-          "http://localhost:5000/authRouter/check-auth",
-          { withCredentials: true }
-        );
-
-        setAuthenticated(res.data.authenticated);
-      } catch {
-        setAuthenticated(false);
-      } finally {
-        setLoading(false);
-      }
-    }
-
-    check();
-  }, []);
-
-  if (loading) {
-    return <h2>Loading...</h2>;
-  }
+  const { isAuthenticated, user } = useSelector(
+    (state) => state.state
+  );
 
   return (
     <div className="relative">
@@ -47,7 +26,6 @@ export default function Layout() {
         alt=""
       />
 
-      {/* ---------- Navbar ---------- */}
       <nav
         className="relative z-50"
         style={{
@@ -67,6 +45,7 @@ export default function Layout() {
 
         {/* Nav links */}
         <div style={{ display: "flex", alignItems: "center", gap: 30 }}>
+          <NavItem to="/SearchUser" label="Search" icon={<Search size={16} />} />
           <NavItem to="/" label="Notes" icon={<BookOpen size={16} />} />
           <NavItem to="/Music" label="Music" icon={<ListMusic size={16} />} />
           <NavItem to="/Timer" label="Timer" icon={<Timer size={16} />} />
@@ -76,24 +55,51 @@ export default function Layout() {
         {/* Auth area */}
         <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
           {isAuthenticated ? (
+            <Link to='/ProfilePage'>
             <button
               style={{
                 display: "flex",
                 alignItems: "center",
-                gap: 8,
+                gap: 10,
                 background: "rgba(255,255,255,0.14)",
                 border: "1px solid rgba(255,255,255,0.25)",
                 color: "#fff",
-                padding: "9px 18px",
+                padding: "6px 16px 6px 6px",
                 borderRadius: 999,
-                fontWeight: 600,
-                fontSize: 14,
                 cursor: "pointer",
               }}
-            >
-              <Settings size={16} />
-              Settings
+              >
+              {/* Avatar placeholder — replace with <img src={user?.avatar}/> later */}
+              <div
+                style={{
+                  width: 32,
+                  height: 32,
+                  borderRadius: "50%",
+                  background: "linear-gradient(135deg,#3b6fd1,#5a3fae)",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  fontWeight: 700,
+                  fontSize: 14,
+                  color: "#fff",
+                  flexShrink: 0,
+                }}
+                >
+                {(user?.name || user?.username || "A")[0].toUpperCase()}
+              </div>
+
+              {/* Name + Username */}
+              <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", lineHeight: 1.2 }}>
+                <span style={{ fontWeight: 700, fontSize: 13.5, color: "#fff" }}>
+                  {user?.name || "User"}
+                </span>
+                <span style={{ fontWeight: 400, fontSize: 11.5, color: "rgba(255,255,255,0.65)" }}>
+                  @{user?.username || "guest"}
+                </span>
+              </div>
+
             </button>
+                </Link>
           ) : (
             <>
               <Link to="/signup">

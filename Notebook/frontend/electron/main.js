@@ -87,6 +87,23 @@ ipcMain.on("ViewNotes", (event,id) => {
   // updateNote.webContents.openDevTools()
   updateNote.loadURL(`http://localhost:5173/viewNotes/${id}`);
 });
+ipcMain.on("CustomMusicPlayer", (event,id) => {
+  const CustomMusicPlayer = new BrowserWindow({
+     width: 300,
+    height: 300,
+    icon: stickyNotes,
+    alwaysOnTop: true,        
+    webPreferences: {
+      preload: preloadPath,
+      contextIsolation: true,
+      nodeIntegration: false,
+      webSecurity: false,
+    },
+  });
+   CustomMusicPlayer.setAlwaysOnTop(true, "screen-saver");
+  // updateNote.webContents.openDevTools()
+  CustomMusicPlayer.loadURL(`http://localhost:5173/CustomMusicPlayer`);
+});
 
 ipcMain.on("closeNoteWindow", (event) => {
   const win = BrowserWindow.fromWebContents(event.sender);

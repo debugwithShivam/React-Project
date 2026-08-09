@@ -1,74 +1,76 @@
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import imgeConfig from "../config/imageConfig";
-import axios from "axios";
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { Eye, EyeOff } from "lucide-react";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import axios from "axios";
+import {useDispatch} from 'react-redux'
+import { setIsAuthenticated } from "../Redux/Slice";
 
 export default function Login() {
+  const dispatch = useDispatch()
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
 
+  const [showPass, setShowPass] = useState(false);
   const [formData, setFromData] = useState({
     name: "",
+    username: "",
     email: "",
     password: "",
   });
 
-  async function createAccount(e) {
-    e.preventDefault();
-    if (!formData.name || !formData.email || !formData.password) {
-      alert("Fill all Fields");
-      return;
-    }
-
-    try {
-      const reponse = await axios.post(
+  // Mutation setup
+  const createAccountMutation = useMutation({
+    mutationFn: async (data) => {
+      const response = await axios.post(
         "http://localhost:5000/authRouter/createAccount",
-        {
-          name: formData.name,
-          email: formData.email,
-          password: formData.password,
-        },
-        { withCredentials: true },
+        data,
+        { withCredentials: true }
       );
-
+      return response.data;
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries(["user"]);
       localStorage.setItem("email", formData.email);
-                  navigate("/Email");
-
-    } catch (error) {
-      console.log("DATA:", error.response?.data);
-    }
-  }
+      dispatch(setIsAuthenticated(true))
+      navigate("/Email");
+    },
+    onError: (error) => {
+      console.log("DATA:", error.response?.data.error);
+    },
+  });
 
   function handleChange(e) {
     const { name, value } = e.target;
-
     setFromData((prev) => ({
       ...prev,
       [name]: value,
     }));
   }
 
+  function handleSubmit(e) {
+    e.preventDefault();
+    if (!formData.name || !formData.email || !formData.password || !formData.username) {
+      alert("Fill all Fields");
+      return;
+    }
+    createAccountMutation.mutate(formData);
+  }
+
   return (
     <>
-      <div className="w-full h-screen flex items-center justify-center  sm:p-5">
+      <div className="w-full h-screen flex items-center justify-center sm:p-5">
         <div className="w-full h-10 max-w-4xl min-h-[420px] flex flex-col md:flex-row overflow-hidden rounded-2xl shadow-2xl">
-          {/* Left */}
           <div className="w-full md:w-1/2 bg-black/80 text-white p-5 flex flex-col justify-between">
-            {/* Heading */}
             <div>
               <h1 className="text-2xl md:text-3xl font-bold">Login</h1>
-
               <p className="mt-2 text-xs md:text-sm text-gray-300 leading-6">
-                Come and join us! You can also handle your personal tasks like
-                playing music.
+                Come and join us! You can also handle your personal tasks like playing music.
               </p>
             </div>
 
-            {/* Form */}
-            <form
-              onSubmit={(e) => e.preventDefault()}
-              className="mt-5 space-y-3"
-            >
+            <form onSubmit={handleSubmit} className="mt-5 space-y-3">
               <input
                 type="text"
                 name="name"
@@ -77,7 +79,14 @@ export default function Login() {
                 placeholder="Name"
                 className="w-full h-10 rounded-lg bg-white/10 border border-white/20 px-3 outline-none focus:ring-2 focus:ring-blue-500"
               />
-
+              <input
+                type="text"
+                name="username"
+                value={formData.username}
+                onChange={handleChange}
+                placeholder="Username"
+                className="w-full h-10 rounded-lg bg-white/10 border border-white/20 px-3 outline-none focus:ring-2 focus:ring-blue-500"
+              />
               <input
                 type="email"
                 name="email"
@@ -86,33 +95,26 @@ export default function Login() {
                 placeholder="Email"
                 className="w-full h-10 rounded-lg bg-white/10 border border-white/20 px-3 outline-none focus:ring-2 focus:ring-blue-500"
               />
-
-              <input
-                type="password"
-                name="password"
-                value={formData.password}
-                onChange={handleChange}
-                placeholder="Password"
-                className="w-full h-10 rounded-lg bg-white/10 border border-white/20 px-3 outline-none focus:ring-2 focus:ring-blue-500"
-              />
-            </form>
-
-            {/* Bottom */}
-            <div className="mt-5">
-              <label className="flex items-center gap-2 text-xs md:text-sm">
-                <input type="checkbox" className="accent-blue-500" />I Agree To
-                give personal info
-              </label>
-
+              <div className="flex justify-center items-center gap-4">
+                <label htmlFor="" onClick={() => setShowPass((prev) => !prev)}>
+                  {showPass ? <Eye /> : <EyeOff />}
+                </label>
+                <input
+                  type={showPass ? "text" : "password"}
+                  name="password"
+                  value={formData.password}
+                  onChange={handleChange}
+                  placeholder="Password"
+                  className="w-full h-10 rounded-lg bg-white/10 border border-white/20 px-3 outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
               <button
-                onClick={(e) => {
-                  createAccount(e);
-                }}
+                type="submit"
                 className="mt-4 w-full h-10 rounded-lg bg-white text-black font-semibold hover:bg-blue-600 hover:text-white transition"
               >
                 Create Account
               </button>
-            </div>
+            </form>
           </div>
 
           {/* Right */}

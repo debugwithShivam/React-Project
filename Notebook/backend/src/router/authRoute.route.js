@@ -1,8 +1,9 @@
-import {Router} from 'express';
+import { Router } from 'express';
 
 // authentication Router
 import authorization from '../controllers/Auth/auth.Controller.js';
 import verifyOtp from '../controllers/Auth/VerifyOtp.Controller.js';
+import singIn from '../controllers/Auth/SingIn.controller.js';
 
 // Notes Router
 import insertNotes from '../controllers/Notes/InsertNotes.controller.js';
@@ -21,36 +22,56 @@ import getMusic from '../controllers/Music/getMusic.controller.js';
 import upload from '../middleware/upload.js';
 import tookenChecker from '../middleware/authMiddleware.js';
 
+// Account
+import searchUsers from '../controllers/Account/searchUsers.controller.js';
+import getProfile from '../controllers/Account/getProfile.controller.js';
+
+// Follow
+import followUser from '../controllers/User/follow/followUser.controller.js';
+import getFollowStatus from '../controllers/User/follow/getFollowStatus.controller.js';
+import unFollowUser from '../controllers/User/follow/unFollowUser.controller.js';
+
 const authRouter = Router();
 
-authRouter.get('/check-auth',tookenChecker,(req,res)=>{
-     res.status(200).json({
+authRouter.get('/check-auth', tookenChecker, (req, res) => {
+    res.status(200).json({
         authenticated: true,
-        user: req.user,
+        user: {
+                id: req.user._id,
+                name: req.user.name,
+                username: req.user.username,
+                email: req.user.email,
+            },
     });
 })
 // Get Requets
-authRouter.get('/getNotes',getNotes)
-authRouter.get('/noteDataGetById/:id',noteDataGetById)
-authRouter.get('/getMusic',getMusic)
+authRouter.get('/getNotes', tookenChecker, getNotes)
+authRouter.get('/noteDataGetById/:id', tookenChecker, noteDataGetById)
+authRouter.get('/getMusic', tookenChecker, getMusic)
+authRouter.get('/searchUsers', tookenChecker, searchUsers)
+authRouter.get("/follow-status/:userId",tookenChecker,getFollowStatus)
+authRouter.get("/profile",tookenChecker,getProfile)
 
 // POST Requets
-authRouter.post('/createAccount',authorization)
-authRouter.post('/insertNotes',insertNotes)
-authRouter.post('/VerifOtp',verifyOtp)
-authRouter.post('/uploadMusic',tookenChecker,upload.fields([
-    {name:"music",maxCount:1},
-    {name:"coverImage",maxCount:1},
-]),uploadMusic)
+authRouter.post('/createAccount', authorization)
+authRouter.post('/singIn', singIn)
+authRouter.post('/insertNotes', tookenChecker, insertNotes)
+authRouter.post('/VerifOtp', verifyOtp)
+authRouter.post('/uploadMusic', tookenChecker, upload.fields([
+    { name: "music", maxCount: 1 },
+    { name: "coverImage", maxCount: 1 },
+]), uploadMusic)
+authRouter.post('/follow/:userId',tookenChecker,followUser)
 
 //patch request 
-authRouter.patch('/updateNotes',updateNotes)
-authRouter.patch('/updateMusic',updateMusic)
+authRouter.patch('/updateNotes', updateNotes)
+authRouter.patch('/updateMusic', updateMusic)
 
 
 //delete request 
-authRouter.delete('/deleteMusic/:id',deleteMusic)
-authRouter.delete('/deleteNotes/:id',deleteNotes)
+authRouter.delete('/deleteMusic/:id', deleteMusic)
+authRouter.delete('/deleteNotes/:id', deleteNotes)
+authRouter.delete('/unfollow/:userId',tookenChecker, unFollowUser)
 
 
 export default authRouter

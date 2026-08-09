@@ -3,34 +3,33 @@ import jwt from 'jsonwebtoken'
 import config from "../../config/EVConfig.js";
 
 async function insertNotes(req, res) {
-    const { title,type, textArea, htmlCode, cssCode, jsCode, } = req.body
+    const { title, type, textArea, htmlCode, cssCode, jsCode, } = req.body
     const accessToken = req.cookies.accessToken;
     console.log(req.body)
 
     try {
         let decoded = jwt.verify(accessToken, config.ACCESSTOKEN)
         let createNotes = await Note.create({
-            userId: decoded.id,
-            title: title,
-            type:type,
+            userId: req.user.id,
+            title,
+            type,
             content: textArea,
             html: htmlCode,
             css: cssCode,
-            javascript: jsCode,
+            javascript: jsCode
+        });
 
-        })
-        
         await createNotes.save()
-         return res.status(201).json({
+        return res.status(201).json({
             success: true,
             message: "Note created successfully",
             data: createNotes,
         });
     } catch (error) {
-         console.log(error);
+        console.log(error);
         return res.status(500).json({
-            success:false,
-            message:"Your Note Is note Save"
+            success: false,
+            message: "Your Note Is note Save"
         })
     }
 

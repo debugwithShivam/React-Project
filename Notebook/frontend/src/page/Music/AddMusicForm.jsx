@@ -56,7 +56,7 @@ export default function AddMusicForm() {
   const isFormValid = title && artist && musicFile && coverImage
 
   return (
-    <div className="w-full flex justify-center px-4 absolute top-20 z-50" >
+    <div className="w-full flex justify-center px-4 absolute top-0 z-50" >
       <form
         onSubmit={handleSubmit}
         className="relative w-full max-w-2xl overflow-hidden

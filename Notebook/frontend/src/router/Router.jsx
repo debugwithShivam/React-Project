@@ -12,6 +12,9 @@ import ProtectedRoutes from "../auth/ProtectedRoutes.jsx";
 import CreateNotes from "../page/Notes/CreateNotes.jsx";
 import UpdateNotes from "../page/Notes/UpdateNotes.jsx";
 import ViewNotes from "../page/Notes/ViewNotes.jsx";
+import CustomMusicPlayer from "../page/Music/CustomMusicPlayer.jsx";
+import SearchUser from "../component/SearchUser.jsx";
+import ProfilePage from "../component/ProfilePage.jsx";
 
 const router = createBrowserRouter([
   {
@@ -27,6 +30,10 @@ const router = createBrowserRouter([
     element: <ViewNotes/>,
   },
   {
+    path: "CustomMusicPlayer",
+    element: <CustomMusicPlayer/>,
+  },
+  {
     path: "/",
     element: <Layout />,
     children: [
@@ -36,6 +43,10 @@ const router = createBrowserRouter([
           {
             index: true,
             element: <Notes />,
+          },
+          {
+            path: '/SearchUser',
+            element: <SearchUser />,
           },
           {
             path: "timer",
@@ -48,6 +59,10 @@ const router = createBrowserRouter([
           {
             path: "tasks",
             element: <Todo />,
+          },
+          {
+            path: "ProfilePage",
+            element: <ProfilePage />,
           },
         ],
       },

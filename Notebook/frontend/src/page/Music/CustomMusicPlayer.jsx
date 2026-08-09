@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react'
 import { useMusic } from './musicData'
-import { useSelector } from 'react-redux'
 
 const API_BASE = 'http://localhost:5000'
 
@@ -11,7 +10,7 @@ function formatTime(t) {
   return `${m}:${s.toString().padStart(2, '0')}`
 }
 
-export default function Footer() {
+export default function CustomMusicPlayer() {
   const { data, isLoading } = useMusic()
   const [coverImage, setCoverImage] = useState(null)
   const [fileUrl, setFileUrl] = useState(null)
@@ -23,7 +22,6 @@ export default function Footer() {
   const [isPlaying, setIsPlaying] = useState(false)
   const [volume, setVolume] = useState(1)
   const audioRef = useRef(null)
-  const optionIndex = useSelector((state)=>state.state)
 
   useEffect(() => {
     if (data && data[index]) {
@@ -65,10 +63,10 @@ export default function Footer() {
     return () => {
       audio.removeEventListener('loadedmetadata', loaded)
       audio.removeEventListener('timeupdate', update)
+      audio.removeEventListener('ended', ended)
     }
-  }, [isLoading])
+  }, [isLoading, data])
 
-  // keep <audio>.volume in sync with volume state
   useEffect(() => {
     if (audioRef.current) {
       audioRef.current.volume = volume
@@ -110,66 +108,69 @@ export default function Footer() {
   }
 
   return (
-    <div className='fixed bottom-0 left-0 flex items-center justify-between w-screen h-20 px-4 bg-black/90 text-white border-t border-white/10'>
+    <div className='w-screen h-screen flex flex-col justify-between bg-black/90 text-white  p-4 shadow-xl'>
       <audio ref={audioRef} />
 
-      {/* Left: cover + info */}
-      <div className='flex items-center gap-3 w-1/4 min-w-0'>
+      {/* Cover image - takes most of the box */}
+      <div className='w-full aspect-square rounded-xl overflow-hidden bg-white/5'>
         {coverImage && (
           <img
             src={coverImage}
-            className='w-12 h-12 rounded-md object-cover shrink-0'
+            className='w-full h-full object-contain'
             alt=""
           />
         )}
-        <div className='flex flex-col min-w-0'>
-          <span className='text-sm font-medium truncate'>{title}</span>
-          <span className='text-xs text-white/60 truncate'>{artist}</span>
-        </div>
       </div>
 
-      <div className='flex flex-col items-center justify-center gap-1 w-1/2'>
-        <div className='flex items-center gap-4'>
-          <button
-            onClick={decIndex}
-            className='text-white/70 hover:text-white transition-colors'
-          >
-            ⏮
-          </button>
-          <button
-            onClick={togglePlay}
-            className='w-8 h-8 flex items-center justify-center rounded-full bg-white text-black hover:scale-105 transition-transform'
-          >
-            {isPlaying ? '⏸' : '▶'}
-          </button>
-          <button
-            onClick={incIndex}
-            className='text-white/70 hover:text-white transition-colors'
-          >
-            ⏭
-          </button>
-        </div>
-
-        <div className='flex items-center gap-2 w-full max-w-md'>
-          <span className='text-xs text-white/50 w-9 text-right'>
-            {formatTime(currentTime)}
-          </span>
-          <input
-            type="range"
-            min="0"
-            max={duration}
-            value={currentTime}
-            onChange={seek}
-            className='flex-1 h-1 accent-white cursor-pointer'
-          />
-          <span className='text-xs text-white/50 w-9'>
-            {formatTime(duration)}
-          </span>
-        </div>
+      {/* Title + artist */}
+      <div className='flex flex-col items-center text-center mt-2 min-w-0'>
+        <span className='text-sm font-medium truncate w-full'>{title}</span>
+        <span className='text-xs text-white/60 truncate w-full'>{artist}</span>
       </div>
 
-      <div className='flex items-center gap-2 w-1/4 justify-end'>
-        <span className='text-sm'>🔊</span>
+      {/* Progress bar */}
+      <div className='flex items-center gap-2 w-full mt-2'>
+        <span className='text-[10px] text-white/50 w-8 text-right'>
+          {formatTime(currentTime)}
+        </span>
+        <input
+          type="range"
+          min="0"
+          max={duration || 0}
+          value={currentTime}
+          onChange={seek}
+          className='flex-1 h-1 accent-white cursor-pointer'
+        />
+        <span className='text-[10px] text-white/50 w-8'>
+          {formatTime(duration)}
+        </span>
+      </div>
+
+      {/* Controls */}
+      <div className='flex items-center justify-center gap-5 mt-2'>
+        <button
+          onClick={decIndex}
+          className='text-white/70 hover:text-white transition-colors text-lg'
+        >
+          ⏮
+        </button>
+        <button
+          onClick={togglePlay}
+          className='w-9 h-9 flex items-center justify-center rounded-full bg-white text-black hover:scale-105 transition-transform'
+        >
+          {isPlaying ? '⏸' : '▶'}
+        </button>
+        <button
+          onClick={incIndex}
+          className='text-white/70 hover:text-white transition-colors text-lg'
+        >
+          ⏭
+        </button>
+      </div>
+
+      {/* Volume */}
+      <div className='flex items-center gap-2 w-full mt-2'>
+        <span className='text-xs'>🔊</span>
         <input
           type="range"
           min="0"
@@ -177,7 +178,7 @@ export default function Footer() {
           step="0.1"
           value={volume}
           onChange={changeVolume}
-          className='w-24 h-1 accent-white cursor-pointer'
+          className='flex-1 h-1 accent-white cursor-pointer'
         />
       </div>
     </div>

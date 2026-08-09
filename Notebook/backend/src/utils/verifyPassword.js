@@ -1,6 +1,6 @@
 import bcrypt from 'bcrypt'
 
-async function loginUser(enteredPassword, storedHash) {
+async function verifyPassword(enteredPassword, storedHash) {
   const isMatch = await bcrypt.compare(enteredPassword, storedHash);
   
   if (isMatch) {
@@ -8,6 +8,7 @@ async function loginUser(enteredPassword, storedHash) {
   } else {
     console.log("Invalid password.");
   }
+  return isMatch
 }
 
-export default loginUser
+export default verifyPassword

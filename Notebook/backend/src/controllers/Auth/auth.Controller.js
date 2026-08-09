@@ -20,8 +20,8 @@ transporter.verify((error, success) => {
 });
 
 async function authorization(req, res) {
-  console.log(config)
-  const { name, email, password } = req.body
+  const { name, username, email, password } = req.body
+  console.log(email)
 
   if (!name || !email || !password) {
     return res.status(400).json({
@@ -29,11 +29,32 @@ async function authorization(req, res) {
     });
   }
 
+
   try {
-    const existingUser = await userAuth.findOne({ email })
+    const normalizedUsername = username.trim().toLowerCase();
+    const normalizedEmail = email.trim().toLowerCase();
+    const existingUser = await userAuth.findOne({
+      $or: [
+        { email:normalizedUsername },
+        { username:normalizedEmail }
+      ]
+    })
 
     if (existingUser) {
-      return res.status(400).json({ message: 'User already exists' });
+      if (existingUser.email === normalizedUsername) {
+        return res.status(400).json({
+          success: false,
+          message: "Email already exists"
+        });
+      }
+
+      if (existingUser.username === normalizedEmail) {
+        return res.status(400).json({
+          success: false,
+          message: "Username already exists",
+          username:"Username is already exists"
+        });
+      }
     }
 
     const OtpGen = Math.floor(100000 + Math.random() * 900000)
@@ -42,9 +63,10 @@ async function authorization(req, res) {
 
     await userAuth.create(
       {
-        name,
-        email,
-        password: hashedPassword,
+        name:name.trim(),
+        username: normalizedUsername.trim(),
+        email: normalizedEmail.trim(),
+        password: hashedPassword.trim(),
         otp: OtpGen,
         otpExpire: otpExpire,
         isVerified: false
@@ -85,12 +107,12 @@ async function authorization(req, res) {
           background:#f8fafc;
           border:2px dashed #2563eb;
           border-radius:12px;
-          padding:18px 35px;
+          padding:15px 20px;
           margin-bottom:25px;">
           
           <span
           style="
-          font-size:34px;
+          font-size:27px;
           font-weight:bold;
           color:#2563eb;
           letter-spacing:8px;

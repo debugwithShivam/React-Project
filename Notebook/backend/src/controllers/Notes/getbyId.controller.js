@@ -4,7 +4,9 @@ async function noteDataGetById(req,res){
     const { id } = req.params; 
     console.log(id)
     try{
-        let notesData = await  Note.findById(id)
+        let notesData = await  Note.findOne({
+            userId: req.user.id
+        })
        return  res.status(200).json({
             success:true,
             message:"Data Was Found",

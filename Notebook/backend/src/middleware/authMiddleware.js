@@ -3,6 +3,7 @@ import config from '../config/EVConfig.js';
 import userAuth from '../module/User.js';
 
 async function tookenChecker(req, res, next) {
+
     const accessToken = req.cookies?.accessToken || req.headers.authorization?.split(' ')[1];
     const refreshToken = req.cookies?.refreshToken;
 
@@ -13,7 +14,17 @@ async function tookenChecker(req, res, next) {
     if (accessToken) {
         try {
             const decoded = jwt.verify(accessToken, config.ACCESSTOKEN);
-            req.user = decoded;
+            const user = await userAuth.findById(decoded.id)
+            console.log(user)
+
+            if (!user) {
+                return res.status(401).json({
+                    message: "User not found",
+                });
+            }
+
+            req.user = user;
+
             return next();
         } catch (error) {
             if (!(error instanceof jwt.JsonWebTokenError) && !(error instanceof jwt.TokenExpiredError)) {

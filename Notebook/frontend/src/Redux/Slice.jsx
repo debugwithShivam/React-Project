@@ -2,7 +2,8 @@ import { createSlice } from "@reduxjs/toolkit";
 
 const initialState = {
   bold: false,
-  isAuthenticated:null,
+  isAuthenticated: null,
+  user:"",
   italic: false,
   underline: false,
   strike: false,
@@ -16,7 +17,9 @@ const initialState = {
   cssCode: "/* Write CSS */",
   jsCode: 'console.log("Hello")',
   textArea: "",
-  toggleMusicAddForm:false
+  toggleMusicAddForm: false,
+  index: 0,
+  indexToggle: false,
 };
 
 const noteBookSlice = createSlice({
@@ -59,6 +62,7 @@ const noteBookSlice = createSlice({
       state.close = !state.close;
     },
 
+
     SetSrcDoc: (state, action) => {
       state.srcDoc = action.payload;
     },
@@ -84,7 +88,16 @@ const noteBookSlice = createSlice({
     setIsAuthenticated: (state, action) => {
       state.isAuthenticated = action.payload;
     },
-      ToggleMusicAddForm: (state) => {
+    indexToggle: (state) => {
+      state.indexToggle = !state.indexToggle;
+    },
+    setIndex: (state, action) => {
+      state.index = action.payload;
+    },
+    setUser: (state, action) => {
+      state.user = action.payload;
+    },
+    ToggleMusicAddForm: (state) => {
       state.toggleMusicAddForm = !state.toggleMusicAddForm;
     },
   },
@@ -109,6 +122,9 @@ export const {
   setTextArea,
   setIsAuthenticated,
   ToggleMusicAddForm,
+  setIndex,
+  indexToggle,
+  setUser
 } = noteBookSlice.actions;
 
 export default noteBookSlice.reducer;

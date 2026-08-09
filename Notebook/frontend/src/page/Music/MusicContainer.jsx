@@ -3,11 +3,14 @@ import { useQuery } from '@tanstack/react-query'
 import axios from 'axios'
 import { Play, Pause, Heart, Music2 } from 'lucide-react'
 import { useMusic } from './musicData'
+import { useDispatch } from 'react-redux'
+import { setIndex ,indexToggle} from '../../Redux/Slice'
 
 const API_BASE = 'http://localhost:5000'
 
 export default function MusicContainer({ search = '' }) {
   const { data, isLoading } = useMusic()
+  const dispatch = useDispatch()
 
   const [playingId, setPlayingId] = useState(null)
   const audioRef = useRef(null)
@@ -68,7 +71,7 @@ export default function MusicContainer({ search = '' }) {
       <div className='grid grid-cols-3   h-full drag-region
       no-drag hide-scrollbar p-2   overflow-y-auto justify-start gap-3'>
 
-        {filtered.map((song) => {
+        {filtered.map((song,i) => {
           const isPlaying = playingId === song._id
           return (
             <div
@@ -89,7 +92,11 @@ export default function MusicContainer({ search = '' }) {
                 )}
 
                 <button
-                  onClick={() => togglePlay(song)}
+                  onClick={() =>{ 
+                    togglePlay(song)
+                    dispatch(setIndex(i))
+                    dispatch(indexToggle())
+                  }}
                   className="absolute bottom-2 right-2 flex h-10 w-10 items-center justify-center rounded-full bg-indigo-600 text-white opacity-0 shadow-lg transition-all duration-200 group-hover:opacity-100 hover:scale-110 active:scale-95"
                 >
                   {isPlaying ? (
