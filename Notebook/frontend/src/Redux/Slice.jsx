@@ -3,7 +3,7 @@ import { createSlice } from "@reduxjs/toolkit";
 const initialState = {
   bold: false,
   isAuthenticated: null,
-  user:"",
+  user: "",
   italic: false,
   underline: false,
   strike: false,
@@ -20,6 +20,8 @@ const initialState = {
   toggleMusicAddForm: false,
   index: 0,
   indexToggle: false,
+  selectUser: JSON.parse(localStorage.getItem("selectUser")) || null,
+  TimerPage: JSON.parse(localStorage.getItem("TimerPage")) || null,
 };
 
 const noteBookSlice = createSlice({
@@ -100,6 +102,20 @@ const noteBookSlice = createSlice({
     ToggleMusicAddForm: (state) => {
       state.toggleMusicAddForm = !state.toggleMusicAddForm;
     },
+    setSelecUser: (state, action) => {
+      state.selectUser = action.payload;
+      localStorage.setItem(
+        "selectUser",
+        JSON.stringify(action.payload)
+      );
+    },
+    setTimerPage: (state, action) => {
+      state.TimerPage = action.payload;
+      localStorage.setItem(
+        "TimerPage",
+        JSON.stringify(action.payload)
+      );
+    }
   },
 });
 
@@ -124,7 +140,9 @@ export const {
   ToggleMusicAddForm,
   setIndex,
   indexToggle,
-  setUser
+  setUser,
+  setSelecUser,
+  setTimerPage
 } = noteBookSlice.actions;
 
 export default noteBookSlice.reducer;

@@ -4,6 +4,7 @@ async function getFollowStatus(req, res) {
     try {
         const followerId = req.user._id;
         const followingId = req.params.userId;
+        console.log("hello",followingId)
 
         const follow = await Follow.findOne({
             follower: followerId,

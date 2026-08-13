@@ -3,6 +3,11 @@ import { getProfileData } from "./getProfiledata";
 import { MessageCircle } from "lucide-react";
 import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import useFollowMutation from './useFollowMutation'
+import { useDispatch } from "react-redux";
+import { setSelecUser } from "../../Redux/Slice";
+import { Link } from "react-router-dom";
+import axios from "axios";
+
 
 const avatarColors = [
   "bg-red-500",
@@ -36,6 +41,11 @@ export default function Following() {
   }
 
   const following = data?.following ?? [];
+  const dispatch = useDispatch()
+
+
+
+
 
 
 
@@ -59,7 +69,7 @@ export default function Following() {
 
           return (
             <div
-              key={person.id || person._id || person.username}
+              key={person?.id || person?._id || person?.username}
               className="
                                 m-2 p-2
                                 rounded-2xl
@@ -69,10 +79,7 @@ export default function Following() {
                                 gap-3
                             "
             >
-              {/* User information */}
               <div className="flex items-center gap-3 min-w-0">
-
-                {/* Avatar */}
                 <div
                   className={`
                                         w-12 h-12
@@ -88,7 +95,6 @@ export default function Following() {
                   {initial}
                 </div>
 
-                {/* Name + username */}
                 <div className="min-w-0">
                   <h2 className="font-semibold truncate">
                     {person?.name}
@@ -100,12 +106,11 @@ export default function Following() {
                 </div>
               </div>
 
-              {/* Follow button */}
               <div className="flex justify-center items-center gap-3">
 
                 <button
                   onClick={() => {
-                    unfollowMutation.mutate(person._id);
+                    unfollowMutation.mutate(person?._id);
                   }}
                   className="
                                 shrink-0
@@ -125,9 +130,13 @@ export default function Following() {
                     ? "..."
                     : "Following"}</span>
                 </button>
-                <div className="flex justify-center items-center w-10 bg-white/24 rounded-full border-2 h-10 mr-2">
-                  <MessageCircle size={18} />
-                </div>
+                <Link to='/ChatSeaction'>
+                  <div onClick={() => {
+                    dispatch(setSelecUser(person))
+                  }} className="flex justify-center items-center w-10 bg-white/24 rounded-full border-2 h-10 mr-2">
+                    <MessageCircle size={18} />
+                  </div>
+                </Link>
               </div>
             </div>
           );

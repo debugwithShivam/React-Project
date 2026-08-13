@@ -31,6 +31,11 @@ import followUser from '../controllers/User/follow/followUser.controller.js';
 import getFollowStatus from '../controllers/User/follow/getFollowStatus.controller.js';
 import unFollowUser from '../controllers/User/follow/unFollowUser.controller.js';
 
+// Convertions
+import getOrCreateConversation from '../controllers/User/Conversation/getOrCreateConversation.Controller.js';
+import sendMessage from '../controllers/User/Conversation/sendMessage.controller.js';
+import getMessages from '../controllers/User/Conversation/getMessages.controller.js';
+
 const authRouter = Router();
 
 authRouter.get('/check-auth', tookenChecker, (req, res) => {
@@ -51,6 +56,7 @@ authRouter.get('/getMusic', tookenChecker, getMusic)
 authRouter.get('/searchUsers', tookenChecker, searchUsers)
 authRouter.get("/follow-status/:userId",tookenChecker,getFollowStatus)
 authRouter.get("/profile",tookenChecker,getProfile)
+authRouter.get("/messages/:conversationId",tookenChecker,getMessages);
 
 // POST Requets
 authRouter.post('/createAccount', authorization)
@@ -62,6 +68,8 @@ authRouter.post('/uploadMusic', tookenChecker, upload.fields([
     { name: "coverImage", maxCount: 1 },
 ]), uploadMusic)
 authRouter.post('/follow/:userId',tookenChecker,followUser)
+authRouter.post("/conversation/:userId",tookenChecker,getOrCreateConversation);
+authRouter.post("/message",tookenChecker,sendMessage);
 
 //patch request 
 authRouter.patch('/updateNotes', updateNotes)

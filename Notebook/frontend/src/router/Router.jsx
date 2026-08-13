@@ -15,6 +15,7 @@ import ViewNotes from "../page/Notes/ViewNotes.jsx";
 import CustomMusicPlayer from "../page/Music/CustomMusicPlayer.jsx";
 import SearchUser from "../component/SearchUser.jsx";
 import ProfilePage from "../component/ProfilePage.jsx";
+import ChatSeaction from "../page/Profilepage/ChatSeaction.jsx";
 
 const router = createBrowserRouter([
   {
@@ -63,6 +64,10 @@ const router = createBrowserRouter([
           {
             path: "ProfilePage",
             element: <ProfilePage />,
+          },
+          {
+            path: "ChatSeaction",
+            element: <ChatSeaction />,
           },
         ],
       },

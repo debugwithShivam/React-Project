@@ -15,7 +15,6 @@ async function tookenChecker(req, res, next) {
         try {
             const decoded = jwt.verify(accessToken, config.ACCESSTOKEN);
             const user = await userAuth.findById(decoded.id)
-            console.log(user)
 
             if (!user) {
                 return res.status(401).json({

@@ -37,8 +37,8 @@ async function getProfile(req, res) {
                 followers: followers.length,
                 following: following.length,
             },
-            followers: followers.map((item) => item.follower),
-            following: following.map((item) => item.following),
+            followers: followers.map((item) => item.follower).filter(Boolean),
+            following: following.map((item) => item.following).filter(Boolean),
         });
 
     } catch (error) {
