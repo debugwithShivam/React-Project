@@ -7,7 +7,7 @@ import { useDispatch } from "react-redux";
 import { setSelecUser } from "../../Redux/Slice";
 import { Link } from "react-router-dom";
 import axios from "axios";
-
+import useUnreadMessages from './useUnreadMessages'
 
 const avatarColors = [
   "bg-red-500",
@@ -21,6 +21,7 @@ const avatarColors = [
 ];
 
 export default function Following() {
+  const { data: unreadCount, } = useUnreadMessages();
   const { data, isLoading, isError } = getProfileData();
   const { unfollowMutation } = useFollowMutation();
 
@@ -46,6 +47,7 @@ export default function Following() {
 
 
 
+  console.log(following)
 
 
 
@@ -135,6 +137,30 @@ export default function Following() {
                     dispatch(setSelecUser(person))
                   }} className="flex justify-center items-center w-10 bg-white/24 rounded-full border-2 h-10 mr-2">
                     <MessageCircle size={18} />
+                    {unreadCount > 0 && (
+                      <span
+                        className="
+                    absolute
+                    -top-2
+                    -right-2
+                    min-w-5
+                    h-5
+                    px-1
+                    rounded-full
+                    bg-red-500
+                    text-white
+                    text-xs
+                    font-bold
+                    flex
+                    items-center
+                    justify-center
+                "
+                      >
+                        {unreadCount > 99
+                          ? "99+"
+                          : unreadCount}
+                      </span>
+                    )}
                   </div>
                 </Link>
               </div>

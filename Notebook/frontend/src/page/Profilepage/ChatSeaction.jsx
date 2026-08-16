@@ -36,9 +36,9 @@ export default function ChatSeaction() {
     const { selectUser } = useSelector((state) => state.state);
     const userFirstLetter = selectUser?.name?.[0] ?? "A"
     const isOnline = selectUser ? onlineUsers.has(String(selectUser._id)) : false
-    const [message, setMeaage] = useState("")
     const [conversationId, setConversationId] = useState(null);
     const queryClient = useQueryClient();
+    const dispatch = useDispatch()
 
 
 
@@ -56,6 +56,21 @@ export default function ChatSeaction() {
         enabled: !!conversationId,
     })
 
+    const {
+        data: unreadData,
+    } = useQuery({
+        queryKey: ["unreadMessages"],
+        queryFn: async () => {
+            const response = await axios.get(
+                "http://localhost:5000/authRouter/messages/unread",
+                {
+                    withCredentials: true,
+                }
+            );
+
+            return response.data;
+        },
+    });
 
     const messages = messagesData?.data ?? [];
 
@@ -79,58 +94,100 @@ export default function ChatSeaction() {
         },
     });
 
+    const markAsReadMutation = useMutation({
+        mutationFn: async (conversationId) => {
+            const response = await axios.patch(
+                `http://localhost:5000/authRouter/messages/${conversationId}/read`,
+                {},
+                {
+                    withCredentials: true,
+                }
+            );
+
+            return response.data;
+        },
+
+        onSuccess: () => {
+            queryClient.invalidateQueries({
+                queryKey: ["unreadMessages"],
+            });
+        },
+    });
     useEffect(() => {
-        if (!socket || !conversationId) return;
+        if (!socket) return;
 
         const handleNewMessage = (data) => {
-            const incomingConversationId = data.conversationId;
+            const incomingConversationId =
+                String(data.conversationId);
+
             const newMessage = data.message;
 
+            // Current chat open hai
             if (
-                String(incomingConversationId) !==
-                String(conversationId)
+                conversationId &&
+                incomingConversationId === String(conversationId)
             ) {
+                queryClient.setQueryData(
+                    ["messages", conversationId],
+                    (oldData) => {
+                        if (!oldData) {
+                            return {
+                                success: true,
+                                data: [newMessage],
+                            };
+                        }
+
+                        return {
+                            ...oldData,
+                            data: [
+                                ...oldData.data,
+                                newMessage,
+                            ],
+                        };
+                    }
+                );
+
+                markAsReadMutation.mutate(conversationId);
+
                 return;
             }
 
-            queryClient.setQueryData(
-                ["messages", conversationId],
-                (oldData) => {
-                    if (!oldData) {
-                        return {
-                            success: true,
-                            data: [newMessage],
-                        };
-                    }
-                    return {
-                        ...oldData,
-                        data: [...oldData.data, newMessage],
-                    };
-                }
-            );
+            queryClient.invalidateQueries({
+                queryKey: ["unreadMessages"],
+            });
         };
+
         socket.on("newMessage", handleNewMessage);
 
         return () => {
             socket.off("newMessage", handleNewMessage);
         };
-    }, [socket, conversationId, queryClient]);
+    }, [
+        socket,
+        conversationId,
+        queryClient,
+    ]);
 
     useEffect(() => {
-
         if (!selectUser?._id) return;
-
         createConversation.mutate();
-
     }, [selectUser?._id]);
 
 
 
-    
 
+
+
+    useEffect(() => {
+        if (!conversationId) return;
+
+        markAsReadMutation.mutate(conversationId);
+    }, [conversationId]);
 
     const { data, isLoading, isError, } = getProfileData();
     const followers = data?.followers ?? [];
+
+    console.log(followers)
 
 
     if (!selectUser) {
@@ -171,8 +228,17 @@ export default function ChatSeaction() {
                             person?.username ||
                             "A"
                         )[0].toUpperCase();
+                        const getUnreadCount = (personId) => {
+                            const item = unreadData?.data?.find(
+                                (item) =>
+                                    String(item._id.sender) === String(personId)
+                            );
+
+                            return item?.count ?? 0;
+                        };
+                        const unreadCount = getUnreadCount(person._id);
                         return (
-                            <div key={index}>
+                            <div key={index} onClick={()=>dispatch(setSelecUser(person))}>
                                 <div className='flex  p-2 m-2 rounded-2xl bg-white/30 gap-2 justify-between'>
                                     <div className='flex gap-2'>
 
@@ -189,14 +255,11 @@ export default function ChatSeaction() {
                                             <span>
                                                 2:14
                                             </span>
-                                            <span className='ml-2 shrink-0
-                          text-xs font-semibold
-                          bg-orange-500 text-white
-                          rounded-full
-                          w-5 h-5
-                          flex items-center justify-center'>
-                                                4
-                                            </span>
+                                            {unreadCount > 0 && (
+                                                <span className=" ml-2 shrink-0 text-xs font-semibold bg-orange-500 text-white rounded-full w-5 h-5 flex items-center justify-center">
+                                                    {unreadCount > 99 ? "99+" : unreadCount}
+                                                </span>
+                                            )}
                                         </div>
                                     </div>
                                 </div>
@@ -329,7 +392,10 @@ export default function ChatSeaction() {
                         );
                     })}
                 </div>
-                <SendMessage/>
+                <SendMessage
+                    conversationId={conversationId}
+                    receiverId={selectUser?._id}
+                />
             </div>
         </div>
     )

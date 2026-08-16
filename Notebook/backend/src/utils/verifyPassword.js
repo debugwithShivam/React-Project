@@ -1,5 +1,5 @@
 import bcrypt from 'bcrypt'
-
+import config from '../config/EVConfig';
 async function verifyPassword(enteredPassword, storedHash) {
   const isMatch = await bcrypt.compare(enteredPassword, storedHash);
   
@@ -10,5 +10,8 @@ async function verifyPassword(enteredPassword, storedHash) {
   }
   return isMatch
 }
+
+
+
 
 export default verifyPassword

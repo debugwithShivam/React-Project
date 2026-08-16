@@ -18,7 +18,7 @@ function createWindow() {
       preload: preloadPath,
       contextIsolation: true,
       nodeIntegration: false,
-      webSecurity: false,
+        webSecurity:false,
     },
   });
 
@@ -42,7 +42,7 @@ ipcMain.on("open-note-window", () => {
       preload: preloadPath,
       contextIsolation: true,
       nodeIntegration: false,
-      webSecurity: false,
+        webSecurity:false,
     },
   });
   // child.webContents.openDevTools()
@@ -60,7 +60,7 @@ ipcMain.on("UpdateNotes", (event,id) => {
       preload: preloadPath,
       contextIsolation: true,
       nodeIntegration: false,
-      webSecurity: false,
+        webSecurity:false,
     },
   });
   // updateNote.webContents.openDevTools()
@@ -80,7 +80,7 @@ ipcMain.on("ViewNotes", (event,id) => {
       preload: preloadPath,
       contextIsolation: true,
       nodeIntegration: false,
-      webSecurity: false,
+        webSecurity:false,
     },
   });
    updateNote.setAlwaysOnTop(true, "screen-saver");
@@ -97,7 +97,7 @@ ipcMain.on("CustomMusicPlayer", (event,id) => {
       preload: preloadPath,
       contextIsolation: true,
       nodeIntegration: false,
-      webSecurity: false,
+        webSecurity:false,
     },
   });
    CustomMusicPlayer.setAlwaysOnTop(true, "screen-saver");

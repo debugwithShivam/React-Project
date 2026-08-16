@@ -44,7 +44,16 @@ async function getOrCreateConversation(req, res) {
 
         let conversation = await Conversation.findOne({
             participants: {
-                $all: [currentUserId, otherUserId],
+                $all: [
+                    currentUserId,
+                    otherUserId,
+                ],
+            },
+            $expr: {
+                $eq: [
+                    { $size: "$participants" },
+                    2,
+                ],
             },
         });
 

@@ -15,9 +15,14 @@ import Followers from "./Followers";
 import Notes from "./Notes";
 import Messages from "./Messages";
 import { useState } from "react";
+import useUnreadMessages from './useUnreadMessages'
+
 
 export default function ProfilePageHeader() {
-    const [page,setPage] = useState("Notes")
+    const { data: unreadData, } = useUnreadMessages();
+    console.log(unreadData)
+    const totalUnread = unreadData?.total ?? 0;
+    const [page, setPage] = useState("Notes")
     const { user } = useSelector((state) => state.state);
 
     const { data, isLoading, isError } = getProfileData()
@@ -118,13 +123,18 @@ export default function ProfilePageHeader() {
                     {navItems.map(({ icon: Icon, label }) => (
                         <button
                             key={label}
-                            onClick={()=>{
-                                setPage(label)
+                            onClick={() => {
+                                setPage(label);
                             }}
-                            className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium text-white/70 hover:text-white hover:bg-white/10 transition-colors whitespace-nowrap"
-                        >
+                            className=" flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium text-white/70 hover:text-white hover:bg-white/10 transition-colors whitespace-nowrap">
                             <Icon size={17} />
                             <span>{label}</span>
+                            {label === "Messages" && totalUnread > 0 && (
+                                <span
+                                    className=" min-w-5 h-5 px-1.5 flex items-center justify-center rounded-full bg-red-500 text-white text-xs font-bold">
+                                    {totalUnread > 99 ? "99+" : totalUnread}
+                                </span>
+                            )}
                         </button>
                     ))}
                 </div>
@@ -135,10 +145,10 @@ export default function ProfilePageHeader() {
                     </p>
                 )}
             </div>
-            {page == "Notes" && <Notes/> }
-            {page == "Followers" && <Followers/> }
-            {page == "Following" && <Following/> }
-            {page == "Messages" && <Messages/> }
+            {page == "Notes" && <Notes />}
+            {page == "Followers" && <Followers />}
+            {page == "Following" && <Following />}
         </div>
     );
 }
+

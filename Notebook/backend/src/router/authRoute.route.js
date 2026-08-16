@@ -35,6 +35,8 @@ import unFollowUser from '../controllers/User/follow/unFollowUser.controller.js'
 import getOrCreateConversation from '../controllers/User/Conversation/getOrCreateConversation.Controller.js';
 import sendMessage from '../controllers/User/Conversation/sendMessage.controller.js';
 import getMessages from '../controllers/User/Conversation/getMessages.controller.js';
+import markMessagesAsRead from '../controllers/User/Conversation/markMessagesAsRead.controller.js';
+import getUnreadCounts from '../controllers/User/Conversation/getUnreadCounts.controller.js';
 
 const authRouter = Router();
 
@@ -56,6 +58,7 @@ authRouter.get('/getMusic', tookenChecker, getMusic)
 authRouter.get('/searchUsers', tookenChecker, searchUsers)
 authRouter.get("/follow-status/:userId",tookenChecker,getFollowStatus)
 authRouter.get("/profile",tookenChecker,getProfile)
+authRouter.get("/messages/unread",tookenChecker,getUnreadCounts);
 authRouter.get("/messages/:conversationId",tookenChecker,getMessages);
 
 // POST Requets
@@ -74,6 +77,7 @@ authRouter.post("/message",tookenChecker,sendMessage);
 //patch request 
 authRouter.patch('/updateNotes', updateNotes)
 authRouter.patch('/updateMusic', updateMusic)
+authRouter.patch("/messages/:conversationId/read",tookenChecker,markMessagesAsRead);
 
 
 //delete request 
