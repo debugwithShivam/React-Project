@@ -1,5 +1,6 @@
 import generateToken from '../../utils/generateToken.js'
 import userAuth from '../../module/User.js';
+import config from '../../config/EVConfig.js';
 
 async function verifyOtp(req, res) {
     try {

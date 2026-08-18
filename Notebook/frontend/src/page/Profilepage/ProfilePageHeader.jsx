@@ -20,7 +20,6 @@ import useUnreadMessages from './useUnreadMessages'
 
 export default function ProfilePageHeader() {
     const { data: unreadData, } = useUnreadMessages();
-    console.log(unreadData)
     const totalUnread = unreadData?.total ?? 0;
     const [page, setPage] = useState("Notes")
     const { user } = useSelector((state) => state.state);

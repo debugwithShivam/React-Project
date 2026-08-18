@@ -10,7 +10,7 @@ export default function Timer() {
   const {TimerPage} = useSelector((state) => state.state);
   console.log(TimerPage)
   return (
-    <div className="min-h-screen px-6 py-10 md:px-10">
+    <div className="min-h-screen  px-6 py-10 md:px-10">
       <Header/>
       {TimerPage == "Focus" && <Focus/>}
       {TimerPage == "Alarm" && <Alarm/>}
