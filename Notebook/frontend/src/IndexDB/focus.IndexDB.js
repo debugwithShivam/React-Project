@@ -1,18 +1,11 @@
 import Dexie from 'dexie'
 
-export const focusSetTimerDB = new Dexie("TimerDb")
-export const setTiemrDB = new Dexie("SetTimer")
-export const tiemrScoreDB = new Dexie("tiemrScore")
-
-focusSetTimerDB.version(1).stores({
-    time:"Focustimer, deepFocus, shortFocus, longFocus"
-})
+export const db = new Dexie("TimerDB")
 
 
-setTiemrDB.version(1).stores({
-    setTimer:"hour, min, sec"
-})
+db.version(1).stores({
+    timerSettings: "id",
+    customTimer: "id",
+    timerScores: "id"
+});
 
-tiemrScoreDB.version(1).stores({
-    score:"Sessions, Completed, focusTime"
-})
