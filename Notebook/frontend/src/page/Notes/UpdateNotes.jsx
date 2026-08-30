@@ -18,6 +18,7 @@ import {
 import { useState } from "react";
 import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query'
 import axios from 'axios'
+import VITE_API_URL from '../../config/backend_API_URL';
 
 export default function UpdateNotes() {
   const [showMenu, setShowMenu] = useState(false);
@@ -89,7 +90,7 @@ export default function UpdateNotes() {
 
   async function getNotesData(id) {
     try {
-      let response = await axios.get(`http://localhost:5000/authRouter/noteDataGetById/${id}`, { withCredentials: true })
+      let response = await axios.get(`${VITE_API_URL}/authRouter/noteDataGetById/${id}`, { withCredentials: true })
       setText(response.data.data.content);
       setHtmlCode(response.data.data.html);
       setCssCode(response.data.data.css);
@@ -113,7 +114,7 @@ export default function UpdateNotes() {
 
   const UpdateNote = useMutation({
     mutationFn: (data) =>
-      axios.patch('http://localhost:5000/authRouter/updateNotes', data, {
+      axios.patch(`${VITE_API_URL}/authRouter/updateNotes`, data, {
         withCredentials: true
       }),
     onSuccess: () => {

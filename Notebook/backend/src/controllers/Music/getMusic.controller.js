@@ -9,7 +9,9 @@ async function  getMusic(req,res) {
             message:"Data Was Found",
             data:musicData,
         })
+        console.log(musicData)
     }catch(error){
+        console.log(error)
      return res.status(500).json({
             success:false,
             message:"No Data Found"

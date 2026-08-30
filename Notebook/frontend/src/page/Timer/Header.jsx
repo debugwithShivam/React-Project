@@ -2,7 +2,7 @@ import React from 'react'
 import { useDispatch, useSelector } from 'react-redux'
 import { setTimerPage } from '../../Redux/Slice'
 
-const TABS = ["Focus", "Alarm", "Stop Watch", "Timer"]
+const TABS = ["Focus",  "Stop Watch", ]
 
 export default function Header() {
   const dispatch = useDispatch()

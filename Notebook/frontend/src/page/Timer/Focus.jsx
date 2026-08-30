@@ -42,7 +42,6 @@ export default function Focus() {
     });
   };
 
-  // countdown effect — fixed to run every 1000ms (1 real second)
   useEffect(() => {
     if (!isRunning) return;
 
@@ -74,7 +73,6 @@ export default function Focus() {
     return () => clearInterval(interval);
   }, [isRunning, selectedTimer]);
 
-  // helper to know the "full" duration of the currently selected timer
   const getDuration = (key) => {
     if (key === "custom") return customMinutes * 60;
     return DEFAULT_DURATIONS[key];
@@ -212,7 +210,19 @@ export default function Focus() {
           <p className="text-sm text-white/65">You've got this!</p>
         </div>
 
-        <div className="h-75 flex justify-center items-center">
+        <div className="h-75 flex justify-center flex-col items-center">
+          {selectedTimer === "custom" && (
+          <div className="flex justify-center items-center gap-2 -mt-4 mb-2">
+            <label className="text-white/80 font-extrabold ">Minutes:</label>
+            <input
+              type="number"
+              min={1}
+              value={customMinutes}
+              onChange={(e) => handleCustomMinutesChange(e.target.value)}
+              className="w-16 px-2 py-1 rounded-md bg-white/10 border border-white/20 text-white text-sm text-center outline-none"
+            />
+          </div>
+        )}
           <div
             className="
               w-64 h-64
@@ -222,6 +232,7 @@ export default function Focus() {
               shadow-[0_0_30px_rgba(232,185,4,0.12)]
             "
           >
+            
             <div
               className="
                 w-full h-full
@@ -247,18 +258,7 @@ export default function Focus() {
           </div>
         </div>
 
-        {selectedTimer === "custom" && (
-          <div className="flex justify-center items-center gap-2 -mt-4 mb-2">
-            <label className="text-white/60 text-xs">Minutes:</label>
-            <input
-              type="number"
-              min={1}
-              value={customMinutes}
-              onChange={(e) => handleCustomMinutesChange(e.target.value)}
-              className="w-16 px-2 py-1 rounded-md bg-white/10 border border-white/20 text-white text-sm text-center outline-none"
-            />
-          </div>
-        )}
+        
 
         <div className="flex flex-col justify-center items-center">
           <button
@@ -428,3 +428,4 @@ export default function Focus() {
     </div>
   );
 }
+

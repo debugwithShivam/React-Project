@@ -123,8 +123,9 @@ export default function Layout() {
           </div>
         )}
       </header>
-      <div className="">
-        <Outlet />
+      <div className="body">
+       <h1></h1>
+       <Outlet/>
       </div>
     </div>
   );

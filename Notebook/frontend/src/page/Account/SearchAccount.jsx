@@ -4,6 +4,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { SearchIcon, Search, X, UserRound } from 'lucide-react'
 import { useSelector } from 'react-redux'
 import UserSearchResult from './UserSearchResult'
+import VITE_API_URL from '../../config/backend_API_URL'
 
 export default function SearchAccount() {
     const [query, setQuery] = useState("")
@@ -21,7 +22,7 @@ export default function SearchAccount() {
     async function searchUser({ queryKey }) {
         const [, searchQuery] = queryKey
         try {
-            let response = await axios.get("http://localhost:5000/authRouter/searchUsers", {
+            let response = await axios.get(`${VITE_API_URL}/authRouter/searchUsers`, {
                 params: {
                     q: searchQuery
                 }, withCredentials: true

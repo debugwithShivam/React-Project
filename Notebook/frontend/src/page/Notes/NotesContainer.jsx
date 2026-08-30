@@ -2,6 +2,7 @@ import axios from 'axios'
 import React, { useEffect } from 'react'
 import { useQuery, useQueryClient, useMutation } from '@tanstack/react-query'
 import { Trash2, Pencil, Pin, FileText, StickyNote, Clock } from 'lucide-react'
+import VITE_API_URL from '../../config/backend_API_URL'
 
 const noteColors = [
     { bg: 'bg-yellow-200/85', pin: 'text-yellow-600', fold: 'bg-yellow-900/10' },
@@ -18,7 +19,7 @@ export default function NotesContainer() {
 
     async function getNotesData() {
         try {
-            let response = await axios.get('http://localhost:5000/authRouter/getNotes', { withCredentials: true })
+            let response = await axios.get(`${VITE_API_URL}/authRouter/getNotes`, { withCredentials: true })
             console.log(response.data.data);
             return response.data.data
         } catch (error) {
@@ -35,7 +36,7 @@ export default function NotesContainer() {
 
     async function handleDelete(id) {
         try {
-            await axios.delete(`http://localhost:5000/authRouter/deleteNotes/${id}`, { withCredentials: true })
+            await axios.delete(`${VITE_API_URL}/authRouter/deleteNotes/${id}`, { withCredentials: true })
             queryClient.invalidateQueries({
                 queryKey: ['insertNotes']
             })

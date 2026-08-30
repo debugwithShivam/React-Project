@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
 import { Navigate, Outlet, useNavigate } from "react-router-dom";
+import Setting from "../components/Setting/Setting";
 
 export default function ProtectedRoute({ children }) {
   const navigate = useNavigate();
@@ -32,7 +33,7 @@ export default function ProtectedRoute({ children }) {
     return <h1>Loading...</h1>;
   }
 
-return authStatus ? <Outlet/> : <Navigate to="/login" replace />;
+return authStatus ? <Setting/> : <Navigate to="/login" replace />;
   
 
   return children;

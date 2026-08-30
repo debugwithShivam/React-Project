@@ -1,8 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react'
 import { useMusic } from './musicData'
 import { useSelector } from 'react-redux'
-
-const API_BASE = 'http://localhost:5000'
+import VITE_API_URL from '../../config/backend_API_URL'
 
 function formatTime(t) {
   if (!t || isNaN(t)) return '0:00'
@@ -28,8 +27,8 @@ export default function Footer() {
   useEffect(() => {
     if (data && data[index]) {
       const { fileUrl: audio, coverImage: image, title, artist } = data[index]
-      setFileUrl(`${API_BASE}${audio}`)
-      setCoverImage(`${API_BASE}${image}`)
+      setFileUrl(`${VITE_API_URL}${audio}`)
+      setCoverImage(`${VITE_API_URL}${image}`)
       setTitle(title)
       setArtist(artist)
     }

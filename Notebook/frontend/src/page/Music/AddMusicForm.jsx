@@ -4,7 +4,7 @@ import axios from 'axios'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useSelector } from 'react-redux'
 import { Music2, Image as ImageIcon, UploadCloud, X, Loader2 } from 'lucide-react'
-
+import VITE_API_URL from '../../config/backend_API_URL'
 export default function AddMusicForm() {
   const [title, setTitle] = useState("")
   const [artist, setArtist] = useState("")
@@ -20,7 +20,7 @@ export default function AddMusicForm() {
 
   const addMusic = useMutation({
     mutationFn: (data) =>
-      axios.post('http://localhost:5000/authRouter/uploadMusic', data, {
+      axios.post(`${VITE_API_URL}/authRouter/uploadMusic`, data, {
         withCredentials: true,
       }),
     onSuccess: () => {

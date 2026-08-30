@@ -18,7 +18,7 @@ function createWindow() {
       preload: preloadPath,
       contextIsolation: true,
       nodeIntegration: false,
-        webSecurity:false,
+      webSecurity: false,
     },
   });
 
@@ -42,14 +42,14 @@ ipcMain.on("open-note-window", () => {
       preload: preloadPath,
       contextIsolation: true,
       nodeIntegration: false,
-        webSecurity:false,
+      webSecurity: false,
     },
   });
   // child.webContents.openDevTools()
   child.loadURL("http://localhost:5173/CreateNotes");
 });
 
-ipcMain.on("UpdateNotes", (event,id) => {
+ipcMain.on("UpdateNotes", (event, id) => {
   const updateNote = new BrowserWindow({
     width: 450,
     height: 450,
@@ -60,47 +60,48 @@ ipcMain.on("UpdateNotes", (event,id) => {
       preload: preloadPath,
       contextIsolation: true,
       nodeIntegration: false,
-        webSecurity:false,
+      webSecurity: false,
     },
   });
   // updateNote.webContents.openDevTools()
   updateNote.loadURL(`http://localhost:5173/UpdateNotes/${id}`);
 });
 
-ipcMain.on("ViewNotes", (event,id) => {
+ipcMain.on("ViewNotes", (event, id) => {
   const updateNote = new BrowserWindow({
-     width: 450,
+    width: 450,
     height: 450,
     icon: stickyNotes,
-    alwaysOnTop: true,        
-    frame: false,  
-    movable:true,
-    transparent:true,
+    alwaysOnTop: true,
+    frame: false,
+    movable: true,
+    transparent: true,
     webPreferences: {
       preload: preloadPath,
       contextIsolation: true,
       nodeIntegration: false,
-        webSecurity:false,
+      webSecurity: false,
     },
   });
-   updateNote.setAlwaysOnTop(true, "screen-saver");
+  updateNote.setAlwaysOnTop(true, "screen-saver");
   // updateNote.webContents.openDevTools()
   updateNote.loadURL(`http://localhost:5173/viewNotes/${id}`);
 });
-ipcMain.on("CustomMusicPlayer", (event,id) => {
+
+ipcMain.on("CustomMusicPlayer", (event, id) => {
   const CustomMusicPlayer = new BrowserWindow({
-     width: 300,
+    width: 300,
     height: 300,
     icon: stickyNotes,
-    alwaysOnTop: true,        
+    alwaysOnTop: true,
     webPreferences: {
       preload: preloadPath,
       contextIsolation: true,
       nodeIntegration: false,
-        webSecurity:false,
+      webSecurity: false,
     },
   });
-   CustomMusicPlayer.setAlwaysOnTop(true, "screen-saver");
+  CustomMusicPlayer.setAlwaysOnTop(true, "screen-saver");
   // updateNote.webContents.openDevTools()
   CustomMusicPlayer.loadURL(`http://localhost:5173/CustomMusicPlayer`);
 });
@@ -109,5 +110,38 @@ ipcMain.on("closeNoteWindow", (event) => {
   const win = BrowserWindow.fromWebContents(event.sender);
   if (win) win.close();
 });
+
+ipcMain.on("open-todo-window", () => {
+  const todoWindow = new BrowserWindow({
+    width: 320,
+    height: 400,
+
+    frame: false,
+    transparent: true,
+    backgroundColor: "#00000000",
+
+    resizable: false,
+    movable: true,
+    hasShadow: false,
+
+    alwaysOnTop: true,
+
+    webPreferences: {
+      preload: preloadPath,
+      contextIsolation: true,
+      nodeIntegration: false,
+      webSecurity: false,
+    },
+  });
+
+  todoWindow.setAlwaysOnTop(true, "screen-saver");
+  todoWindow.webContents.openDevTools()
+  todoWindow.loadURL("http://localhost:5173/TodoPage");
+});
+ipcMain.on("closeTodoWindow", (event) => {
+  const win = BrowserWindow.fromWebContents(event.sender);
+  if (win) win.close();
+});
+
 
 app.whenReady().then(createWindow);

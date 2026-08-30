@@ -16,6 +16,7 @@ import CustomMusicPlayer from "../page/Music/CustomMusicPlayer.jsx";
 import SearchUser from "../component/SearchUser.jsx";
 import ProfilePage from "../component/ProfilePage.jsx";
 import ChatSeaction from "../page/Profilepage/ChatSeaction.jsx";
+import TodoPage from "../page/TodoPage.jsx/TodoPage.jsx";
 
 const router = createBrowserRouter([
   {
@@ -33,6 +34,10 @@ const router = createBrowserRouter([
   {
     path: "CustomMusicPlayer",
     element: <CustomMusicPlayer/>,
+  },
+  {
+    path: "TodoPage",
+    element: <TodoPage/>,
   },
   {
     path: "/",

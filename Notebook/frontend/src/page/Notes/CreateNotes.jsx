@@ -35,6 +35,7 @@ import {
   Minimize2,
   StickyNote,
 } from "lucide-react";
+import VITE_API_URL from "../../config/backend_API_URL";
 
 export default function CreateNotes() {
   const [showMenu, setShowMenu] = useState(false);
@@ -96,7 +97,7 @@ export default function CreateNotes() {
   const queryClient = useQueryClient();
   const insertProduct = useMutation({
     mutationFn: (data) =>
-      axios.post("http://localhost:5000/authRouter/insertNotes", data, {
+      axios.post(`${VITE_API_URL}/authRouter/insertNotes`, data, {
         withCredentials: true,
       }),
     onSuccess: () => {

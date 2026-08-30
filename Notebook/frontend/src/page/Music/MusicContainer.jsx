@@ -5,8 +5,7 @@ import { Play, Pause, Heart, Music2 } from 'lucide-react'
 import { useMusic } from './musicData'
 import { useDispatch } from 'react-redux'
 import { setIndex ,indexToggle} from '../../Redux/Slice'
-
-const API_BASE = 'http://localhost:5000'
+import VITE_API_URL from '../../config/backend_API_URL'
 
 export default function MusicContainer({ search = '' }) {
   const { data, isLoading } = useMusic()
@@ -26,7 +25,7 @@ export default function MusicContainer({ search = '' }) {
     : songs
 
   const togglePlay = (song) => {
-    const url = `${API_BASE}${song.fileUrl}`
+    const url = `${VITE_API_URL}${song.fileUrl}`
 
     if (playingId === song._id) {
       audioRef.current?.pause()
@@ -81,7 +80,7 @@ export default function MusicContainer({ search = '' }) {
               <div className="relative aspect-square w-full overflow-hidden bg-black/30">
                 {song.coverImage ? (
                   <img
-                    src={`${API_BASE}${song.coverImage}`}
+                    src={`${VITE_API_URL}${song.coverImage}`}
                     alt={song.title}
                     className="h-full w-full  object-cover transition duration-300 group-hover:scale-105"
                   />

@@ -3,6 +3,7 @@ import { useParams } from 'react-router-dom';
 import axios from 'axios';
 import { useQuery } from '@tanstack/react-query';
 import { X, FileText, Code2 } from 'lucide-react';
+import VITE_API_URL from '../../config/backend_API_URL';
 
 const DEFAULTS = {
   content: "",
@@ -18,7 +19,7 @@ export default function ViewNotes() {
   async function getNotesData(id) {
     try {
       const response = await axios.get(
-        `http://localhost:5000/authRouter/noteDataGetById/${id}`,
+        `${VITE_API_URL}/authRouter/noteDataGetById/${id}`,
         { withCredentials: true }
       );
       return response.data.data;

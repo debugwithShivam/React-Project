@@ -7,7 +7,7 @@ export default function useUnreadMessages() {
 
         queryFn: async () => {
             const response = await axios.get(
-                "http://localhost:5000/authRouter/messages/unread",
+                `${VITE_API_URL}/authRouter/messages/unread`,
                 {
                     withCredentials: true,
                 }

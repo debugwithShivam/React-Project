@@ -17,7 +17,7 @@ import { useSocket } from '../../context/Socket'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import axios from 'axios';
 import SendMessage from './SendMessage';
-
+import VITE_API_URL from '../../config/backend_API_URL';
 
 
 const avatarColors = [
@@ -43,7 +43,7 @@ export default function ChatSeaction() {
 
 
     async function getMessage() {
-        const response = await axios.get(`http://localhost:5000/authRouter/messages/${conversationId}`,
+        const response = await axios.get(`${VITE_API_URL}/authRouter/messages/${conversationId}`,
             {
                 withCredentials: true,
             })
@@ -62,7 +62,7 @@ export default function ChatSeaction() {
         queryKey: ["unreadMessages"],
         queryFn: async () => {
             const response = await axios.get(
-                "http://localhost:5000/authRouter/messages/unread",
+                `${VITE_API_URL}/authRouter/messages/unread`,
                 {
                     withCredentials: true,
                 }
@@ -79,7 +79,7 @@ export default function ChatSeaction() {
         mutationFn: async () => {
 
             const response = await axios.post(
-                `http://localhost:5000/authRouter/conversation/${selectUser._id}`,
+                `${VITE_API_URL}/authRouter/conversation/${selectUser._id}`,
                 {},
                 {
                     withCredentials: true,
@@ -97,7 +97,7 @@ export default function ChatSeaction() {
     const markAsReadMutation = useMutation({
         mutationFn: async (conversationId) => {
             const response = await axios.patch(
-                `http://localhost:5000/authRouter/messages/${conversationId}/read`,
+                `${VITE_API_URL}/authRouter/messages/${conversationId}/read`,
                 {},
                 {
                     withCredentials: true,
@@ -172,11 +172,6 @@ export default function ChatSeaction() {
         if (!selectUser?._id) return;
         createConversation.mutate();
     }, [selectUser?._id]);
-
-
-
-
-
 
     useEffect(() => {
         if (!conversationId) return;

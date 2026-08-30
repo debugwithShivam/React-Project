@@ -11,7 +11,7 @@ let app = express();
 
 app.use("/product",express.static('src/product'))
 app.use(cors({
-   origin: "http://localhost:5174",
+   origin: "http://localhost:5173",
    credentials: true
 }));
 app.use(cookieParser())

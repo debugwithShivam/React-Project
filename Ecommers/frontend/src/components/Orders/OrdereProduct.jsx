@@ -3,7 +3,7 @@ import { Truck, MapPin, Phone, CreditCard, Trash2 } from "lucide-react";
 import OrderProduct from "./Orderproductdata";
 import { Barcode } from "lucide-react";
 import { useQueryClient, useMutation } from "@tanstack/react-query";
-import {Link} from 'react-router-dom'
+import { Link } from 'react-router-dom'
 import axios from "axios";
 
 const STATUS_STYLES = {
@@ -24,7 +24,7 @@ function OrderCard({ order }) {
     mutationFn: (order_id) =>
       axios.post(`http://localhost:4876/auth/deleteBuyOrder`, {
         order_id,
-      },{withCredentials:true}),
+      }, { withCredentials: true }),
     onSuccess: () => {
       queryClint.invalidateQueries({
         queryKey: ["deleteBuyOrder"],
@@ -33,27 +33,26 @@ function OrderCard({ order }) {
   });
 
   let trackOrder = {
-    order_date:order.order_date,
-    order_id:order.order_id,
-    product_name:order.product_name,
-    catogary:order.catogary,
-    quantity:order.quantity,
-    product_price:order.product_price,
-    total_price:order.total_price,
-    order_status:order.order_status,
-    username:order.username,
-    Phone_number:order.Phone_number,
-    email_Address:order.email_Address,
-    address_line2:order.address_line2,
-    city:order.city,
-    state:order.state,
-    pin_code:order.pin_code,
-    payment_method:order.payment_method,
-    delivery_estimate:order.delivery_estimate,
+    order_date: order.order_date,
+    order_id: order.order_id,
+    product_name: order.product_name,
+    catogary: order.catogary,
+    quantity: order.quantity,
+    product_price: order.product_price,
+    total_price: order.total_price,
+    order_status: order.order_status,
+    username: order.username,
+    Phone_number: order.Phone_number,
+    email_Address: order.email_Address,
+    address_line2: order.address_line2,
+    city: order.city,
+    state: order.state,
+    pin_code: order.pin_code,
+    payment_method: order.payment_method,
+    delivery_estimate: order.delivery_estimate,
   }
 
   return (
-    <Link to='/OrderTracker' onClick={()=>{localStorage.setItem('order',JSON.stringify(order))}}>
     <div className="flex flex-col border border-neutral-900 bg-white text-neutral-900">
       {/* Header */}
       <div className="flex items-stretch justify-between border-b border-neutral-900">
@@ -65,18 +64,20 @@ function OrderCard({ order }) {
         </div>
         <div
           className={`flex w-28 items-center justify-center border-l border-neutral-900 p-2 text-xs font-semibold ${statusClass}`}
-          >
+        >
           {order.order_status}
         </div>
       </div>
 
       {/* Image */}
       <div className="aspect-[4/3] w-full border-b border-neutral-900 flex justify-center items-center bg-neutral-50">
-        <img
-          src={order.image}
-          className="object-contain w-30 h-full"
-          alt={order.product_name}
+        <Link to='/OrderTracker' onClick={() => { localStorage.setItem('order', JSON.stringify(order)) }}>
+          <img
+            src={order.image}
+            className="object-contain w-30 h-full"
+            alt={order.product_name}
           />
+        </Link>
       </div>
 
       {/* Price / Qty */}
@@ -140,13 +141,12 @@ function OrderCard({ order }) {
         <button
           onClick={() => onDelete.mutate(order.order_id)}
           className="flex w-full items-center justify-center gap-2 border border-red-600 bg-red-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-red-700 active:scale-[0.98]"
-          >
+        >
           <Trash2 size={16} />
           Delete Order
         </button>
       </div>
     </div>
-</Link>
   );
 }
 
@@ -175,11 +175,10 @@ export default function OrdereProduct({ category }) {
         )?.map((s, i) => (
           <div
             key={i}
-            className={`rounded-2xl border px-4 py-3 ${
-              i === 0
+            className={`rounded-2xl border px-4 py-3 ${i === 0
                 ? "border-neutral-900 bg-neutral-900 text-white"
                 : "border-neutral-200 bg-white text-neutral-900"
-            }`}
+              }`}
           >
             <p
               className={`text-xs font-medium ${i === 0 ? "text-neutral-300" : "text-neutral-400"}`}

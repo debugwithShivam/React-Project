@@ -2,20 +2,20 @@ import React from 'react'
 import axios from 'axios'
 import { SearchIcon, Search, X, UserRound } from 'lucide-react'
 import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query'
-
+import VITE_API_URL from '../../config/backend_API_URL'
 export default function UserSearchResult({ user }) {
 
     const queryClient = useQueryClient()
     const { data: isFollowing = false, isLoading: followStatusLoading, } = useQuery({
         queryKey: ['follow-status', user._id],
         queryFn: async () => {
-            const response = await axios.get(`http://localhost:5000/authRouter/follow-status/${user._id}`, { withCredentials: true });
+            const response = await axios.get(`${VITE_API_URL}/authRouter/follow-status/${user._id}`, { withCredentials: true });
             return response.data.following;
         }
     })
 
     const followMutation = useMutation({
-        mutationFn: (userId) => axios.post(`http://localhost:5000/authRouter/follow/${userId}`, {}, { withCredentials: true }),
+        mutationFn: (userId) => axios.post(`${VITE_API_URL}/authRouter/follow/${userId}`, {}, { withCredentials: true }),
         onSuccess: () => {
             queryClient.invalidateQueries({
                 queryKey: ['follow-status', user._id]
@@ -60,7 +60,7 @@ export default function UserSearchResult({ user }) {
 
     const unFollowMutation = useMutation({
         mutationFn: async () => {
-            const response = await axios.delete(`http://localhost:5000/authRouter/unfollow/${user._id}`,
+            const response = await axios.delete(`${VITE_API_URL}/authRouter/unfollow/${user._id}`,
                 {
                     withCredentials: true,
                 });

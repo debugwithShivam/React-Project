@@ -1,13 +1,13 @@
 import axios from "axios";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-
+import VITE_API_URL from "../../config/backend_API_URL";
 export default function useFollowMutation() {
     const queryClient = useQueryClient();
 
     const followMutation = useMutation({
         mutationFn: async (userId) => {
             const response = await axios.post(
-                `http://localhost:5000/authRouter/follow/${userId}`,
+                `${VITE_API_URL}/$authRouter/follow/${userId}`,
                 {},
                 {
                     withCredentials: true,
@@ -38,7 +38,7 @@ export default function useFollowMutation() {
     const unfollowMutation = useMutation({
         mutationFn: async (userId) => {
             const response = await axios.delete(
-                `http://localhost:5000/authRouter/unfollow/${userId}`,
+                `${VITE_API_URL}/$authRouter/unfollow/${userId}`,
                 {
                     withCredentials: true,
                 }

@@ -5,7 +5,7 @@ import {
     useQueryClient,
 } from "@tanstack/react-query";
 import { Search } from "lucide-react";
-
+import VITE_API_URL from "../../config/backend_API_URL";
 export default function SendMessage({
     conversationId,
     receiverId,
@@ -21,7 +21,7 @@ export default function SendMessage({
             content,
         }) => {
             const response = await axios.post(
-                "http://localhost:5000/authRouter/message",
+                `${VITE_API_URL}/authRouter/message`,
                 {
                     conversationId,
                     receiverId,
