@@ -17,7 +17,7 @@ export default function ProtectedRoutes() {
     async function check() {
       try {
         const res = await axios.get(
-          "http://localhost:5000/authRouter/check-auth",
+          "https://react-project-qnnx.onrender.com/authRouter/check-auth",
           { withCredentials: true }
         );
         

@@ -4,12 +4,17 @@ import registerUser from "../../utils/HashingPassword.js";
 import nodemailer from 'nodemailer'
 
 const transporter = nodemailer.createTransport({
-  service: 'gmail',
-  auth: {
-    user: config.EMAIL,
-    pass: config.PASS,
-  }
-})
+    host: "smtp.gmail.com",
+    port: 465,
+    secure: true,
+    auth: {
+        user: config.EMAIL,
+        pass: config.PASS,
+    },
+    connectionTimeout: 10000,
+    greetingTimeout: 10000,
+    socketTimeout: 15000,
+});
 
 transporter.verify((error, success) => {
   if (error) {
@@ -18,6 +23,8 @@ transporter.verify((error, success) => {
     console.log("SMTP is ready");
   }
 });
+
+
 
 async function authorization(req, res) {
   const { name, username, email, password } = req.body
@@ -105,7 +112,7 @@ async function authorization(req, res) {
           
           <div style="display:inline-block;
           background:#f8fafc;
-          border:2px dashed #2563eb;
+          border:1.5px dashed #2563eb;
           border-radius:12px;
           padding:15px 20px;
           margin-bottom:25px;">

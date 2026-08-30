@@ -7,6 +7,10 @@ async function tookenChecker(req, res, next) {
     const accessToken = req.cookies?.accessToken || req.headers.authorization?.split(' ')[1];
     const refreshToken = req.cookies?.refreshToken;
 
+    console.log("Origin:", req.headers.origin);
+    console.log("Cookies:", req.cookies);
+    console.log("Authorization:", req.headers.authorization);
+
     if (!accessToken && !refreshToken) {
         return res.status(401).json({ message: 'Unauthorized' });
     }

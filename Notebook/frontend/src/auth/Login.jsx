@@ -24,7 +24,7 @@ export default function Login() {
   const createAccountMutation = useMutation({
     mutationFn: async (data) => {
       const response = await axios.post(
-        "http://localhost:5000/authRouter/createAccount",
+        "https://react-project-qnnx.onrender.com/authRouter/createAccount",
         data,
         { withCredentials: true }
       );

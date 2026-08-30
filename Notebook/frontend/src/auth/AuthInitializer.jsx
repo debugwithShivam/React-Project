@@ -10,7 +10,7 @@ export default function AuthInitializer() {
         async function checkAuth() {
             try {
                 const response = await axios.get(
-                    "http://localhost:5000/authRouter/check-auth",
+                    "https://react-project-qnnx.onrender.com/authRouter/check-auth",
                     {
                         withCredentials: true,
                     }

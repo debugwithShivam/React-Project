@@ -4,10 +4,23 @@ import { fileURLToPath } from "node:url";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-const logo = path.join(__dirname, "../src/image/logo.png");
-const stickyNotes = path.join(__dirname, "../src/image/stickyNotes.png");
+const logo = path.join(__dirname, "assets/logo.png");
+const stickyNotes = path.join(__dirname, "assets/stickyNotes.png");
 const preloadPath = path.join(__dirname, "preload.cjs");
 let mainWindow;
+
+const isDev = !app.isPackaged;
+
+function loadPage(window, route = "") {
+  if (isDev) {
+    window.loadURL(`http://localhost:5173/${route}`);
+  } else {
+    window.loadFile(
+      path.join(__dirname, "../dist/index.html"),
+      { hash: route }
+    );
+  }
+}
 
 function createWindow() {
   mainWindow = new BrowserWindow({
@@ -28,7 +41,7 @@ function createWindow() {
 
   Menu.setApplicationMenu(null);
   mainWindow.webContents.openDevTools()
-  mainWindow.loadURL("http://localhost:5173/");
+  loadPage(mainWindow);
 }
 
 ipcMain.on("open-note-window", () => {
@@ -46,7 +59,7 @@ ipcMain.on("open-note-window", () => {
     },
   });
   // child.webContents.openDevTools()
-  child.loadURL("http://localhost:5173/CreateNotes");
+  loadPage(child, "CreateNotes");
 });
 
 ipcMain.on("UpdateNotes", (event, id) => {
@@ -64,7 +77,8 @@ ipcMain.on("UpdateNotes", (event, id) => {
     },
   });
   // updateNote.webContents.openDevTools()
-  updateNote.loadURL(`http://localhost:5173/UpdateNotes/${id}`);
+
+  loadPage(updateNote, `UpdateNotes/${id}`);
 });
 
 ipcMain.on("ViewNotes", (event, id) => {
@@ -85,7 +99,7 @@ ipcMain.on("ViewNotes", (event, id) => {
   });
   updateNote.setAlwaysOnTop(true, "screen-saver");
   // updateNote.webContents.openDevTools()
-  updateNote.loadURL(`http://localhost:5173/viewNotes/${id}`);
+  loadPage(updateNote, `ViewNotes/${id}`);
 });
 
 ipcMain.on("CustomMusicPlayer", (event, id) => {
@@ -103,7 +117,7 @@ ipcMain.on("CustomMusicPlayer", (event, id) => {
   });
   CustomMusicPlayer.setAlwaysOnTop(true, "screen-saver");
   // updateNote.webContents.openDevTools()
-  CustomMusicPlayer.loadURL(`http://localhost:5173/CustomMusicPlayer`);
+  loadPage(CustomMusicPlayer, "CustomMusicPlayer");;
 });
 
 ipcMain.on("closeNoteWindow", (event) => {
@@ -135,8 +149,7 @@ ipcMain.on("open-todo-window", () => {
   });
 
   todoWindow.setAlwaysOnTop(true, "screen-saver");
-  todoWindow.webContents.openDevTools()
-  todoWindow.loadURL("http://localhost:5173/TodoPage");
+  loadPage(todoWindow, "TodoPage");
 });
 ipcMain.on("closeTodoWindow", (event) => {
   const win = BrowserWindow.fromWebContents(event.sender);

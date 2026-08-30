@@ -3,6 +3,7 @@
   "private": true,
   "version": "0.0.0",
   "type": "module",
+  "main": "electron/main.js",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
@@ -11,6 +12,21 @@
     "watch": "electron electron/main.js",
     "electron:build": "npm run build && electron-builder"
   },
+  "build": {
+    "appId": "com.notebook.app",
+    "productName": "Notebook",
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "dist/**/*",
+      "electron/**/*",
+      "package.json"
+    ],
+    "win": {
+      "target": "nsis"
+    }
+  },
   "dependencies": {
     "@monaco-editor/react": "^4.7.0",
     "@reduxjs/toolkit": "^2.12.0",
@@ -18,7 +34,6 @@
     "@tanstack/react-query": "^5.101.4",
     "axios": "^1.18.1",
     "dexie": "^4.4.5",
-    "electron": "^43.2.0",
     "lucide-react": "^1.28.0",
     "react": "^19.2.7",
     "react-dom": "^19.2.7",
@@ -28,6 +43,7 @@
     "tailwindcss": "^4.3.3"
   },
   "devDependencies": {
+    "electron": "^43.2.0",
     "@types/react": "^19.2.17",
     "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "^6.0.3",

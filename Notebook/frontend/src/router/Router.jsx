@@ -6,7 +6,7 @@ import Todo from "../component/Todo.jsx";
 import Login from "../auth/Login.jsx";
 import Signin from "../auth/Singin.jsx";
 import EmailVerifyOTP from "../auth/EmailVerifyOTP.jsx";
-import { createBrowserRouter } from "react-router-dom";
+import { createBrowserRouter,createHashRouter } from "react-router-dom";
 import Layout from "./Layout.jsx";
 import ProtectedRoutes from "../auth/ProtectedRoutes.jsx";
 import CreateNotes from "../page/Notes/CreateNotes.jsx";
@@ -18,7 +18,7 @@ import ProfilePage from "../component/ProfilePage.jsx";
 import ChatSeaction from "../page/Profilepage/ChatSeaction.jsx";
 import TodoPage from "../page/TodoPage.jsx/TodoPage.jsx";
 
-const router = createBrowserRouter([
+const router = createHashRouter([
   {
     path: "CreateNotes",
     element: <CreateNotes />,
