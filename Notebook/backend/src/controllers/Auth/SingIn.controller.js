@@ -36,16 +36,16 @@ async function singIn(req, res) {
 
         res.cookie("accessToken", accessToken, {
             httpOnly: false,
-            sameSite: "lax",
-            secure: false,
+            sameSite: "none",
+            secure: true,
             path: "/",
             maxAge: 2 * 24 * 60 * 60 * 1000,
         });
 
         res.cookie("refreshToken", refreshToken, {
             httpOnly: false,
-            sameSite: "lax",
-            secure: false,
+            sameSite: "none",
+            secure: true,
             path: "/",
             maxAge: 7 * 24 * 60 * 60 * 1000,
         });

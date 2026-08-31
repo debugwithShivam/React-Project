@@ -12,7 +12,7 @@ export default function Signin() {
   const navigate = useNavigate()
 
   const singinUser = useMutation({
-    mutationFn: (data) => axios.post("https://react-project-qnnx.onrender.com/authRouter/singIn", data, { withCredentials: true }),
+    mutationFn: (data) => axios.post("https://react-project-ckcb.onrender.com/authRouter/singIn", data, { withCredentials: true }),
     onSuccess: (data) => {
       console.log(data)
       navigate('/')

@@ -8,7 +8,7 @@ export function SocketProvider({ children }) {
     const [onlineUsers, setOnlineUsers] = useState(new Set());
 
     useEffect(() => {
-        const newSocket = io("https://react-project-qnnx.onrender.com", {
+        const newSocket = io("https://react-project-ckcb.onrender.com", {
             withCredentials: true,
         });
 

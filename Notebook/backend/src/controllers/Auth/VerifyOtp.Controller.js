@@ -55,16 +55,16 @@ async function verifyOtp(req, res) {
 
         res.cookie("accessToken", accessToken, {
             httpOnly: true,
-            sameSite: "lax",
-            secure: false,
+            sameSite: "none",
+            secure: true,
             path: "/",
             maxAge: 2 * 24 * 60 * 60 * 1000,
         });
 
         res.cookie("refreshToken", refreshToken, {
             httpOnly: true,
-            sameSite: "lax",
-            secure: false,
+            sameSite: "none",
+            secure: true,
             path: "/",
             maxAge: 7 * 24 * 60 * 60 * 1000,
         });

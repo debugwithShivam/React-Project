@@ -59,8 +59,8 @@ async function tookenChecker(req, res, next) {
 
         res.cookie('accessToken', newAccessToken, {
             httpOnly: true,
-            sameSite: 'lax',
-            secure: false,
+            sameSite: 'none',
+            secure: true,
             maxAge: 2 * 24 * 60 * 60 * 1000,
             path: '/',
             expires: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000)

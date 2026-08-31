@@ -20,7 +20,7 @@ export default function EmailVerifyOTP() {
     e.preventDefault();
     try {
       let response = await axios.post(
-        "https://react-project-qnnx.onrender.com/authRouter/VerifOtp",
+        "https://react-project-ckcb.onrender.com/authRouter/VerifOtp",
         {
           email: email,
           otp: otp,
