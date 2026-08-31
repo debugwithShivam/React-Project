@@ -35,7 +35,7 @@ async function singIn(req, res) {
         console.log(1)
 
         res.cookie("accessToken", accessToken, {
-            httpOnly: false,
+            httpOnly: true,
             sameSite: "none",
             secure: true,
             path: "/",
@@ -43,7 +43,7 @@ async function singIn(req, res) {
         });
 
         res.cookie("refreshToken", refreshToken, {
-            httpOnly: false,
+            httpOnly: true,
             sameSite: "none",
             secure: true,
             path: "/",
