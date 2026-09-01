@@ -3,7 +3,9 @@ import config from "../config/EVConfig.js";
 
 const resend = new Resend(config.RESENDAPI);
 
+
 export async function sendOtpEmail({ to, otp, name }) {
+    console.log(config.EMAIL)
     try {
         const { data, error } = await resend.emails.send({
             from: config.EMAIL,
