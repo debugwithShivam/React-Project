@@ -25,7 +25,8 @@ const config = Object.freeze({
   ACCESSTOKEN:process.env.JWTACCESS,
   REFRESHTOKEN:process.env.JWTREFRESH,
   EMAIL:process.env.EMAIL,
-  PASS:process.env.PASS
+  PASS:process.env.PASS,
+  RESENDAPI:process.env.RESEND_API_KEY
 });
 
 export default config; 
