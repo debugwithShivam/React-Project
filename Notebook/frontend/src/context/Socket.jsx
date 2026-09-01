@@ -1,6 +1,6 @@
 import { useEffect, useState, useContext, createContext } from "react";
 import { io } from "socket.io-client";
-
+import VITE_API_URL from "../config/backend_API_URL";
 const SocketContext = createContext(null);
 
 export function SocketProvider({ children }) {
@@ -8,7 +8,7 @@ export function SocketProvider({ children }) {
     const [onlineUsers, setOnlineUsers] = useState(new Set());
 
     useEffect(() => {
-        const newSocket = io("https://react-project-ckcb.onrender.com", {
+        const newSocket = io(`${VITE_API_URL}`, {
             withCredentials: true,
         });
 

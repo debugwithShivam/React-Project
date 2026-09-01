@@ -11,7 +11,7 @@ async function authorization(req, res) {
   const { name, username, email, password } = req.body
   console.log(email)
 
-  if (!name || !email || !password) {
+  if (!name || !email || !password || !username) {
     return res.status(400).json({
       message: "All fields are required"
     });

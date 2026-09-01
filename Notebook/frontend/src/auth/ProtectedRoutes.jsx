@@ -4,7 +4,7 @@ import { Navigate, Outlet } from 'react-router-dom'
 import { useNavigate } from "react-router-dom";
 import { useDispatch } from "react-redux";
 import { setIsAuthenticated,setUser } from "../Redux/Slice";
-
+import VITE_API_URL from "../config/backend_API_URL";
 
 export default function ProtectedRoutes() {
   const navigate = useNavigate();
@@ -17,7 +17,7 @@ export default function ProtectedRoutes() {
     async function check() {
       try {
         const res = await axios.get(
-          "https://react-project-ckcb.onrender.com/authRouter/check-auth",
+          `${VITE_API_URL}/authRouter/check-auth`,
           { withCredentials: true }
         );
         

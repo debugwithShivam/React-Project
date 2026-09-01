@@ -4,9 +4,9 @@ import { useState } from "react";
 import { Eye, EyeOff } from "lucide-react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import axios from "axios";
-import {useDispatch} from 'react-redux'
+import { useDispatch } from 'react-redux'
 import { setIsAuthenticated } from "../Redux/Slice";
-
+import VITE_API_URL from "../config/backend_API_URL";
 export default function Login() {
   const dispatch = useDispatch()
   const navigate = useNavigate();
@@ -24,7 +24,7 @@ export default function Login() {
   const createAccountMutation = useMutation({
     mutationFn: async (data) => {
       const response = await axios.post(
-        "https://react-project-ckcb.onrender.com/authRouter/createAccount",
+        `${VITE_API_URL}/authRouter/createAccount`,
         data,
         { withCredentials: true }
       );
@@ -37,7 +37,10 @@ export default function Login() {
       navigate("/Email");
     },
     onError: (error) => {
-      console.log("DATA:", error.response?.data.error);
+      console.log("STATUS:", error.response?.status);
+      console.log("DATA:", error.response?.data);
+      console.log("MESSAGE:", error.message);
+      console.log("FULL ERROR:", error);
     },
   });
 

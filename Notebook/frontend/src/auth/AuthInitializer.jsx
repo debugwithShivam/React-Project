@@ -2,6 +2,7 @@ import { useEffect } from "react";
 import axios from "axios";
 import { useDispatch } from "react-redux";
 import { setIsAuthenticated } from "../Redux/Slice";
+import VITE_API_URL from "../config/backend_API_URL";
 
 export default function AuthInitializer() {
     const dispatch = useDispatch();
@@ -10,7 +11,7 @@ export default function AuthInitializer() {
         async function checkAuth() {
             try {
                 const response = await axios.get(
-                    "https://react-project-ckcb.onrender.com/authRouter/check-auth",
+                    `${VITE_API_URL}/authRouter/check-auth`,
                     {
                         withCredentials: true,
                     }

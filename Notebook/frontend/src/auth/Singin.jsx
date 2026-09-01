@@ -4,6 +4,7 @@ import { useMutation } from '@tanstack/react-query'
 import axios from 'axios'
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import VITE_API_URL from "../config/backend_API_URL";
 
 export default function Signin() {
 
@@ -12,7 +13,7 @@ export default function Signin() {
   const navigate = useNavigate()
 
   const singinUser = useMutation({
-    mutationFn: (data) => axios.post("https://react-project-ckcb.onrender.com/authRouter/singIn", data, { withCredentials: true }),
+    mutationFn: (data) => axios.post(`${VITE_API_URL}/authRouter/singIn`, data, { withCredentials: true }),
     onSuccess: (data) => {
       console.log(data)
       navigate('/')

@@ -3,7 +3,7 @@ import axios from "axios";
 import { useNavigate } from "react-router-dom";
 import { setIsAuthenticated } from "../Redux/Slice";
 import { useDispatch } from "react-redux";
-
+import VITE_API_URL from "../config/backend_API_URL";
 export default function EmailVerifyOTP() {
   const dispatch = useDispatch()
   const navigate = useNavigate();
@@ -20,7 +20,7 @@ export default function EmailVerifyOTP() {
     e.preventDefault();
     try {
       let response = await axios.post(
-        "https://react-project-ckcb.onrender.com/authRouter/VerifOtp",
+        `${VITE_API_URL}/authRouter/VerifOtp`,
         {
           email: email,
           otp: otp,
