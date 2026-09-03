@@ -1,8 +1,8 @@
 import Note from "../../module/sticky-note.schema.js";
 
 async function deleteNotes(req, res) {
-    const { id } = req.params; // params se id lo
-    try {
+    const { id } = req.params; 
+        try {
         await Note.findByIdAndDelete(id);
         res.status(200).json({
             success: true,

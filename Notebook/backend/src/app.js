@@ -7,6 +7,7 @@ import { errorHandler, notFoundHandler } from "./middleware/errorHandler.js";
 import authRouter from "./router/authRoute.route.js";
 import connectDB from "./db/DatabaseConnection.js";
 import dns from "node:dns";
+import { fileURLToPath } from "node:url";
 
 dns.setServers(["8.8.8.8", "8.8.4.4"]);
 
@@ -22,12 +23,13 @@ dns.resolveSrv(
 
 
 const app = express();
+const uploadsPath = fileURLToPath(new URL("../uploads", import.meta.url));
 
 
 connectDB()
 
 app.disable("x-powered-by");
-app.use('/uploads',express.static('uploads'));
+app.use("/uploads", express.static(uploadsPath));
 app.use(
   cors({
     origin: config.corsOrigins,

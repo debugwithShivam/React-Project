@@ -1,5 +1,5 @@
 import backgroungImage from '../image/background.jpg'
-import logo from '../image/logo.png'
+import logo from '../image/logo.ico'
 import logoWithTitle from '../image/logoWithTitle.png'
 import singin from '../image/singin.webp'
 import login from '../image/login.webp'

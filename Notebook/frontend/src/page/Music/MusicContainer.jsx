@@ -1,15 +1,16 @@
 import React, { useRef, useState } from 'react'
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import axios from 'axios'
-import { Play, Pause, Heart, Music2 } from 'lucide-react'
+import { Play, Pause, Heart, Music2, Trash2 } from 'lucide-react'
 import { useMusic } from './musicData'
 import { useDispatch } from 'react-redux'
-import { setIndex ,indexToggle} from '../../Redux/Slice'
+import { setIndex, indexToggle } from '../../Redux/Slice'
 import VITE_API_URL from '../../config/backend_API_URL'
 
 export default function MusicContainer({ search = '' }) {
   const { data, isLoading } = useMusic()
   const dispatch = useDispatch()
+
 
   const [playingId, setPlayingId] = useState(null)
   const audioRef = useRef(null)
@@ -26,6 +27,7 @@ export default function MusicContainer({ search = '' }) {
 
   const togglePlay = (song) => {
     const url = `${VITE_API_URL}${song.fileUrl}`
+    console.log(url)
 
     if (playingId === song._id) {
       audioRef.current?.pause()
@@ -43,6 +45,24 @@ export default function MusicContainer({ search = '' }) {
     audioRef.current = audio
     setPlayingId(song._id)
   }
+
+  const queryClient = useQueryClient()
+  let deleteMusic = useMutation({
+    mutationFn: async (data) => {
+      await axios.delete(`${VITE_API_URL}/authRouter/deleteMusic/${data}`)
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: ['insertMusic']
+      })
+    },
+    onError: (error) => {
+    console.log(
+      'Delete failed:',
+      error.response?.data || error.message
+    )
+  }
+  })
 
   if (isLoading) {
     return (
@@ -70,7 +90,7 @@ export default function MusicContainer({ search = '' }) {
       <div className='grid grid-cols-3   h-full drag-region
       no-drag hide-scrollbar p-2   overflow-y-auto justify-start gap-3'>
 
-        {filtered.map((song,i) => {
+        {filtered.map((song, i) => {
           const isPlaying = playingId === song._id
           return (
             <div
@@ -91,7 +111,7 @@ export default function MusicContainer({ search = '' }) {
                 )}
 
                 <button
-                  onClick={() =>{ 
+                  onClick={() => {
                     togglePlay(song)
                     dispatch(setIndex(i))
                     dispatch(indexToggle())
@@ -106,7 +126,7 @@ export default function MusicContainer({ search = '' }) {
                 </button>
 
                 <button className="absolute right-2 top-2 flex h-8 w-8 items-center justify-center rounded-full bg-black/40 text-white/90 backdrop-blur transition hover:bg-black/60">
-                  <Heart size={15} className={song.fav ? 'fill-rose-500 text-rose-500' : ''} />
+                  <Trash2 size={15} className={song.fav ? 'fill-rose-500 text-rose-500' : ''} onClick={() => deleteMusic.mutate(song._id)} />
                 </button>
               </div>
 

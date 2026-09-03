@@ -14,7 +14,6 @@ async function singIn(req, res) {
 
         const user = await userAuth.findOne({ email })
 
-        console.log(user)
         if (!user) {
             return res.status(401).json({
                 message: "Invaild email or password"
@@ -22,7 +21,6 @@ async function singIn(req, res) {
         }
         
         const isPasswordCorrect = await verifyPassword(password, user.password)
-        console.log(isPasswordCorrect)
         
         if (!isPasswordCorrect) {
             return res.status(402).json({
@@ -32,7 +30,6 @@ async function singIn(req, res) {
         
         let accessToken = generateToken(user._id, "ACCESSTOKEN")
         let refreshToken = generateToken(user._id, "REFRESHTOKEN")
-        console.log(1)
 
         res.cookie("accessToken", accessToken, {
             httpOnly: true,

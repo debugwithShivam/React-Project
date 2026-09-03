@@ -1,9 +1,10 @@
 import multer from 'multer'
 import path from 'path'
 import fs from 'fs'
+import { fileURLToPath } from 'node:url'
 
-const musicPath = 'uploads/music'
-const imagePath = 'uploads/images'
+const musicPath = fileURLToPath(new URL('../../uploads/music', import.meta.url))
+const imagePath = fileURLToPath(new URL('../../uploads/images', import.meta.url))
 
 fs.mkdirSync(musicPath,{recursive:true})
 fs.mkdirSync(imagePath,{recursive:true})

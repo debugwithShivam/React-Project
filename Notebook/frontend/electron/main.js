@@ -2,9 +2,11 @@ import { app, BrowserWindow, Menu, ipcMain } from "electron";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
+app.setAppUserModelId("com.notebook.app")
+
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-const logo = path.join(__dirname, "assets/logo.png");
+const logo = path.join(__dirname, "assets/logo.ico");
 const stickyNotes = path.join(__dirname, "assets/stickyNotes.png");
 const preloadPath = path.join(__dirname, "preload.cjs");
 let mainWindow;
@@ -13,11 +15,16 @@ const isDev = !app.isPackaged;
 
 function loadPage(window, route = "") {
   if (isDev) {
-    window.loadURL(`http://localhost:5173/${route}`);
+    const url = route
+      ? `http://localhost:5173/#/${route}`
+      : `http://localhost:5173/#/`;
+    window.loadURL(url);
   } else {
     window.loadFile(
       path.join(__dirname, "../dist/index.html"),
-      { hash: route }
+      {
+        hash: route ? `/${route}` : "/",
+      }
     );
   }
 }

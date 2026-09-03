@@ -14,7 +14,6 @@ async function authorization(req, res) {
             password
         } = req.body;
 
-        console.log("CREATE ACCOUNT:", email);
 
 
         // -------------------------
@@ -84,7 +83,6 @@ async function authorization(req, res) {
         );
 
 
-        console.log("OTP generated");
         const hashedPassword = await registerUser(password);
 
         const user = await userAuth.create({
@@ -98,7 +96,6 @@ async function authorization(req, res) {
         });
 
 
-        console.log("USER CREATED:",user._id);
 
         try {
             await sendOtpEmail({

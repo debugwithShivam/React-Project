@@ -24,7 +24,8 @@
       "package.json"
     ],
     "win": {
-      "target": "nsis"
+      "target": "nsis",
+      "icon":"electron/assets/logo.ico"
     }
   },
   "dependencies": {
