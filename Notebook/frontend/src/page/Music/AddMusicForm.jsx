@@ -33,12 +33,15 @@ export default function AddMusicForm() {
     },
   })
 
-  const handleCoverChange = (file) => {
-    setCoverImage(file)
-    if (file) setCoverPreview(URL.createObjectURL(file))
-    else setCoverPreview(null)
-  }
-
+const handleCoverChange = (file) => {
+    setCoverImage(file);
+    if (file) {
+        const previewUrl = URL.createObjectURL(file);
+        setCoverPreview(previewUrl);
+    } else {
+        setCoverPreview(null);
+    }
+};
   const handleSubmit = (e) => {
     e.preventDefault()
     if (!title || !artist || !musicFile || !coverImage) return
