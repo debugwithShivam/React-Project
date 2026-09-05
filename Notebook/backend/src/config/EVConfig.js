@@ -22,12 +22,15 @@ const config = Object.freeze({
   port: parsePort(process.env.PORT),
   mongoUri: process.env.MONGODB,
   corsOrigins: allowedOrigins,
-  ACCESSTOKEN:process.env.JWTACCESS,
-  REFRESHTOKEN:process.env.JWTREFRESH,
-  EMAIL:process.env.EMAIL,
-  PASS:process.env.PASS,
-  RESENDAPI:process.env.RESEND_API_KEY
+  ACCESSTOKEN: process.env.JWTACCESS,
+  REFRESHTOKEN: process.env.JWTREFRESH,
+  EMAIL: process.env.EMAIL,
+  PASS: process.env.PASS,
+  RESENDAPI: process.env.RESEND_API_KEY,
+  CLOUDINARY_CLOUD_NAME: process.env.CLOUDINARY_CLOUD_NAME,
+  CLOUDINARY_API_KEY: process.env.CLOUDINARY_API_KEY,
+  CLOUDINARY_API_SECRET: process.env.CLOUDINARY_API_SECRET,
 });
 
-export default config; 
+export default config;
 
