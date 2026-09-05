@@ -26,7 +26,7 @@ export default function MusicContainer({ search = '' }) {
     : songs
 
   const togglePlay = (song) => {
-    const url = `${VITE_API_URL}${song.fileUrl}`
+    const url = `${song.fileUrl}`
     console.log(url)
 
     if (playingId === song._id) {
@@ -101,7 +101,7 @@ export default function MusicContainer({ search = '' }) {
               <div className="relative aspect-square w-full overflow-hidden bg-black/30">
                 {song.coverImage ? (
                   <img
-                    src={`${VITE_API_URL}${song.coverImage}`}
+                    src={`${song.coverImage}`}
                     alt={song.title}
                     className="h-full w-full  object-cover transition duration-300 group-hover:scale-105"
                   />

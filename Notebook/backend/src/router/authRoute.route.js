@@ -41,8 +41,6 @@ import getUnreadCounts from '../controllers/User/Conversation/getUnreadCounts.co
 const authRouter = Router();
 
 
-
-
 authRouter.get('/check-auth', tookenChecker, (req, res) => {
     res.status(200).json({
         authenticated: true,
