@@ -7,6 +7,7 @@ app.setAppUserModelId("com.notebook.app")
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const logo = path.join(__dirname, "assets/logo.ico");
+console.log(logo)
 const stickyNotes = path.join(__dirname, "assets/stickyNotes.png");
 const preloadPath = path.join(__dirname, "preload.cjs");
 let mainWindow;
@@ -47,6 +48,7 @@ function createWindow() {
   });
 
   Menu.setApplicationMenu(null);
+  mainWindow.setIcon(logo)
   mainWindow.webContents.openDevTools()
   loadPage(mainWindow);
 }
@@ -83,7 +85,7 @@ ipcMain.on("UpdateNotes", (event, id) => {
       webSecurity: false,
     },
   });
-  // updateNote.webContents.openDevTools()
+  updateNote.webContents.openDevTools()
 
   loadPage(updateNote, `UpdateNotes/${id}`);
 });

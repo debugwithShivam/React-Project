@@ -25,8 +25,8 @@ export default function CustomMusicPlayer() {
   useEffect(() => {
     if (data && data[index]) {
       const { fileUrl: audio, coverImage: image, title, artist } = data[index]
-      setFileUrl(`${VITE_API_URL}${audio}`)
-      setCoverImage(`${VITE_API_URL}${image}`)
+      setFileUrl(`${audio}`)
+      setCoverImage(`${image}`)
       setTitle(title)
       setArtist(artist)
     }

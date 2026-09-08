@@ -2,6 +2,7 @@ import userAuth from "../../module/User.js";
 import registerUser from "../../utils/HashingPassword.js";
 import { generateOtp, hashOtp } from "../../utils/otp.js";
 import { sendOtpEmail } from "../../services/email.service.js";
+import generateToken from "../../utils/generateToken.js";
 
 async function authorization(req, res) {
 
@@ -16,9 +17,6 @@ async function authorization(req, res) {
 
 
 
-        // -------------------------
-        // Validate
-        // -------------------------
 
         if (!name || !username || !email || !password) {
             return res.status(400).json({
@@ -28,9 +26,9 @@ async function authorization(req, res) {
         }
 
 
-        const normalizedName =name.trim();
-        const normalizedUsername =username.trim().toLowerCase();
-        const normalizedEmail =email.trim().toLowerCase();
+        const normalizedName = name.trim();
+        const normalizedUsername = username.trim().toLowerCase();
+        const normalizedEmail = email.trim().toLowerCase();
 
 
         const existingUser = await userAuth.findOne({
@@ -52,35 +50,35 @@ async function authorization(req, res) {
             }
 
 
-            const otp = generateOtp();
-            const otpHash = hashOtp(otp);
-            const otpExpire = new Date(
-                Date.now() + 10 * 60 * 1000
-            );
+            // const otp = generateOtp();
+            // const otpHash = hashOtp(otp);
+            // const otpExpire = new Date(
+            //     Date.now() + 10 * 60 * 1000
+            // );
 
-            await sendOtpEmail({
-                to: normalizedEmail,
-                otp,
-                name: normalizedName
-            });
+            // await sendOtpEmail({
+            //     to: normalizedEmail,
+            //     otp,
+            //     name: normalizedName
+            // });
 
 
-            existingUser.otp = otpHash;
-            existingUser.otpExpire = otpExpire;
+            // existingUser.otp = otpHash;
+            // existingUser.otpExpire = otpExpire;
 
             await existingUser.save();
-            return res.status(200).json({
-                success: true,
-                message:
-                    "A new OTP has been sent to your email"
-            });
+            // return res.status(200).json({
+            //     success: true,
+            //     message:
+            //         "A new OTP has been sent to your email"
+            // });
         }
 
-        const otp = generateOtp();
-        const otpHash = hashOtp(otp);
-        const otpExpire = new Date(
-            Date.now() + 10 * 60 * 1000
-        );
+        // const otp = generateOtp();
+        // const otpHash = hashOtp(otp);
+        // const otpExpire = new Date(
+        //     Date.now() + 10 * 60 * 1000
+        // );
 
 
         const hashedPassword = await registerUser(password);
@@ -90,35 +88,71 @@ async function authorization(req, res) {
             username: normalizedUsername,
             email: normalizedEmail,
             password: hashedPassword,
-            otp: otpHash,
-            otpExpire: otpExpire,
+            // otp: otpHash,
+            // otpExpire: otpExpire,
             isVerified: false
         });
 
 
+        // Tokens
+        const accessToken = generateToken(user._id, "ACCESSTOKEN");
 
-        try {
-            await sendOtpEmail({
-                to: normalizedEmail,
-                otp,
-                name: normalizedName
-            });
-        } catch (emailError) {
-            console.error(
-                "OTP EMAIL ERROR:",
-                emailError
-            );
+        const refreshToken = generateToken(user._id, "REFRESHTOKEN");
 
-            await userAuth.findByIdAndDelete(
-                user._id
-            );
 
-            return res.status(503).json({
-                success: false,
-                message:
-                    "Unable to send verification email"
-            });
-        }
+        res.cookie("accessToken",accessToken,{
+                httpOnly: true,
+                sameSite: "none",
+                secure: true,
+                path: "/",
+                maxAge:
+                    2 *
+                    24 *
+                    60 *
+                    60 *
+                    1000
+            }
+        );
+
+
+        res.cookie("refreshToken",refreshToken,{
+                httpOnly: true,
+                sameSite: "none",
+                secure: true,
+                path: "/",
+                maxAge:
+                    7 *
+                    24 *
+                    60 *
+                    60 *
+                    1000
+            }
+        );
+
+
+
+        // try {
+        //     await sendOtpEmail({
+        //         to: normalizedEmail,
+        //         otp,
+        //         name: normalizedName
+        //     });
+        // } catch (emailError) {
+        //     console.error(
+        //         "OTP EMAIL ERROR:",
+        //         emailError
+        //     );
+
+        //     await userAuth.findByIdAndDelete(
+        //         user._id
+        //     );
+
+        //     return res.status(503).json({
+        //         success: false,
+        //         message:
+        //             "Unable to send verification email"
+        //     });
+        // }
 
 
 

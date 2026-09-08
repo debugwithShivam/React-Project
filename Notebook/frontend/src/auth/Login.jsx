@@ -34,7 +34,7 @@ export default function Login() {
       queryClient.invalidateQueries(["user"]);
       localStorage.setItem("email", formData.email);
       dispatch(setIsAuthenticated(true))
-      navigate("/Email");
+      // navigate("/Email");
     },
     onError: (error) => {
       console.log("STATUS:", error.response?.status);

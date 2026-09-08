@@ -66,7 +66,7 @@ authRouter.get("/messages/:conversationId",tookenChecker,getMessages);
 authRouter.post('/createAccount', authorization)
 authRouter.post('/singIn', singIn)
 authRouter.post('/insertNotes', tookenChecker, insertNotes)
-authRouter.post('/VerifOtp', verifyOtp)
+// authRouter.post('/VerifOtp', verifyOtp)
 authRouter.post('/uploadMusic', tookenChecker, upload.fields([
     { name: "music", maxCount: 1 },
     { name: "coverImage", maxCount: 1 },

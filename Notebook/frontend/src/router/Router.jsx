@@ -79,7 +79,7 @@ const router = createHashRouter([
 
       { path: "login", element: <Login /> },
       { path: "signup", element: <Signin /> },
-      { path: "Email", element: <EmailVerifyOTP /> },
+      // { path: "Email", element: <EmailVerifyOTP /> },
       { path: "*", element: <NotFound /> },
     ],
   },
