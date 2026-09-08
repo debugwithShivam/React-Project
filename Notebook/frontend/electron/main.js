@@ -49,7 +49,7 @@ function createWindow() {
 
   Menu.setApplicationMenu(null);
   mainWindow.setIcon(logo)
-  mainWindow.webContents.openDevTools()
+  // mainWindow.webContents.openDevTools()
   loadPage(mainWindow);
 }
 
