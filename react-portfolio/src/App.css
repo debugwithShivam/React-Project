@@ -1,6 +1,3 @@
-/* ==========================================================================
-   SHIVAM PANDEY - FULL-STACK PORTFOLIO STYLES
-   ========================================================================== */
 
 :root {
   --bg-dark: #090a10;
@@ -31,6 +28,16 @@
   margin: 0;
   padding: 0;
   box-sizing: border-box;
+}
+
+img {
+  max-width: 100%;
+}
+
+button,
+input,
+textarea {
+  max-width: 100%;
 }
 
 html {
@@ -2287,6 +2294,16 @@ section {
 }
 
 @media (max-width: 768px) {
+  section {
+    padding: 4.5rem 0;
+  }
+
+  .container,
+  .navbar-container {
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+
   .desktop-nav-links,
   .nav-status-badge {
     display: none;
@@ -2306,6 +2323,66 @@ section {
   .hero-summary {
     font-size: 1rem;
   }
+
+  .section-header {
+    margin-bottom: 2.5rem;
+  }
+
+  .section-header h2 {
+    font-size: 1.85rem;
+  }
+
+  .stats-grid,
+  .projects-grid,
+  .skills-domains-grid,
+  .education-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .flagship-spotlight-card,
+  .architecture-flow-wrapper,
+  .education-card,
+  .contact-form-card {
+    padding: 1.35rem;
+  }
+
+  .flagship-badge-row,
+  .flagship-actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .flagship-actions .btn,
+  .project-card-actions .card-detail-btn {
+    width: 100%;
+  }
+
+  .flagship-tech-visual {
+    padding: 1rem;
+  }
+
+  .skills-toolbar {
+    align-items: stretch;
+  }
+
+  .skill-search-input-wrapper {
+    min-width: 0;
+    width: 100%;
+  }
+
+  .contact-card {
+    align-items: flex-start;
+    flex-wrap: wrap;
+  }
+
+  .contact-card-body {
+    min-width: 0;
+  }
+
+  .contact-card-value {
+    overflow-wrap: anywhere;
+  }
+
   .form-row {
     grid-template-columns: 1fr;
   }
@@ -2314,5 +2391,97 @@ section {
   }
   .printable-resume-paper {
     padding: 1.5rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .navbar-root {
+    padding: 0.75rem 0;
+  }
+
+  .brand-text {
+    display: none;
+  }
+
+  .nav-actions {
+    gap: 0.45rem;
+  }
+
+  .resume-btn {
+    padding: 0.45rem 0.6rem;
+  }
+
+  .resume-btn span {
+    display: none;
+  }
+
+  .hero-section {
+    min-height: auto;
+    padding-top: 7rem;
+  }
+
+  .hero-name {
+    font-size: 2rem;
+  }
+
+  .hero-title {
+    font-size: 1rem;
+  }
+
+  .hero-cta-group,
+  .hero-cta-group .btn {
+    width: 100%;
+  }
+
+  .hero-meta-bar {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 0.7rem;
+  }
+
+  .meta-divider {
+    display: none;
+  }
+
+  .project-filter-tabs,
+  .category-filter-buttons {
+    justify-content: flex-start;
+    overflow-x: auto;
+    flex-wrap: nowrap;
+    padding-bottom: 0.35rem;
+  }
+
+  .filter-tab,
+  .cat-btn {
+    flex: 0 0 auto;
+  }
+
+  .modal-backdrop {
+    padding: 0.5rem;
+  }
+
+  .modal-header,
+  .modal-body,
+  .modal-footer,
+  .resume-modal-toolbar {
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+
+  .modal-title {
+    font-size: 1.25rem;
+  }
+
+  .modal-footer {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .modal-footer .btn {
+    width: 100%;
+  }
+
+  .printable-resume-paper {
+    padding: 1rem;
   }
 }

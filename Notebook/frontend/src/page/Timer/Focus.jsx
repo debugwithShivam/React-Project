@@ -68,7 +68,7 @@ export default function Focus() {
 
         return { ...prev, [selectedTimer]: current - 1 };
       });
-    }, 10);
+    }, 1000);
 
     return () => clearInterval(interval);
   }, [isRunning, selectedTimer]);

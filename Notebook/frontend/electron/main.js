@@ -67,7 +67,7 @@ ipcMain.on("open-note-window", () => {
       webSecurity: false,
     },
   });
-  // child.webContents.openDevTools()
+  child.webContents.openDevTools()
   loadPage(child, "CreateNotes");
 });
 
