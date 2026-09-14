@@ -1,9 +1,9 @@
 import React from 'react'
 
-export default function Admin() {
+export default function StaffRoles() {
   return (
     <div>
-      <h1>hellow world</h1>
+      
     </div>
   )
 }

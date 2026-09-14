@@ -1,7 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { Bike, Shield, Heart, MapPin, Mail, Phone, ArrowUpRight, Smartphone, LayoutDashboard } from 'lucide-react';
-import logo from '../image/logo.png';
+import logo from '../image/topbar.png';
 
 export default function Footer() {
   return (

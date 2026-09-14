@@ -1,5 +1,11 @@
 import React, { useEffect } from 'react';
-import { BrowserRouter as Router, Routes, Route, useLocation, Link } from 'react-router-dom';
+import {
+  createBrowserRouter,
+  Link,
+  Outlet,
+  RouterProvider,
+  useLocation,
+} from 'react-router-dom';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
 import HomePage from './pages/HomePage';
@@ -12,7 +18,25 @@ import SignupPage from './pages/SignupPage';
 import RidesHistoryPage from './pages/RidesHistoryPage';
 import PrivacyPolicyPage from './pages/PrivacyPolicyPage';
 import TermsConditionsPage from './pages/TermsConditionsPage';
-import Admin from './pages/Admin';
+import Admin from './Admin/Admin';
+import AllBookRide from './Admin/pages/AllBookRide';
+import Captains from './Admin/pages/Captains';
+import CitiesZones from './Admin/pages/CitiesZones';
+import CouponsOffers from './Admin/pages/CouponsOffers';
+import Dashboard from './Admin/pages/Dashboard';
+import DriverDocuments from './Admin/pages/DriverDocuments';
+import Drivers from './Admin/pages/Drivers';
+import Notifications from './Admin/pages/Notifications';
+import Payments from './Admin/pages/Payments';
+import Pricing from './Admin/pages/Pricing';
+import Reports from './Admin/pages/Reports';
+import Revenue from './Admin/pages/Revenue';
+import Rides from './Admin/pages/Rides';
+import Settings from './Admin/pages/Settings';
+import StaffRoles from './Admin/pages/StaffRoles';
+import Support from './Admin/pages/Support';
+import Customers from './Admin/pages/Customers';
+import Reviews from './Admin/pages/Reviews';
 // Scroll to top on route change
 function ScrollToTop() {
   const { pathname } = useLocation();
@@ -43,30 +67,65 @@ function NotFoundPage() {
   );
 }
 
-export default function App() {
+function AppLayout() {
   return (
-    <Router>
+    <>
       <ScrollToTop />
       <div className="min-h-screen flex flex-col bg-white text-gray-900 w-full overflow-x-hidden">
         <Navbar />
         <main className="flex-grow">
-          <Routes>
-            <Route path="/" element={<HomePage />} />
-            <Route path="/book" element={<BookingPage />} />
-            <Route path="/my-rides" element={<RidesHistoryPage />} />
-            <Route path="/about" element={<AboutPage />} />
-            <Route path="/safety" element={<SafetyPage />} />
-            <Route path="/contact" element={<ContactPage />} />
-            <Route path="/login" element={<LoginPage />} />
-            <Route path="/signup" element={<SignupPage />} />
-            <Route path="/privacy" element={<PrivacyPolicyPage />} />
-            <Route path="/terms" element={<TermsConditionsPage />} />
-            <Route path="*" element={<NotFoundPage />} />
-            <Route path="/Admin" element={<Admin />} />
-          </Routes>
+          <Outlet />
         </main>
         <Footer />
       </div>
-    </Router>
+    </>
   );
+}
+
+const router = createBrowserRouter([
+  {
+    path: '/',
+    element: <AppLayout />,
+    children: [
+      { index: true, element: <HomePage /> },
+      { path: 'book', element: <BookingPage /> },
+      { path: 'my-rides', element: <RidesHistoryPage /> },
+      { path: 'about', element: <AboutPage /> },
+      { path: 'safety', element: <SafetyPage /> },
+      { path: 'contact', element: <ContactPage /> },
+      { path: 'login', element: <LoginPage /> },
+      { path: 'signup', element: <SignupPage /> },
+      { path: 'privacy', element: <PrivacyPolicyPage /> },
+      { path: 'terms', element: <TermsConditionsPage /> },
+      { path: '*', element: <NotFoundPage /> },
+    ],
+  },
+  {
+        path: 'Admin',
+        element: <Admin />,
+        children: [
+          { path: 'Dashboard', element: <Dashboard /> },
+          { path: 'AllBookRide', element: <AllBookRide /> },
+          { path: 'Captains', element: <Captains /> },
+          { path: 'CitiesZones', element: <CitiesZones /> },
+          { path: 'CouponsOffers', element: <CouponsOffers /> },
+          { path: 'Customers', element: <Customers /> },
+          { path: 'DriverDocuments', element: <DriverDocuments /> },
+          { path: 'Drivers', element: <Drivers /> },
+          { path: 'Notifications', element: <Notifications /> },
+          { path: 'Payments', element: <Payments /> },
+          { path: 'Pricing', element: <Pricing /> },
+          { path: 'Reports', element: <Reports /> },
+          { path: 'Revenue', element: <Revenue /> },
+          { path: 'Reviews', element: <Reviews /> },
+          { path: 'Rides', element: <Rides /> },
+          { path: 'Settings', element: <Settings /> },
+          { path: 'StaffRoles', element: <StaffRoles /> },
+          { path: 'Support', element: <Support /> },
+        ],
+      },
+]);
+
+export default function App() {
+  return <RouterProvider router={router} />;
 }
