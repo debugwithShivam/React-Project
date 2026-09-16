@@ -3,8 +3,12 @@ import { Link } from 'react-router-dom';
 import { Bike, Zap, Car, Shield, ShieldCheck, ArrowRight, Star, Clock, Users, Smartphone, CheckCircle, TrendingUp, DollarSign } from 'lucide-react';
 import RideBookingWidget from '../components/RideBookingWidget';
 import { VEHICLES, IMPACT_STATS, TESTIMONIALS } from '../data/mockData';
+import { useSiteContent } from '../context/SiteContentContext';
 
 export default function HomePage() {
+  const { content } = useSiteContent();
+  const vehicles = content.vehicles || VEHICLES;
+
   return (
     <div className="space-y-14 sm:space-y-20 pb-16 overflow-hidden w-full">
       
@@ -19,14 +23,11 @@ export default function HomePage() {
              
 
               <h1 className="text-3xl sm:text-4xl lg:text-6xl font-black text-gray-900 tracking-tight leading-[1.15]">
-                Beat the traffic. <br />
-                <span className="text-brand-dark underline decoration-brand-yellow decoration-6 sm:decoration-8 underline-offset-4">
-                  Save time & money.
-                </span>
+                {content.home.heroTitle}
               </h1>
 
               <p className="text-sm sm:text-base lg:text-lg text-gray-600 leading-relaxed font-normal max-w-xl">
-                Zip through rush-hour traffic on a bike taxi or book guaranteed zero-haggling autos and comfortable cabs in over 150+ cities across India.
+                {content.home.heroDescription}
               </p>
 
               {/* Key trust bullets */}
@@ -88,7 +89,7 @@ export default function HomePage() {
 
         {/* Responsive Fleet Grid: 1 col on xs, 2 on sm, 3 on md, 5 on xl */}
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-5 gap-4 sm:gap-5">
-          {VEHICLES.map((item) => (
+          {vehicles.map((item) => (
             <div
               key={item.id}
               className="bg-white rounded-3xl p-5 sm:p-6 border border-gray-200 shadow-sm hover:shadow-xl transition-all duration-300 flex flex-col justify-between group hover:-translate-y-1"

@@ -1,9 +1,1 @@
-import React from 'react'
-
-export default function Rides() {
-  return (
-    <div>
-      
-    </div>
-  )
-}
+export { default } from '../components/Rides/Rides';

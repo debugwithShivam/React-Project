@@ -5,9 +5,12 @@ import { VEHICLES, POPULAR_LOCATIONS } from '../data/mockData';
 import VehicleCard from '../components/VehicleCard';
 import MapPreview from '../components/MapPreview';
 import RideStatusModal from '../components/RideStatusModal';
+import { useSiteContent } from '../context/SiteContentContext';
 
 export default function BookingPage() {
   const [searchParams] = useSearchParams();
+  const { content } = useSiteContent();
+  const vehicles = content.vehicles || VEHICLES;
 
   const [bookingMode, setBookingMode] = useState(searchParams.get('mode') === 'schedule' ? 'schedule' : 'now');
   const [scheduleDate, setScheduleDate] = useState(() => {
@@ -27,7 +30,7 @@ export default function BookingPage() {
   );
 
   const initialType = searchParams.get('type') || 'bike';
-  const foundVehicle = VEHICLES.find((v) => v.id === initialType) || VEHICLES[0];
+  const foundVehicle = vehicles.find((v) => v.id === initialType) || vehicles[0];
   const [selectedVehicle, setSelectedVehicle] = useState(foundVehicle);
 
   const [distance] = useState(6.4); // km
@@ -41,10 +44,10 @@ export default function BookingPage() {
   useEffect(() => {
     const typeParam = searchParams.get('type');
     if (typeParam) {
-      const match = VEHICLES.find((v) => v.id === typeParam);
+      const match = vehicles.find((v) => v.id === typeParam);
       if (match) setSelectedVehicle(match);
     }
-  }, [searchParams]);
+  }, [searchParams, vehicles]);
 
   // Swap pickup & dropoff
   const handleSwap = () => {
@@ -250,7 +253,7 @@ export default function BookingPage() {
               </div>
 
               <div className="space-y-2 sm:space-y-3">
-                {VEHICLES.map((vehicle) => (
+                {vehicles.map((vehicle) => (
                   <VehicleCard
                     key={vehicle.id}
                     vehicle={vehicle}

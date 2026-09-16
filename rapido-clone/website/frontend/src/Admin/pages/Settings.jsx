@@ -1,9 +1,1 @@
-import React from 'react'
-
-export default function Settings() {
-  return (
-    <div>
-      
-    </div>
-  )
-}
+export { default } from '../components/Settings/Settings';

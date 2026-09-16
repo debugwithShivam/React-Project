@@ -1,9 +1,1 @@
-import React from 'react'
-
-export default function Payments() {
-  return (
-    <div>
-      
-    </div>
-  )
-}
+export { default } from '../components/Payments/Payments';

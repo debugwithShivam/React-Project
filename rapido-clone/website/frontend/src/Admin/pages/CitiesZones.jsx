@@ -1,9 +1,1 @@
-import React from 'react'
-
-export default function CitiesZones() {
-  return (
-    <div>
-      
-    </div>
-  )
-}
+export { default } from '../components/CitiesZones/CitiesZones';

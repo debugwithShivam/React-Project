@@ -1,9 +1,1 @@
-import React from 'react'
-
-export default function Drivers() {
-  return (
-    <div>
-      
-    </div>
-  )
-}
+export { default } from '../components/Drivers/Drivers';

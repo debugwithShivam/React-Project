@@ -1,9 +1,1 @@
-import React from 'react'
-
-export default function Captains() {
-  return (
-    <div>
-      
-    </div>
-  )
-}
+export { default } from '../components/Captains/Captains';

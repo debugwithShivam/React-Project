@@ -2,19 +2,13 @@ import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Menu, X, Bike, ArrowRight, LayoutDashboard, Clock } from 'lucide-react';
 import logo from '../image/logo.png';
+import { useSiteContent } from '../context/SiteContentContext';
 
 export default function Navbar() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const location = useLocation();
-
-  const navLinks = [
-    { name: 'Home', path: '/' },
-    { name: 'About Us', path: '/about' },
-    { name: 'Safety', path: '/safety' },
-    { name: 'Book a Ride', path: '/book' },
-    { name: 'My Rides', path: '/my-rides' },
-    { name: 'Contact Us', path: '/contact' },
-  ];
+  const { content } = useSiteContent();
+  const navLinks = content.navigation;
 
   const isActive = (path) => {
     if (path === '/' && location.pathname === '/') return true;
@@ -34,10 +28,10 @@ export default function Navbar() {
             </div>
             <div className="flex flex-col">
               <span className="text-xl sm:text-2xl font-extrabold tracking-tight text-brand-dark flex items-center gap-1">
-                Sawaari <span className="text-[10px] sm:text-xs bg-brand-dark text-brand-yellow px-1.5 py-0.5 rounded font-bold uppercase tracking-wider">Ride</span>
+                {content.brand.name} <span className="text-[10px] sm:text-xs bg-brand-dark text-brand-yellow px-1.5 py-0.5 rounded font-bold uppercase tracking-wider">Ride</span>
               </span>
               <span className="text-[9px] sm:text-[10px] font-semibold text-gray-400 tracking-wider uppercase -mt-0.5 sm:-mt-1">
-                Bharat's Smart Commute
+                {content.brand.tagline}
               </span>
             </div>
           </Link>

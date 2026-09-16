@@ -1,9 +1,2 @@
-import React from 'react'
+export { default } from '../components/Customers/Customers';
 
-export default function Customers() {
-  return (
-    <div>
-      
-    </div>
-  )
-}

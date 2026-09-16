@@ -1,9 +1,1 @@
-import React from 'react'
-
-export default function Pricing() {
-  return (
-    <div>
-      
-    </div>
-  )
-}
+export { default } from '../components/Pricing/Pricing';

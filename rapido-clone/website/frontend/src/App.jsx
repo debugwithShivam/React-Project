@@ -37,6 +37,14 @@ import StaffRoles from './Admin/pages/StaffRoles';
 import Support from './Admin/pages/Support';
 import Customers from './Admin/pages/Customers';
 import Reviews from './Admin/pages/Reviews';
+import Wallet from './Admin/pages/Wallet';
+import ScheduledCabs from './Admin/pages/ScheduledCabs';
+import CustomCabs from './Admin/pages/CustomCabs';
+import RiderHistory from './Admin/pages/RiderHistory';
+import DriverRideHistory from './Admin/pages/DriverRideHistory';
+import Refunds from './Admin/pages/Refunds';
+import Password from './Admin/pages/Password';
+import { SiteContentProvider } from './context/SiteContentContext';
 // Scroll to top on route change
 function ScrollToTop() {
   const { pathname } = useLocation();
@@ -104,6 +112,7 @@ const router = createBrowserRouter([
         path: 'Admin',
         element: <Admin />,
         children: [
+          { index: true, element: <Dashboard /> },
           { path: 'Dashboard', element: <Dashboard /> },
           { path: 'AllBookRide', element: <AllBookRide /> },
           { path: 'Captains', element: <Captains /> },
@@ -119,7 +128,14 @@ const router = createBrowserRouter([
           { path: 'Revenue', element: <Revenue /> },
           { path: 'Reviews', element: <Reviews /> },
           { path: 'Rides', element: <Rides /> },
+          { path: 'ScheduledCabs', element: <ScheduledCabs /> },
+          { path: 'CustomCabs', element: <CustomCabs /> },
+          { path: 'RiderHistory', element: <RiderHistory /> },
+          { path: 'DriverRideHistory', element: <DriverRideHistory /> },
+          { path: 'Wallet', element: <Wallet /> },
+          { path: 'Refunds', element: <Refunds /> },
           { path: 'Settings', element: <Settings /> },
+          { path: 'Password', element: <Password /> },
           { path: 'StaffRoles', element: <StaffRoles /> },
           { path: 'Support', element: <Support /> },
         ],
@@ -127,5 +143,9 @@ const router = createBrowserRouter([
 ]);
 
 export default function App() {
-  return <RouterProvider router={router} />;
+  return (
+    <SiteContentProvider>
+      <RouterProvider router={router} />
+    </SiteContentProvider>
+  );
 }

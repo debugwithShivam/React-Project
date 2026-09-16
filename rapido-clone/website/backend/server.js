@@ -14,6 +14,7 @@ const connectDB = require('./src/config/db');
 const authRoutes = require('./src/routes/authRoutes');
 const rideRoutes = require('./src/routes/rideRoutes');
 const userRoutes = require('./src/routes/userRoutes');
+const contentRoutes = require('./src/routes/contentRoutes');
 
 // Middlewares
 const errorHandler = require('./src/middlewares/errorHandler');
@@ -39,6 +40,7 @@ app.get('/api/health', (req, res) => {
 app.use('/api/auth', authRoutes);
 app.use('/api/rides', rideRoutes);
 app.use('/api/users', userRoutes);
+app.use('/api/content', contentRoutes);
 
 // Global Error Handler Middleware
 app.use(errorHandler);

@@ -2,9 +2,12 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { MapPin, Navigation, Bike, Zap, Car, ArrowRight, Clock, Calendar, Shield } from 'lucide-react';
 import { POPULAR_LOCATIONS, VEHICLES } from '../data/mockData';
+import { useSiteContent } from '../context/SiteContentContext';
 
 export default function RideBookingWidget({ onBookDirect }) {
   const navigate = useNavigate();
+  const { content } = useSiteContent();
+  const vehicles = content.vehicles || VEHICLES;
   const [bookingMode, setBookingMode] = useState('now'); // 'now' | 'schedule'
   const [scheduleDate, setScheduleDate] = useState(() => {
     const tomorrow = new Date();
@@ -15,7 +18,7 @@ export default function RideBookingWidget({ onBookDirect }) {
 
   const [pickup, setPickup] = useState('Indiranagar Metro Station, Bangalore');
   const [dropoff, setDropoff] = useState('Koramangala 5th Block, Bangalore');
-  const [selectedVehicle, setSelectedVehicle] = useState(VEHICLES[0]);
+  const [selectedVehicle, setSelectedVehicle] = useState(vehicles[0]);
   const [showPickupList, setShowPickupList] = useState(false);
   const [showDropoffList, setShowDropoffList] = useState(false);
 
@@ -213,7 +216,7 @@ export default function RideBookingWidget({ onBookDirect }) {
             Select Ride Type
           </label>
           <div className="grid grid-cols-3 gap-1.5 sm:gap-2">
-            {VEHICLES.slice(0, 3).map((veh) => (
+            {vehicles.slice(0, 3).map((veh) => (
               <button
                 key={veh.id}
                 type="button"

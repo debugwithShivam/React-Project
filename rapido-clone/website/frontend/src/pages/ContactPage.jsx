@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
 import { Mail, Phone, MapPin, Send, HelpCircle, ChevronDown, ChevronUp, CheckCircle, MessageSquare } from 'lucide-react';
 import { FAQS } from '../data/mockData';
+import { useSiteContent } from '../context/SiteContentContext';
 
 export default function ContactPage() {
+  const { content } = useSiteContent();
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -51,8 +53,8 @@ export default function ContactPage() {
             <div>
               <h4 className="font-bold text-gray-900 text-base">Helpline Support</h4>
               <p className="text-xs text-gray-500 mt-1">Direct rider & captain assistance toll-free.</p>
-              <a href="tel:18001234567" className="text-sm font-black text-brand-dark hover:underline block mt-2">
-                1800-123-4567
+              <a href={`tel:${content.home.supportPhone.replace(/[^\d+]/g, '')}`} className="text-sm font-black text-brand-dark hover:underline block mt-2">
+                {content.home.supportPhone}
               </a>
             </div>
           </div>
@@ -64,8 +66,8 @@ export default function ContactPage() {
             <div>
               <h4 className="font-bold text-gray-900 text-base">Email Queries</h4>
               <p className="text-xs text-gray-500 mt-1">Expect a response within 4 working hours.</p>
-              <a href="mailto:support@rapidoride.com" className="text-sm font-black text-brand-dark hover:underline block mt-2">
-                support@rapidoride.com
+              <a href={`mailto:${content.home.supportEmail}`} className="text-sm font-black text-brand-dark hover:underline block mt-2">
+                {content.home.supportEmail}
               </a>
             </div>
           </div>

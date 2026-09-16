@@ -1,9 +1,1 @@
-import React from 'react'
-
-export default function StaffRoles() {
-  return (
-    <div>
-      
-    </div>
-  )
-}
+export { default } from '../components/StaffRoles/StaffRoles';

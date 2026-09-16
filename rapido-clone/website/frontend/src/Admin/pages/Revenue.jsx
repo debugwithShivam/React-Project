@@ -1,9 +1,1 @@
-import React from 'react'
-
-export default function Revenue() {
-  return (
-    <div>
-      
-    </div>
-  )
-}
+export { default } from '../components/Revenue/Revenue';
