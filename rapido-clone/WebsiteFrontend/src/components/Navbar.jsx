@@ -55,15 +55,6 @@ export default function Navbar() {
 
           {/* Right Action CTA Buttons */}
           <div className="hidden sm:flex items-center space-x-2">
-
-            <Link
-              to="/signup?role=captain"
-              className="hidden md:flex px-3 py-2 text-xs font-bold text-gray-700 hover:text-black items-center gap-1.5 rounded-lg border border-gray-200 hover:border-gray-400 transition-colors"
-            >
-              <Bike className="w-3.5 h-3.5 text-brand-yellow fill-brand-yellow" />
-              Drive with Us
-            </Link>
-
             <Link
               to="/login"
               className="px-3 py-2 text-xs font-semibold text-gray-700 hover:text-brand-dark transition-colors"

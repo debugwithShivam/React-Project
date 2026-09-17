@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react';
 import {
-  createBrowserRouter,
+  createHashRouter,
   Link,
   Outlet,
   RouterProvider,
@@ -90,7 +90,7 @@ function AppLayout() {
   );
 }
 
-const router = createBrowserRouter([
+const router = createHashRouter([
   {
     path: '/',
     element: <AppLayout />,

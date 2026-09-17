@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useSearchParams, useNavigate } from 'react-router-dom';
 import { Bike, Shield, ArrowRight, CheckCircle2, User, Phone, Mail, MapPin, Car, Upload, FileText, CreditCard } from 'lucide-react';
+import { useMutation,useQueryClient } from '@tanstack/react-query';
+import axios from 'axios';
 
 export default function SignupPage() {
   const [searchParams] = useSearchParams();

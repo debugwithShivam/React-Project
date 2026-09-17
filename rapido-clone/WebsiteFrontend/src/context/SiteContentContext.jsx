@@ -1,5 +1,4 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { fetchSiteContent } from '../api/content';
 import { VEHICLES } from '../data/mockData';
 
 const defaultContent = {
@@ -27,7 +26,6 @@ export function SiteContentProvider({ children }) {
   const [content, setContent] = useState(defaultContent);
 
   useEffect(() => {
-    fetchSiteContent().then(setContent).catch(() => {});
   }, []);
 
   const refreshContent = (nextContent) => setContent(nextContent);

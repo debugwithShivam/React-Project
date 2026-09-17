@@ -1,0 +1,285 @@
+import pool from '../config/DBconfig/database.js';
+import bcrypt from 'bcrypt';
+import jwt from 'jsonwebtoken';
+import { generateAccessToken, generateRefreshToken } from '../utils/token.js';
+import envConfig from '../config/envConfig.js';
+
+const normalizeRole = (role = 'USER') => String(role).toUpperCase();
+
+export const registerUser = async ({ name, phone, email, password }) => {
+    const [existingUsers] = await pool.query(
+        `SELECT id FROM users WHERE phone = ? OR email = ? LIMIT 1`,
+        [phone, email]
+    );
+
+    if (existingUsers.length > 0) {
+        throw new Error('Phone or Email is already registered');
+    }
+
+    const passwordHash = await bcrypt.hash(password, 12);
+
+    const [result] = await pool.query(
+        `INSERT INTO users (name, phone, email, password_hash, role, is_active) VALUES (?, ?, ?, ?, 'USER', 1)`,
+        [name, phone, email, passwordHash]
+    );
+
+    return {
+        id: result.insertId,
+        name,
+        phone,
+        email,
+        role: 'USER',
+    };
+};
+
+export const loginUser = async ({ identifier, password }) => {
+    const [users] = await pool.query(
+        `SELECT
+            id,
+            name,
+            phone,
+            email,
+            password_hash,
+            role,
+            profile_image,
+            is_active
+        FROM users
+        WHERE email = ? OR phone = ?
+        LIMIT 1`,
+        [identifier, identifier]
+    );
+
+    if (users.length === 0) {
+        throw new Error('Invalid email/phone or password');
+    }
+
+    const user = users[0];
+
+    if (!user.is_active) {
+        throw new Error('Your account is inactive');
+    }
+
+    const passwordMatched = await bcrypt.compare(password, user.password_hash);
+
+    if (!passwordMatched) {
+        throw new Error('Invalid email/phone or password');
+    }
+
+    const accessToken = generateAccessToken({ ...user, role: normalizeRole(user.role) });
+    const refreshToken = generateRefreshToken({ ...user, role: normalizeRole(user.role) });
+    const refreshTokenHash = await bcrypt.hash(refreshToken, 12);
+
+    await pool.query(
+        `INSERT INTO refresh_tokens (user_id, token_hash, expires_at)
+         VALUES (?, ?, DATE_ADD(NOW(), INTERVAL 7 DAY))`,
+        [user.id, refreshTokenHash]
+    );
+
+    return {
+        user: {
+            id: user.id,
+            name: user.name,
+            phone: user.phone,
+            email: user.email,
+            role: normalizeRole(user.role),
+            profileImage: user.profile_image,
+        },
+        accessToken,
+        refreshToken,
+    };
+};
+
+export const requestPasswordReset = async ({ email, phone }) => {
+    const identifier = email || phone;
+
+    if (!identifier) {
+        throw new Error('Email or phone is required');
+    }
+
+    const [users] = await pool.query(
+        `SELECT id, name, email, phone, role FROM users WHERE email = ? OR phone = ? LIMIT 1`,
+        [identifier, identifier]
+    );
+
+    if (users.length === 0) {
+        throw new Error('No account found with this email or phone');
+    }
+
+    const user = users[0];
+    const resetToken = jwt.sign(
+        { user: user.id, purpose: 'password_reset', role: normalizeRole(user.role) },
+        envConfig.ACCESS_TOKEN_SECRET,
+        { expiresIn: '30m' }
+    );
+
+    const tokenHash = await bcrypt.hash(resetToken, 12);
+
+    await pool.query(
+        `INSERT INTO password_reset_tokens (user_id, token_hash, expires_at)
+         VALUES (?, ?, DATE_ADD(NOW(), INTERVAL 30 MINUTE))
+         ON DUPLICATE KEY UPDATE token_hash = VALUES(token_hash), expires_at = VALUES(expires_at)`,
+        [user.id, tokenHash]
+    );
+
+    return {
+        email: user.email,
+        resetToken,
+    };
+};
+
+export const resetUserPassword = async ({ token, newPassword }) => {
+    if (!token || !newPassword || newPassword.length < 6) {
+        throw new Error('Valid reset token and a password with at least 6 characters are required');
+    }
+
+    let payload;
+
+    try {
+        payload = jwt.verify(token, envConfig.ACCESS_TOKEN_SECRET);
+    } catch (error) {
+        throw new Error('Invalid or expired reset token');
+    }
+
+    if (payload.purpose !== 'password_reset') {
+        throw new Error('Invalid reset token');
+    }
+
+    const [tokens] = await pool.query(
+        `SELECT id, user_id, token_hash, expires_at
+         FROM password_reset_tokens
+         WHERE user_id = ? AND expires_at > NOW()`,
+        [payload.user]
+    );
+
+    let matchedToken = null;
+
+    for (const item of tokens) {
+        const matched = await bcrypt.compare(token, item.token_hash);
+        if (matched) {
+            matchedToken = item;
+            break;
+        }
+    }
+
+    if (!matchedToken) {
+        throw new Error('Reset token not found or expired');
+    }
+
+    const passwordHash = await bcrypt.hash(newPassword, 12);
+
+    await pool.query(
+        `UPDATE users SET password_hash = ? WHERE id = ?`,
+        [passwordHash, payload.user]
+    );
+
+    await pool.query(
+        `DELETE FROM password_reset_tokens WHERE id = ?`,
+        [matchedToken.id]
+    );
+};
+
+export const refreshUserToken = async (refreshToken) => {
+    if (!refreshToken) {
+        throw new Error('Refresh token is required');
+    }
+
+    let payload;
+
+    try {
+        payload = jwt.verify(refreshToken, envConfig.REFRESH_TOKEN_SECRET);
+    } catch (error) {
+        console.error('JWT verification error:', error.message);
+        throw new Error('Invalid or expired refresh token');
+    }
+
+    const userId = payload.user;
+
+    const [tokens] = await pool.query(
+        `SELECT id, user_id, token_hash, expires_at
+         FROM refresh_tokens
+         WHERE user_id = ? AND expires_at > NOW()`,
+        [userId]
+    );
+
+    if (tokens.length === 0) {
+        throw new Error('Refresh token not found or expired');
+    }
+
+    let matchedToken = null;
+
+    for (const token of tokens) {
+        const matched = await bcrypt.compare(refreshToken, token.token_hash);
+        if (matched) {
+            matchedToken = token;
+            break;
+        }
+    }
+
+    if (!matchedToken) {
+        throw new Error('Invalid refresh token');
+    }
+
+    const [users] = await pool.query(
+        `SELECT id, name, phone, email, role, profile_image, is_active
+         FROM users
+         WHERE id = ?
+         LIMIT 1`,
+        [userId]
+    );
+
+    if (users.length === 0) {
+        throw new Error('User not found');
+    }
+
+    const user = users[0];
+
+    if (!user.is_active) {
+        throw new Error('Your account is inactive');
+    }
+
+    const accessToken = generateAccessToken({ ...user, role: normalizeRole(user.role) });
+
+    return { accessToken };
+};
+
+export const logoutUser = async (refreshToken) => {
+    if (!refreshToken) {
+        throw new Error('Refresh token is required');
+    }
+
+    let payload;
+
+    try {
+        payload = jwt.verify(refreshToken, envConfig.REFRESH_TOKEN_SECRET);
+    } catch (error) {
+        throw new Error('Invalid or expired refresh token');
+    }
+
+    const userId = payload.user;
+
+    const [tokens] = await pool.query(
+        `SELECT id, token_hash
+         FROM refresh_tokens
+         WHERE user_id = ?`,
+        [userId]
+    );
+
+    let matchedToken = null;
+
+    for (const token of tokens) {
+        const matched = await bcrypt.compare(refreshToken, token.token_hash);
+        if (matched) {
+            matchedToken = token;
+            break;
+        }
+    }
+
+    if (!matchedToken) {
+        throw new Error('Refresh token not found');
+    }
+
+    await pool.query(
+        `DELETE FROM refresh_tokens WHERE id = ?`,
+        [matchedToken.id]
+    );
+};

@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from 'react';
 import { CheckCircle2, Save } from 'lucide-react';
-import { saveSiteContent } from '../../../api/content';
 import { useSiteContent } from '../../../context/SiteContentContext';
 import { Screen } from '../adminUi';
 
@@ -25,7 +24,6 @@ export default function Settings() {
     event.preventDefault();
     setStatus('saving');
     try {
-      refreshContent(await saveSiteContent(form));
       setStatus('saved');
     } catch {
       setStatus('error');
