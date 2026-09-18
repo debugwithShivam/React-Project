@@ -1,58 +1,52 @@
 import jwt from 'jsonwebtoken'
 import envConfig from '../config/envConfig.js';
 
-export const authenticateUser  = (req,res,next) => {
-    try{
-        const authHeader = req.headers.authorization
 
-        if(!authHeader){
+export const authenticateUser = (req, res, next) => {
+    try {
+
+        const accessToken = req.cookies.accessToken;
+
+        if (!accessToken) {
             return res.status(401).json({
-                success:false,
-                message:'Authorization header is required'
-            })
-        }
-
-        const [type,token] = authHeader.split(' ');
-
-        if(type !== 'Bearer' || !token){
-            return res.status(401).json({
-                success:false,
-                message:"Invalid authorization format",
-            })
+                success: false,
+                message: 'Access token is required'
+            });
         }
 
         const decoded = jwt.verify(
-            token,
+            accessToken,
             envConfig.ACCESS_TOKEN_SECRET
-        )
+        );
 
-        req.user = decoded
+        req.user = decoded;
 
-        next()
+        next();
 
-    }catch(error){
+    } catch (error) {
+
         return res.status(401).json({
-            success:false,
-            message:"Invalid or expired access token",
-            error:error.message
-        })
+            success: false,
+            message: 'Invalid or expired access token'
+        });
     }
-}
+};
+
 
 export const requireRole = (...allowedRole) => {
-    return (req,res,next)=>{
-        if(!req.user){
-            return res.status(401).json({   
-                success:false,
-                message:"User is not authenticated"
-            })
+    return (req, res, next) => {
+        if (!req.user) {
+            return res.status(401).json({
+                success: false,
+                message: 'User is not authenticated'
+            });
         }
-        if(!allowedRole.includes(req.user.role)){
+        if (!allowedRole.includes(req.user.role)) {
             return res.status(403).json({
-                success:false,
-                message:"You do not have paermission to access this resource"
-            })
+                success: false,
+                message: 'You do not have permission to access this resource'
+            });
         }
-        next()
-    }
-}
+        next();
+    };
+};

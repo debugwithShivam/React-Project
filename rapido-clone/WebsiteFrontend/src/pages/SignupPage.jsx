@@ -1,31 +1,45 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useSearchParams, useNavigate } from 'react-router-dom';
 import { Bike, Shield, ArrowRight, CheckCircle2, User, Phone, Mail, MapPin, Car, Upload, FileText, CreditCard } from 'lucide-react';
-import { useMutation,useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import axios from 'axios';
+import API_URL from '../api/content';
 
 export default function SignupPage() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
+  const querClient = useQueryClient()
 
   const [role, setRole] = useState(searchParams.get('role') === 'captain' ? 'captain' : 'user');
-  
+
   const [formData, setFormData] = useState({
     fullname: '',
     phone: '',
     email: '',
+    password: '',
+    confirmPassword: '',
     city: 'Bangalore',
     vehicleType: 'bike',
-    vehicleModel: 'Honda Activa 6G',
+    vehicleModel: '',
     vehiclePlate: '',
     drivingLicense: '',
     aadhaarNumber: '',
     payoutUpi: '',
-    dlUploaded: true,
-    rcUploaded: true,
-    aadhaarUploaded: true,
-    insuranceUploaded: true,
-    agreeTerms: true
+    agreeTerms: false
+  });
+
+  const [documents, setDocuments] = useState({
+    dlFront: null,
+    dlBack: null,
+
+    rcFront: null,
+    rcBack: null,
+
+    aadhaarFront: null,
+    aadhaarBack: null,
+
+    insuranceFront: null,
+    insuranceBack: null,
   });
 
   const [submitted, setSubmitted] = useState(false);
@@ -36,22 +50,143 @@ export default function SignupPage() {
     }
   }, [searchParams]);
 
+
+
+
+  const registerMutation = useMutation({
+    mutationFn: async () => {
+
+      const selectedRole =
+        role === 'captain'
+          ? 'DRIVER'
+          : 'USER';
+
+      const data = new FormData();
+
+      data.append('name', formData.fullname);
+      data.append('phone', formData.phone);
+      data.append('email', formData.email || '');
+      data.append('password', formData.password);
+      data.append('role', selectedRole);
+
+      if (selectedRole === 'DRIVER') {
+        data.append('city', formData.city);
+        data.append('vehicleType', formData.vehicleType);
+        data.append('vehicleModel', formData.vehicleModel);
+        data.append('vehiclePlate', formData.vehiclePlate);
+        data.append('drivingLicense', formData.drivingLicense);
+        data.append('aadhaarNumber', formData.aadhaarNumber || '');
+        data.append('payoutUpi', formData.payoutUpi || '');
+
+        if (documents.dlFront) {
+          data.append('dlFront', documents.dlFront);
+        }
+
+        if (documents.dlBack) {
+          data.append('dlBack', documents.dlBack);
+        }
+
+        if (documents.rcFront) {
+          data.append('rcFront', documents.rcFront);
+        }
+
+        if (documents.rcBack) {
+          data.append('rcBack', documents.rcBack);
+        }
+
+        if (documents.aadhaarFront) {
+          data.append('aadhaarFront', documents.aadhaarFront);
+        }
+
+        if (documents.aadhaarBack) {
+          data.append('aadhaarBack', documents.aadhaarBack);
+        }
+
+        if (documents.insuranceFront) {
+          data.append('insuranceFront', documents.insuranceFront);
+        }
+
+        if (documents.insuranceBack) {
+          data.append('insuranceBack', documents.insuranceBack);
+        }
+      }
+
+      const response = await axios.post(
+        `${API_URL}/auth/register`,
+        data,
+        {
+          withCredentials: true,
+        }
+      );
+
+      return response.data;
+    },
+
+    onSuccess: (data) => {
+      console.log('REGISTER SUCCESS:', data);
+      setSubmitted(true);
+      querClient.invalidateQueries({
+        queryKey: ['currentUser'],
+      });
+    },
+
+    onError: (error) => {
+      console.error(
+        'REGISTER ERROR:',
+        error.response?.data || error.message
+      );
+
+      alert(
+        error.response?.data?.message ||
+        'Registration failed'
+      );
+    }
+  });
+
   const handleSubmit = (e) => {
     e.preventDefault();
+
     if (!formData.fullname || !formData.phone) {
       alert('Please fill the required fields!');
       return;
     }
-    setSubmitted(true);
-    setTimeout(() => {
-      navigate('/book');
-    }, 2500);
+
+    if (!formData.password) {
+      alert('Please create a password!');
+      return;
+    }
+
+    if (formData.password !== formData.confirmPassword) {
+      alert('Passwords do not match!');
+      return;
+    }
+
+    if (!formData.agreeTerms) {
+      alert('Please accept Terms of Service and Privacy Policy.');
+      return;
+    }
+
+    if (
+      role === 'captain' &&
+      (
+        !formData.vehiclePlate ||
+        !formData.drivingLicense
+      )
+    ) {
+      alert(
+        'Vehicle plate and driving license are required.'
+      );
+      return;
+    }
+
+    registerMutation.mutate();
   };
+
 
   return (
     <div className="min-h-[85vh] bg-gradient-to-b from-yellow-50/40 via-white to-gray-50 flex items-center justify-center px-3 sm:px-4 py-8 sm:py-12 w-full">
       <div className="max-w-lg w-full bg-white rounded-3xl shadow-xl border border-gray-100 overflow-hidden">
-        
+
         {/* Top Banner */}
         <div className="bg-brand-dark p-5 sm:p-6 text-white text-center">
           <div className="w-11 h-11 sm:w-12 sm:h-12 bg-brand-yellow rounded-2xl flex items-center justify-center text-brand-dark mx-auto mb-2.5 sm:mb-3 shadow-md">
@@ -73,22 +208,20 @@ export default function SignupPage() {
             <button
               type="button"
               onClick={() => setRole('user')}
-              className={`py-2 text-[11px] sm:text-xs font-bold rounded-xl transition-all ${
-                role === 'user'
-                  ? 'bg-white text-brand-dark shadow-sm'
-                  : 'text-gray-500 hover:text-black'
-              }`}
+              className={`py-2 text-[11px] sm:text-xs font-bold rounded-xl transition-all ${role === 'user'
+                ? 'bg-white text-brand-dark shadow-sm'
+                : 'text-gray-500 hover:text-black'
+                }`}
             >
               I want to Ride
             </button>
             <button
               type="button"
               onClick={() => setRole('captain')}
-              className={`py-2 text-[11px] sm:text-xs font-bold rounded-xl transition-all ${
-                role === 'captain'
-                  ? 'bg-brand-yellow text-brand-dark shadow-sm'
-                  : 'text-gray-500 hover:text-black'
-              }`}
+              className={`py-2 text-[11px] sm:text-xs font-bold rounded-xl transition-all ${role === 'captain'
+                ? 'bg-brand-yellow text-brand-dark shadow-sm'
+                : 'text-gray-500 hover:text-black'
+                }`}
             >
               I want to Drive / Earn
             </button>
@@ -105,13 +238,14 @@ export default function SignupPage() {
               </h4>
               <p className="text-xs text-gray-600">
                 {role === 'captain'
-                  ? `Thank you ${formData.fullname}. Your KYC documents have been routed to our verification team. You can begin accepting rides within 24 hours.`
-                  : `Welcome to Sawaari, ${formData.fullname}. Redirecting you to instant ride booking...`}
+                  ? `Thank you ${formData.fullname}. Your driver application has been submitted and is currently pending verification.`
+                  : `Welcome to Sawaari, ${formData.fullname}. Your account has been created successfully.`
+                }
               </p>
             </div>
           ) : (
             <form onSubmit={handleSubmit} className="space-y-3.5 sm:space-y-4">
-              
+
               {/* Full Name */}
               <div>
                 <label className="block text-[11px] sm:text-xs font-bold text-gray-700 mb-1">Full Name *</label>
@@ -159,6 +293,48 @@ export default function SignupPage() {
                     />
                   </div>
                 </div>
+                <div>
+                  <label className="block text-[11px] sm:text-xs font-bold text-gray-700 mb-1">
+                    Password *
+                  </label>
+
+                  <input
+                    type="password"
+                    required
+                    minLength={6}
+                    value={formData.password}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        password: e.target.value
+                      })
+                    }
+                    placeholder="Create password"
+                    className="w-full px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-xs sm:text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-brand-yellow"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-[11px] sm:text-xs font-bold text-gray-700 mb-1">
+                    Confirm Password *
+                  </label>
+
+                  <input
+                    type="password"
+                    required
+                    minLength={6}
+                    value={formData.confirmPassword}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        confirmPassword: e.target.value
+                      })
+                    }
+                    placeholder="Confirm password"
+                    className="w-full px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-xs sm:text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-brand-yellow"
+                  />
+                </div>
+
 
                 <div>
                   <label className="block text-[11px] sm:text-xs font-bold text-gray-700 mb-1">Operating City</label>
@@ -247,19 +423,55 @@ export default function SignupPage() {
                     <div className="grid grid-cols-2 gap-2 text-xs">
                       <div className="p-2 bg-white rounded-xl border border-gray-200 flex items-center justify-between">
                         <span className="text-[11px] font-semibold text-gray-700 truncate">1. Driving License</span>
-                        <span className="text-[10px] bg-emerald-100 text-emerald-800 font-bold px-1.5 py-0.5 rounded">Attached</span>
+                        <input
+                          type="file"
+                          accept="image/*,.pdf"
+                          onChange={(e) =>
+                            setDocuments({
+                              ...documents,
+                              dlFront: e.target.files[0]
+                            })
+                          }
+                        />
                       </div>
                       <div className="p-2 bg-white rounded-xl border border-gray-200 flex items-center justify-between">
                         <span className="text-[11px] font-semibold text-gray-700 truncate">2. Vehicle RC</span>
-                        <span className="text-[10px] bg-emerald-100 text-emerald-800 font-bold px-1.5 py-0.5 rounded">Attached</span>
+                        <input
+                          type="file"
+                          accept="image/*,.pdf"
+                          onChange={(e) =>
+                            setDocuments({
+                              ...documents,
+                              rcFront: e.target.files[0]
+                            })
+                          }
+                        />
                       </div>
                       <div className="p-2 bg-white rounded-xl border border-gray-200 flex items-center justify-between">
                         <span className="text-[11px] font-semibold text-gray-700 truncate">3. Aadhaar ID</span>
-                        <span className="text-[10px] bg-emerald-100 text-emerald-800 font-bold px-1.5 py-0.5 rounded">Attached</span>
+                        <input
+                          type="file"
+                          accept="image/*,.pdf"
+                          onChange={(e) =>
+                            setDocuments({
+                              ...documents,
+                              aadhaarFront: e.target.files[0]
+                            })
+                          }
+                        />
                       </div>
                       <div className="p-2 bg-white rounded-xl border border-gray-200 flex items-center justify-between">
                         <span className="text-[11px] font-semibold text-gray-700 truncate">4. Insurance Policy</span>
-                        <span className="text-[10px] bg-emerald-100 text-emerald-800 font-bold px-1.5 py-0.5 rounded">Attached</span>
+                        <input
+                          type="file"
+                          accept="image/*,.pdf"
+                          onChange={(e) =>
+                            setDocuments({
+                              ...documents,
+                              insuranceFront: e.target.files[0]
+                            })
+                          }
+                        />
                       </div>
                     </div>
                   </div>
@@ -303,9 +515,18 @@ export default function SignupPage() {
               {/* Submit Button */}
               <button
                 type="submit"
-                className="w-full py-3 sm:py-3.5 bg-brand-yellow hover:bg-brand-yellow-hover text-brand-dark font-black rounded-xl text-xs shadow-md transition-all flex items-center justify-center gap-2 active:scale-95"
+                disabled={registerMutation.isPending}
+                className="w-full py-3 sm:py-3.5 bg-brand-yellow hover:bg-brand-yellow-hover text-brand-dark font-black rounded-xl text-xs shadow-md transition-all flex items-center justify-center gap-2 active:scale-95 disabled:opacity-60 disabled:cursor-not-allowed"
               >
-                <span>{role === 'captain' ? 'Submit Captain KYC Application' : 'Create Free Account'}</span>
+                <span>
+                  {registerMutation.isPending
+                    ? 'Creating Account...'
+                    : role === 'captain'
+                      ? 'Submit Captain KYC Application'
+                      : 'Create Free Account'
+                  }
+                </span>
+
                 <ArrowRight className="w-4 h-4" />
               </button>
             </form>

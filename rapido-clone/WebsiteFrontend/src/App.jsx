@@ -6,8 +6,15 @@ import {
   RouterProvider,
   useLocation,
 } from 'react-router-dom';
+
+import {
+  QueryClient,
+  QueryClientProvider,
+} from '@tanstack/react-query';
+
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
+
 import HomePage from './pages/HomePage';
 import BookingPage from './pages/BookingPage';
 import AboutPage from './pages/AboutPage';
@@ -16,8 +23,10 @@ import ContactPage from './pages/ContactPage';
 import LoginPage from './pages/LoginPage';
 import SignupPage from './pages/SignupPage';
 import RidesHistoryPage from './pages/RidesHistoryPage';
+
 import PrivacyPolicyPage from './pages/PrivacyPolicyPage';
 import TermsConditionsPage from './pages/TermsConditionsPage';
+
 import Admin from './Admin/Admin';
 import AllBookRide from './Admin/pages/AllBookRide';
 import Captains from './Admin/pages/Captains';
@@ -45,7 +54,22 @@ import DriverRideHistory from './Admin/pages/DriverRideHistory';
 import Refunds from './Admin/pages/Refunds';
 import Password from './Admin/pages/Password';
 import { SiteContentProvider } from './context/SiteContentContext';
-// Scroll to top on route change
+import ProtectiveRouter from './routes/ProtectiveRouter';
+import AdminProtectedRouter from './routes/AdminProtectedRouter';
+
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      retry: false,
+      refetchOnWindowFocus: false,
+    },
+  },
+});
+
+// =========================
+// SCROLL TO TOP
+// =========================
+
 function ScrollToTop() {
   const { pathname } = useLocation();
 
@@ -56,60 +80,159 @@ function ScrollToTop() {
   return null;
 }
 
-// 404 Fallback
+// =========================
+// 404
+// =========================
+
 function NotFoundPage() {
   return (
     <div className="min-h-[60vh] flex flex-col items-center justify-center text-center px-4 py-16">
-      <div className="text-6xl font-black text-brand-dark mb-4">404</div>
-      <h2 className="text-2xl font-bold text-gray-800">Page Not Found</h2>
+
+      <div className="text-6xl font-black text-brand-dark mb-4">
+        404
+      </div>
+
+      <h2 className="text-2xl font-bold text-gray-800">
+        Page Not Found
+      </h2>
+
       <p className="text-sm text-gray-500 mt-2 max-w-sm">
         The destination you are looking for does not exist or may have been relocated.
       </p>
+
       <Link
         to="/"
         className="mt-6 px-6 py-3 bg-brand-yellow text-brand-dark font-black rounded-xl text-xs shadow-md hover:bg-brand-yellow-hover"
       >
         Return to Home
       </Link>
+
     </div>
   );
 }
+
+// =========================
+// APP LAYOUT
+// =========================
 
 function AppLayout() {
   return (
     <>
       <ScrollToTop />
+
       <div className="min-h-screen flex flex-col bg-white text-gray-900 w-full overflow-x-hidden">
+
         <Navbar />
+
         <main className="flex-grow">
           <Outlet />
         </main>
+
         <Footer />
+
       </div>
     </>
   );
 }
+
+// =========================
+// ROUTER
+// =========================
 
 const router = createHashRouter([
   {
     path: '/',
     element: <AppLayout />,
     children: [
-      { index: true, element: <HomePage /> },
-      { path: 'book', element: <BookingPage /> },
-      { path: 'my-rides', element: <RidesHistoryPage /> },
-      { path: 'about', element: <AboutPage /> },
-      { path: 'safety', element: <SafetyPage /> },
-      { path: 'contact', element: <ContactPage /> },
-      { path: 'login', element: <LoginPage /> },
-      { path: 'signup', element: <SignupPage /> },
-      { path: 'privacy', element: <PrivacyPolicyPage /> },
-      { path: 'terms', element: <TermsConditionsPage /> },
-      { path: '*', element: <NotFoundPage /> },
+
+      {
+        index: true,
+        element: <HomePage />,
+      },
+
+      {
+        path: 'book',
+        element: <BookingPage />,
+      },
+
+      // =========================
+      // PROTECTED ROUTES
+      // =========================
+
+      {
+        element: <ProtectiveRouter type="protected" />,
+        children: [
+          {
+            path: 'my-rides',
+            element: <RidesHistoryPage />,
+          },
+        ],
+      },
+
+      // =========================
+      // PUBLIC ROUTES
+      // =========================
+
+      {
+        path: 'about',
+        element: <AboutPage />,
+      },
+
+      {
+        path: 'safety',
+        element: <SafetyPage />,
+      },
+
+      {
+        path: 'contact',
+        element: <ContactPage />,
+      },
+
+
+      // =========================
+      // GUEST ONLY ROUTES
+      // =========================
+
+      {
+        element: <ProtectiveRouter type="guest" />,
+        children: [
+          {
+            path: 'login',
+            element: <LoginPage />,
+          },
+          {
+            path: 'signup',
+            element: <SignupPage />,
+          },
+        ],
+      },
+
+      {
+        path: 'privacy',
+        element: <PrivacyPolicyPage />,
+      },
+
+      {
+        path: 'terms',
+        element: <TermsConditionsPage />,
+      },
+
+      {
+        path: '*',
+        element: <NotFoundPage />,
+      },
     ],
   },
+
+  // =========================
+  // ADMIN
+  // =========================
+
   {
-        path: 'Admin',
+    path: 'Admin',
+    element: <AdminProtectedRouter />,
+    children: [
+      {
         element: <Admin />,
         children: [
           { index: true, element: <Dashboard /> },
@@ -140,12 +263,18 @@ const router = createHashRouter([
           { path: 'Support', element: <Support /> },
         ],
       },
+    ],
+  },
 ]);
+
+
 
 export default function App() {
   return (
-    <SiteContentProvider>
-      <RouterProvider router={router} />
-    </SiteContentProvider>
+    <QueryClientProvider client={queryClient}>
+      <SiteContentProvider>
+        <RouterProvider router={router} />
+      </SiteContentProvider>
+    </QueryClientProvider>
   );
 }

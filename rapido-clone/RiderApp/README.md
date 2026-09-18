@@ -1,103 +1,56 @@
-# UrbanRide - Modern React Native Rider App
+# Welcome to your Expo app 👋
 
-A complete, cutting-edge **React Native** Rider (Customer/Passenger) mobile application built for the `rapido-clone` project ecosystem.
+This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
 
----
+## Get started
 
-## ✨ Features & Architecture
+1. Install dependencies
 
-### 🎨 1. Custom Neo-Mobility UI Design
-- Replaces generic yellow branding with a distinctive, high-end mobile interface (Deep Obsidian `#0B0F19`, Electric Cyan `#0EA5E9`, Vivid Indigo `#6366F1`, and Emerald `#10B981`).
-- Fully reactive **Dark Mode** and **Light Mode** toggle with persistent context state.
-- Smooth glass cards, pill badges, and vector icons (`@expo/vector-icons`).
+   ```bash
+   npm install
+   ```
 
-### 🚫 2. Excluded Features (As Requested)
-- **Travel** (Outstation/Intercity) has been completely removed.
-- **Send Anything** (Parcel/Courier delivery) has been omitted.
-- **Metro Tickets** have been omitted.
-- Focus is 100% on fast, reliable **Urban Ride Hailing**.
+2. Start the app
 
-### ⚡ 3. Ride Services Available
-- 🛵 **Bike Taxi**: Solo & fast, helmet verified, pocket-friendly fare.
-- 🛺 **City Auto**: Quick 3-wheeler without meter bargaining.
-- 🚗 **Cab Mini**: Affordable compact AC hatchback.
-- 🚘 **Cab Comfort (Sedan)**: Premium sedans with top-rated captains.
-- 🚙 **Prime XL**: Spacious 6-seater SUVs for groups & luggage.
+   ```bash
+   npx expo start
+   ```
 
-### 🗺️ 4. End-to-End Interactive Ride Flow
-1. **Interactive Simulated Map**: Real-time canvas with road networks, water bodies, parks, live ambient vehicle pins, and animated moving trip markers.
-2. **Route Selector**: Dual search modal with autocomplete, saved places pills, and swap button.
-3. **Vehicle Compare Sheet**: Compare wait times, seats, features, transparent fare estimates, and payment method selector.
-4. **Driver Search Radar**: Pulsing wave animation while matching nearest captains.
-5. **Captain Assigned**: Captain photo, name, rating (★ 4.94), vehicle model & license plate, 4-digit PIN/OTP, and Call & Chat buttons.
-6. **Live Ride Progress**: Route tracking, SOS button, destination status.
-7. **Trip Completed & Rating**: Fare receipt breakdown, interactive 5-star rating, compliment badges, and tip options.
+In the output, you'll find options to open the app in a
 
-### ⚙️ 5. Comprehensive Settings & Safety Hub
-- **My Profile**: View and edit Name, Phone, Email, Gender, and Emergency Guardian Contact.
-- **Saved Places**: Manage Home, Work, and Custom favorites with 1-click booking and delete.
-- **Payments & UrbanRide Wallet**: Wallet balance, ₹100/₹200/₹500 instant top-up simulation, linked UPI apps (GPay, PhonePe, Paytm), and saved cards.
-- **Emergency SOS Toolkit**:
-  - Direct 112 National Emergency Hotline dialer.
-  - Trusted Family Contacts with auto-share after 8 PM.
-  - AI Audio Shield & Unusual Route Stoppage check.
-  - Night Safety Shield (Mandatory OTP verification).
-- **Ride Preferences**: Quiet Ride Mode, Accidental Trip Insurance cover, and language selector (English, Hindi, Kannada, Telugu, Tamil, Bengali).
-- **24/7 Help & Support**: Live chat desk, report lost items, fare recalculation requests, and interactive FAQ accordion.
-- **Legal**: Terms of Service and Privacy Policy modals.
+- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
+- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
+- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
+- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
 
----
+You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
 
-## 🚀 How to Run the App
+## Get a fresh project
 
-Open terminal in `D:\code\project\rapido-clone\RiderApp`:
+When you're ready, run:
 
-### Run in Web Browser
 ```bash
-npm run web
-# or
-npx expo start --web
+npm run reset-project
 ```
 
-### Run on Mobile (Android / iOS via Expo Go)
-```bash
-npm start
-# Scan the QR code using the Expo Go app on your phone
-```
+This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
 
-### Run on Android Emulator
-```bash
-npm run android
-```
+### Other setup steps
 
----
+- To set up ESLint for linting, run `npx expo lint`, or follow our guide on ["Using ESLint and Prettier"](https://docs.expo.dev/guides/using-eslint/)
+- If you'd like to set up unit testing, follow our guide on ["Unit Testing with Jest"](https://docs.expo.dev/develop/unit-testing/)
+- Learn more about the TypeScript setup in this template in our guide on ["Using TypeScript"](https://docs.expo.dev/guides/typescript/)
 
-## 📁 Directory Structure
-```
-D:\code\project\rapido-clone\RiderApp/
-├── App.js                         # Root provider wrapper (Theme, User, Ride, Navigation)
-├── app.json                       # Expo configuration
-├── package.json                   # Dependencies
-├── src/
-│   ├── theme/                     # Color tokens, Typography, Spacing, Border radii
-│   ├── context/
-│   │   ├── ThemeContext.js        # Dark/Light theme state
-│   │   ├── UserContext.js         # Profile, saved addresses, wallet balance
-│   │   └── RideContext.js         # Ride booking lifecycle & history
-│   ├── data/
-│   │   └── mockData.js            # Sample drivers, vehicles, past trips, locations
-│   ├── components/
-│   │   ├── common/                # CustomHeader, CustomButton, InputField, StatusBadge
-│   │   ├── map/                   # SimulatedMap canvas
-│   │   ├── ride/                  # VehicleSelectCard, RadarDriverSearch, ActiveRideCard, FareBreakdownModal
-│   │   └── settings/              # SettingItem
-│   ├── screens/
-│   │   ├── home/                  # HomeScreen
-│   │   ├── search/                # LocationSearchModal
-│   │   ├── ride/                  # RideSelectScreen, TripCompleteScreen
-│   │   ├── activity/              # ActivityScreen (My Rides)
-│   │   ├── safety/                # SafetyScreen (SOS, Shields)
-│   │   └── settings/              # SettingsScreen, ProfileScreen, SavedPlacesScreen, WalletScreen, PreferencesScreen, HelpSupportScreen
-│   └── navigation/
-│       └── AppNavigator.js        # Bottom Tab Bar & Sub-screen Coordinator
-```
+## Learn more
+
+To learn more about developing your project with Expo, look at the following resources:
+
+- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
+- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+
+## Join the community
+
+Join our community of developers creating universal apps.
+
+- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
+- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.

@@ -3,9 +3,10 @@ import {
   Clock, MapPin, Navigation, Calendar, Receipt, Download, 
   Star, Wallet, ArrowRight, ShieldCheck, CheckCircle2, XCircle, AlertCircle, ChevronRight 
 } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Link, useOutletContext } from 'react-router-dom';
 
 export default function RidesHistoryPage() {
+  const { user } = useOutletContext();
   const [activeTab, setActiveTab] = useState('completed'); // 'scheduled' | 'completed' | 'cancelled'
   const [selectedReceipt, setSelectedReceipt] = useState(null);
 
@@ -101,7 +102,7 @@ export default function RidesHistoryPage() {
           <div>
             <h1 className="text-2xl sm:text-3xl font-black text-gray-900">My Rides & Receipts</h1>
             <p className="text-xs sm:text-sm text-gray-500 mt-0.5">
-              Review your past commutes, track scheduled trips, and download digital tax invoices.
+              {user?.name ? `${user.name}, review your past commutes and receipts.` : 'Review your past commutes and receipts.'}
             </p>
           </div>
 

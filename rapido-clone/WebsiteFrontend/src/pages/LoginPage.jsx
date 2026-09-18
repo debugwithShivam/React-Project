@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import {
   ArrowRight,
   Eye,
@@ -14,6 +14,8 @@ import axios from 'axios'
 import API_URL from "../api/content";
 
 export default function LoginPage() {
+  const navigate = useNavigate();
+  const queryClinet = useQueryClient()
   const [role, setRole] = useState("rider");
   const [method, setMethod] = useState("email");
   const [showPassword, setShowPassword] = useState(false);
@@ -34,50 +36,65 @@ export default function LoginPage() {
   };
 
   const handleRoleChange = (newRole) => {
+    console.log("ROLE BUTTON CLICKED:", newRole);
     setRole(newRole);
-
-    // Reset method when switching role if you want
-    setMethod("mobile");
+    setMethod("email");
   };
 
-  const queryClint = useQueryClient()
+  const loginMutation = useMutation({
+    mutationFn: async () => {
+      console.log("ROLE AT LOGIN TIME:", role);
+      const identifier =
+        method === "email"
+          ? formData.email
+          : formData.Phone;
 
- const loginMutation = useMutation({
-  mutationFn: async () => {
-    const identifier =
-      method === "email"
-        ? formData.email
-        : formData.Phone;
+      const response = await axios.post(
+        `${API_URL}/auth/login`,
+        {
+          identifier,
+          password: formData.password,
+          role:
+            role === 'rider'
+              ? 'USER'
+              : role === 'captain'
+                ? 'DRIVER'
+                : 'ADMIN',
+        },
+        {
+          withCredentials: true
+        }
+      );;
 
-    const response = await axios.post(
-      `${API_URL}/auth/login`,
-      {
-        identifier,
-        password: formData.password,
-      },{withCredentials:true}
-    );
+      return response.data;
+    },
 
-    return response.data;
-  },
+    onSuccess: (data) => {
+      console.log("LOGIN SUCCESS:", data);
 
-  onSuccess: (data) => {
-    console.log("LOGIN SUCCESS:", data);
+      queryClinet.invalidateQueries({
+        queryKey: ["currentUser"],
+      });
 
-   
-  },
+      if (data?.user?.role === "ADMIN") {
+        navigate("/Admin", { replace: true });
+      } else {
+        navigate("/my-rides", { replace: true });
+      }
+    },
 
-  onError: (error) => {
-    console.error(
-      "LOGIN ERROR:",
-      error.response?.data || error.message
-    );
-  },
-});
-const handleSubmit = (e) => {
-  e.preventDefault();
+    onError: (error) => {
+      console.error(
+        "LOGIN ERROR:",
+        error.response?.data || error.message
+      );
+    },
+  });
+  const handleSubmit = (e) => {
+    e.preventDefault();
 
-  loginMutation.mutate();
-};
+    loginMutation.mutate();
+  };
 
   return (
     <div className="min-h-[85vh] bg-gradient-to-b from-yellow-50/40 via-white to-gray-50 flex items-center justify-center px-3 sm:px-4 py-8 sm:py-12 w-full">
@@ -104,27 +121,36 @@ const handleSubmit = (e) => {
 
         {/* ================= ROLE SWITCHER ================= */}
         <div className="p-4 sm:p-6 pb-0">
-          <div className="grid grid-cols-2 p-1 bg-gray-100 rounded-2xl">
+          <div className="grid grid-cols-3 p-1 bg-gray-100 rounded-2xl">
 
             {/* Rider */}
             <button
               type="button"
               onClick={() => handleRoleChange("rider")}
               className={`py-2 text-[11px] sm:text-xs font-bold rounded-xl transition-all ${role === "rider"
-                  ? "bg-white text-brand-dark shadow-sm"
-                  : "text-gray-500 hover:text-black"
+                ? "bg-white text-brand-dark shadow-sm"
+                : "text-gray-500 hover:text-black"
                 }`}
             >
               Rider / Commuter
             </button>
-
+            <button
+              type="button"
+              onClick={() => handleRoleChange("admin")}
+              className={`py-2 text-[11px] sm:text-xs font-bold rounded-xl transition-all ${role === "admin"
+                ? "bg-white text-brand-dark shadow-sm"
+                : "text-gray-500 hover:text-black"
+                }`}
+            >
+              Admin
+            </button>
             {/* Captain */}
             <button
               type="button"
               onClick={() => handleRoleChange("captain")}
               className={`py-2 text-[11px] sm:text-xs font-bold rounded-xl transition-all ${role === "captain"
-                  ? "bg-white text-brand-dark shadow-sm"
-                  : "text-gray-500 hover:text-black"
+                ? "bg-white text-brand-dark shadow-sm"
+                : "text-gray-500 hover:text-black"
                 }`}
             >
               Captain (Driver)
@@ -140,7 +166,11 @@ const handleSubmit = (e) => {
           <div className="text-center">
             <p className="text-sm font-bold text-brand-dark">
               Login as{" "}
-              {role === "rider" ? "Rider / Commuter" : "Captain / Driver"}
+              {role === "rider"
+                ? "Rider / Commuter"
+                : role === "captain"
+                  ? "Captain / Driver"
+                  : "Admin"}
             </p>
           </div>
 
@@ -157,14 +187,14 @@ const handleSubmit = (e) => {
 
             <div className="grid grid-cols-2 gap-1 p-1 bg-gray-100 rounded-xl">
 
-              
+
               {/* Email */}
               <button
                 type="button"
                 onClick={() => setMethod("email")}
                 className={`py-2 w-full border-2 rounded-lg text-[10px] sm:text-xs font-bold flex items-center justify-center gap-1 transition-all ${method === "email"
-                    ? "bg-white text-brand-dark shadow-sm"
-                    : "text-gray-500"
+                  ? "bg-white text-brand-dark shadow-sm"
+                  : "text-gray-500"
                   }`}
               >
                 <Mail className="w-3 h-3" />
@@ -176,14 +206,14 @@ const handleSubmit = (e) => {
                 type="button"
                 onClick={() => setMethod("phone")}
                 className={`py-2 w-full border-2 rounded-lg text-[10px] sm:text-xs font-bold flex items-center justify-center gap-1 transition-all ${method === "phone"
-                    ? "bg-white text-brand-dark shadow-sm"
-                    : "text-gray-500"
+                  ? "bg-white text-brand-dark shadow-sm"
+                  : "text-gray-500"
                   }`}
               >
                 <Phone className="w-3 h-3" />
                 Phone
               </button>
-              
+
 
             </div>
           </div>
@@ -196,7 +226,7 @@ const handleSubmit = (e) => {
             {method === "email" && (<div> <label className="block text-[11px] sm:text-xs font-bold text-gray-700 mb-1">
               Email Address </label>
 
-              
+
               <div className="relative">
                 <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
 
@@ -297,7 +327,12 @@ const handleSubmit = (e) => {
 
 
                 Login as{" "}
-                {role === "rider" ? "Rider" : "Captain"}
+                Login as{" "}
+                {role === "rider"
+                  ? "Rider"
+                  : role === "captain"
+                    ? "Captain"
+                    : "Admin"}
               </span>
 
               <ArrowRight className="w-4 h-4" />
@@ -321,8 +356,8 @@ const handleSubmit = (e) => {
                 type="button"
                 onClick={() => setRole("rider")}
                 className={`w-1/2 py-2 font-bold text-[10px] sm:text-[11px] rounded-lg border transition-colors active:scale-95 ${role === "rider"
-                    ? "bg-yellow-50 hover:bg-yellow-100 text-brand-dark border-yellow-200"
-                    : "bg-gray-50 text-gray-600 border-gray-200"
+                  ? "bg-yellow-50 hover:bg-yellow-100 text-brand-dark border-yellow-200"
+                  : "bg-gray-50 text-gray-600 border-gray-200"
                   }`}
               >
                 Login as Rider
@@ -332,8 +367,8 @@ const handleSubmit = (e) => {
                 type="button"
                 onClick={() => setRole("captain")}
                 className={`w-1/2 py-2 font-bold text-[10px] sm:text-[11px] rounded-lg border transition-colors active:scale-95 ${role === "captain"
-                    ? "bg-yellow-50 hover:bg-yellow-100 text-brand-dark border-yellow-200"
-                    : "bg-gray-100 hover:bg-gray-200 text-gray-800 border-gray-200"
+                  ? "bg-yellow-50 hover:bg-yellow-100 text-brand-dark border-yellow-200"
+                  : "bg-gray-100 hover:bg-gray-200 text-gray-800 border-gray-200"
                   }`}
               >
                 Login as Captain

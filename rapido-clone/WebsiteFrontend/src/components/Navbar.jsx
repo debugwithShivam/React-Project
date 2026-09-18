@@ -1,14 +1,56 @@
-import React, { useState } from 'react';
-import { Link, useLocation } from 'react-router-dom';
-import { Menu, X, Bike, ArrowRight, LayoutDashboard, Clock } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { Menu, X, ArrowRight, LogOut, UserCircle } from 'lucide-react';
 import logo from '../image/logo.png';
 import { useSiteContent } from '../context/SiteContentContext';
+import { useQuery } from '@tanstack/react-query';
+import axios from 'axios';
+import API_URL from '../api/content';
 
 export default function Navbar() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const location = useLocation();
+  const navigate = useNavigate();
   const { content } = useSiteContent();
   const navLinks = content.navigation;
+
+  const {
+  data,
+  isLoading,
+} = useQuery({
+  queryKey: ['currentUser'],
+  queryFn: async () => {
+    const response = await axios.get(
+      `${API_URL}/users/me`,
+      {
+        withCredentials: true,
+      }
+    );
+
+    return response.data;
+  },
+  retry: false,
+});
+
+const user = data?.success ? data.user : null;
+
+const handleLogout = async () => {
+  try {
+    await axios.post(
+      `${API_URL}/auth/logout`,
+      {},
+      {
+        withCredentials: true,
+      }
+    );
+  } catch (error) {
+    console.error('Logout error:', error);
+  } finally {
+    setMobileMenuOpen(false);
+    navigate('/');
+    window.location.reload();
+  }
+};
 
   const isActive = (path) => {
     if (path === '/' && location.pathname === '/') return true;
@@ -55,20 +97,41 @@ export default function Navbar() {
 
           {/* Right Action CTA Buttons */}
           <div className="hidden sm:flex items-center space-x-2">
-            <Link
-              to="/login"
-              className="px-3 py-2 text-xs font-semibold text-gray-700 hover:text-brand-dark transition-colors"
-            >
-              Log In
-            </Link>
-
-            <Link
-              to="/signup"
-              className="px-4 py-2 rounded-full text-xs font-bold bg-brand-yellow text-brand-dark hover:bg-brand-yellow-hover shadow-sm hover:shadow-md transition-all duration-200 flex items-center gap-1.5 group"
-            >
-              <span>Sign Up</span>
-              <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
-            </Link>
+            {user ? (
+              <div className="flex items-center gap-3">
+                <div className="flex items-center gap-2">
+                  <UserCircle className="w-8 h-8 text-brand-dark" />
+                  <div className="max-w-[150px] leading-tight">
+                    <p className="truncate text-xs font-bold text-brand-dark">{user.name}</p>
+                    <p className="truncate text-[10px] text-gray-500">{user.email || user.phone}</p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={handleLogout}
+                  className="flex items-center gap-1 rounded-full border border-gray-200 px-3 py-2 text-xs font-semibold text-gray-700 hover:bg-gray-50"
+                >
+                  <LogOut className="w-3.5 h-3.5" />
+                  Logout
+                </button>
+              </div>
+            ) : (
+              <>
+                <Link
+                  to="/login"
+                  className="px-3 py-2 text-xs font-semibold text-gray-700 hover:text-brand-dark transition-colors"
+                >
+                  Log In
+                </Link>
+                <Link
+                  to="/signup"
+                  className="px-4 py-2 rounded-full text-xs font-bold bg-brand-yellow text-brand-dark hover:bg-brand-yellow-hover shadow-sm hover:shadow-md transition-all duration-200 flex items-center gap-1.5 group"
+                >
+                  <span>Sign Up</span>
+                  <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
+                </Link>
+              </>
+            )}
           </div>
 
           {/* Mobile Actions: Book Ride Button & Hamburger Toggle */}
@@ -112,27 +175,49 @@ export default function Navbar() {
           </div>
 
           <div className="flex flex-col gap-2 pt-1">
-            <Link
-              to="/login"
-              onClick={() => setMobileMenuOpen(false)}
-              className="w-full text-center py-2.5 rounded-xl border border-gray-300 font-semibold text-gray-700 hover:bg-gray-50 text-xs"
-            >
-              Log In
-            </Link>
-            <Link
-              to="/signup"
-              onClick={() => setMobileMenuOpen(false)}
-              className="w-full text-center py-2.5 rounded-xl bg-brand-yellow font-bold text-brand-dark shadow-sm text-xs"
-            >
-              Sign Up (Get ₹50 Off First Ride)
-            </Link>
-            <Link
-              to="/signup?role=captain"
-              onClick={() => setMobileMenuOpen(false)}
-              className="w-full text-center py-2 text-xs font-semibold text-gray-500 hover:text-brand-dark"
-            >
-              Become a Captain Partner →
-            </Link>
+            {user ? (
+              <>
+                <div className="flex items-center gap-3 rounded-xl bg-gray-50 p-3">
+                  <UserCircle className="w-8 h-8 text-brand-dark" />
+                  <div className="min-w-0 leading-tight">
+                    <p className="truncate text-sm font-bold text-brand-dark">{user.name}</p>
+                    <p className="truncate text-xs text-gray-500">{user.email || user.phone}</p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={handleLogout}
+                  className="flex w-full items-center justify-center gap-2 rounded-xl border border-gray-300 py-2.5 text-xs font-semibold text-gray-700 hover:bg-gray-50"
+                >
+                  <LogOut className="w-4 h-4" />
+                  Logout
+                </button>
+              </>
+            ) : (
+              <>
+                <Link
+                  to="/login"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="w-full text-center py-2.5 rounded-xl border border-gray-300 font-semibold text-gray-700 hover:bg-gray-50 text-xs"
+                >
+                  Log In
+                </Link>
+                <Link
+                  to="/signup"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="w-full text-center py-2.5 rounded-xl bg-brand-yellow font-bold text-brand-dark shadow-sm text-xs"
+                >
+                  Sign Up (Get ₹50 Off First Ride)
+                </Link>
+                <Link
+                  to="/signup?role=captain"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="w-full text-center py-2 text-xs font-semibold text-gray-500 hover:text-brand-dark"
+                >
+                  Become a Captain Partner →
+                </Link>
+              </>
+            )}
           </div>
         </div>
       )}
