@@ -350,11 +350,7 @@ export async function registerUser({
 
 
 
-export const loginUser = async ({
-    identifier,
-    password,
-    role
-}) => {
+export const loginUser = async ({identifier,password,role}) => {
 
     if (!identifier || !password) {
         throw new Error(
@@ -362,28 +358,16 @@ export const loginUser = async ({
         );
     }
 
-
     const normalizedRole = normalizeRole(role);
-
-
     if (!['USER', 'DRIVER', 'ADMIN'].includes(normalizedRole)) {
         throw new Error('Invalid account type');
     }
 
-
-
-
-
     const normalizedIdentifier =
         normalizePhone(identifier);
 
-
     const isPhone =
         /^\d{10}$/.test(normalizedIdentifier);
-
-
-
-
 
     const [users] = await pool.query(
         `
@@ -428,22 +412,13 @@ export const loginUser = async ({
         );
     }
 
-
     const user = users[0];
-
-
-
-
 
     if (!user.is_active) {
         throw new Error(
             'Your account is inactive'
         );
     }
-
-
-
-
 
     const passwordMatched =
         await bcrypt.compare(
@@ -460,10 +435,6 @@ export const loginUser = async ({
         );
     }
 
-
-
-
-
     const accessToken =
         generateAccessToken({
             ...user,
@@ -476,10 +447,6 @@ export const loginUser = async ({
             ...user,
             role: normalizedRole
         });
-
-
-
-
 
     const refreshTokenHash =
         await bcrypt.hash(
@@ -507,10 +474,6 @@ export const loginUser = async ({
         ]
     );
 
-
-
-
-
     return {
         user: {
             id: user.id,
@@ -520,9 +483,7 @@ export const loginUser = async ({
             role: normalizedRole,
             profileImage: user.profile_image
         },
-
         accessToken,
-
         refreshToken
     };
 };

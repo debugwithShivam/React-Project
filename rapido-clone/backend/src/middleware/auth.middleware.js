@@ -5,7 +5,10 @@ import envConfig from '../config/envConfig.js';
 export const authenticateUser = (req, res, next) => {
     try {
 
-        const accessToken = req.cookies.accessToken;
+        const accessToken = req.cookies.accessToken ||
+    (req.headers.authorization?.startsWith('Bearer ')
+        ? req.headers.authorization.split(' ')[1]
+        : null);
 
         if (!accessToken) {
             return res.status(401).json({

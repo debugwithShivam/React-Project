@@ -3,10 +3,10 @@ import pool from '../config/DBconfig/database.js';
 
 const createAdmin = async () => {
   try {
-    const name = '';
-    const phone = '';
-    const email = '';
-    const password = '';
+    const name = 'shivam pandey';
+    const phone = '9811442710';
+    const email = 'sp5812070@gmail.com';
+    const password = 'shivam';
 
     const [existing] = await pool.query(
       `
