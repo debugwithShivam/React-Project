@@ -6,6 +6,7 @@ import VehicleCard from '../components/VehicleCard';
 import MapPreview from '../components/MapPreview';
 import RideStatusModal from '../components/RideStatusModal';
 import { useSiteContent } from '../context/SiteContentContext';
+import api from '../api/axios';
 
 export default function BookingPage() {
   const [searchParams] = useSearchParams();
@@ -38,6 +39,7 @@ export default function BookingPage() {
   const [promoCode, setPromoCode] = useState('');
   const [promoApplied, setPromoApplied] = useState(false);
   const [isBookingModalOpen, setIsBookingModalOpen] = useState(false);
+    const [isBooking, setIsBooking] = useState(false);
   const [showMobileMap, setShowMobileMap] = useState(true);
 
   // Sync if URL params change
@@ -70,12 +72,29 @@ export default function BookingPage() {
   const discount = promoApplied ? 25 : 0;
   const finalFare = Math.max(15, baseFare - discount);
 
-  const handleConfirmBooking = () => {
+  const handleConfirmBooking = async () => {
     if (!pickup || !dropoff) {
       alert('Please choose both pickup and dropoff locations.');
       return;
     }
-    setIsBookingModalOpen(true);
+    try {
+      setIsBooking(true);
+      await api.post('/rides', {
+        pickupAddress: pickup,
+        pickupLat: 0,
+        pickupLng: 0,
+        dropoffAddress: dropoff,
+        dropoffLat: 0,
+        dropoffLng: 0,
+        vehicleType: String(selectedVehicle.id || 'bike').toUpperCase() === 'BIKE' ? 'BIKE' : String(selectedVehicle.id || '').toUpperCase() === 'AUTO' ? 'AUTO' : 'CAB',
+        estimatedFare: finalFare,
+      });
+      setIsBookingModalOpen(true);
+    } catch (error) {
+      alert(error?.response?.data?.message || 'Unable to book this ride. Please login and try again.');
+    } finally {
+      setIsBooking(false);
+    }
   };
 
   return (
@@ -365,10 +384,11 @@ export default function BookingPage() {
               <button
                 type="button"
                 onClick={handleConfirmBooking}
+                disabled={isBooking}
                 className="w-full sm:w-auto px-6 sm:px-8 py-3.5 sm:py-4 bg-brand-yellow hover:bg-brand-yellow-hover text-brand-dark font-black rounded-2xl shadow-md transition-all duration-200 text-xs sm:text-sm flex items-center justify-center gap-2 hover:scale-105 active:scale-95"
               >
                 <span>
-                  {bookingMode === 'schedule' ? 'Schedule Booking for Later' : 'Confirm & Request Ride'}
+                  {isBooking ? 'Booking...' : bookingMode === 'schedule' ? 'Schedule Booking for Later' : 'Confirm & Request Ride'}
                 </span>
               </button>
             </div>

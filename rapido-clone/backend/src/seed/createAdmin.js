@@ -8,6 +8,8 @@ const createAdmin = async () => {
     const email = 'sp5812070@gmail.com';
     const password = 'shivam';
 
+    const passwordHash = await bcrypt.hash(password, 12);
+
     const [existing] = await pool.query(
       `
       SELECT id
@@ -19,11 +21,26 @@ const createAdmin = async () => {
     );
 
     if (existing.length > 0) {
-      console.log('Admin already exists.');
+      await pool.query(
+        `
+        UPDATE users
+        SET
+          name = ?,
+          phone = ?,
+          email = ?,
+          password_hash = ?,
+          role = 'ADMIN',
+          is_active = 1
+        WHERE id = ?
+        `,
+        [name, phone, email, passwordHash, existing[0].id]
+      );
+
+      console.log('Admin account updated successfully.');
+      console.log('Email:', email);
+      console.log('Password:', password);
       process.exit(0);
     }
-
-    const passwordHash = await bcrypt.hash(password, 12);
 
     await pool.query(
       `

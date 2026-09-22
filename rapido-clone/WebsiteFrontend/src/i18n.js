@@ -13,7 +13,7 @@ const translations = {
       noRecords: 'No records found.',
       saveChanges: 'Save Changes',
       language: 'Language',
-      nav: { Dashboard: 'Dashboard', AllBookRide: 'All Booked Rides', Captains: 'Captains', CitiesZones: 'Cities & Zones', CouponsOffers: 'Coupons & Offers', Customers: 'Customers', DriverDocuments: 'Driver Documents', Drivers: 'Drivers', DriverRideHistory: 'Driver Ride History', Notifications: 'Notifications', Payments: 'Payments', Pricing: 'Pricing', Reports: 'Reports', Revenue: 'Revenue', Refunds: 'Refunds', Reviews: 'Reviews', Rides: 'Rides', RiderHistory: 'Rider History', ScheduledCabs: 'Scheduled Cabs', CustomCabs: 'Custom Cab', Settings: 'Settings', StaffRoles: 'Staff & Roles', Support: 'Support', Wallet: 'Wallet', Password: 'Password' },
+      nav: { Dashboard: 'Dashboard', AllBookRide: 'All Booked Rides', Captains: 'Captains', CitiesZones: 'Cities & Zones', CouponsOffers: 'Coupons & Offers', Customers: 'Customers', DriverDocuments: 'Driver Documents', Drivers: 'Drivers', DriverRideHistory: 'Driver Ride History', Notifications: 'Notifications', Payments: 'Payments', Pricing: 'Pricing', Reports: 'Reports', Revenue: 'Revenue', Refunds: 'Refunds', Reviews: 'Reviews', Rides: 'Rides', RiderHistory: 'Rider History', ScheduledCabs: 'Scheduled Cabs', CustomCabs: 'Custom Cab', Settings: 'Settings', StaffRoles: 'Staff & Roles', Support: 'Support', Wallet: 'Wallet', Password: 'Password', Payouts: 'Payouts', DynamicPages: 'Dynamic Pages', SosAlerts: 'SOS Alerts' },
       status: { Active: 'Active', Completed: 'Completed', Approved: 'Approved', Paid: 'Paid', Resolved: 'Resolved', Pending: 'Pending', Scheduled: 'Scheduled', Ongoing: 'Ongoing', Rejected: 'Rejected', Inactive: 'Inactive' }
     }
   },

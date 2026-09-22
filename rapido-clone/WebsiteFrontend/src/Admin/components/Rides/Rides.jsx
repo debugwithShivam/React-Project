@@ -1,76 +1,126 @@
 import React, { useState } from 'react';
-import { Navigation, Phone, ShieldAlert } from 'lucide-react';
-import { Initials, Screen, Tone } from '../adminUi';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { Search, RefreshCw, XCircle } from 'lucide-react';
+import { Screen, Tone } from '../adminUi';
+import api from '../../../api/axios';
 
-const liveRides = [
-  { id: 'SW-10428', customer: 'Aarav Mehta', captain: 'Ramesh Kumar', vehicle: 'KA-03-AB-2211', from: 'Indiranagar', to: 'Koramangala', progress: 62, status: 'Ongoing', step: 3, fare: '₹84' },
-  { id: 'SW-10424', customer: 'Nikhil Jain', captain: 'Deepak Rao', vehicle: 'KA-05-CD-8821', from: 'Jayanagar', to: 'Lalbagh', progress: 28, status: 'Ongoing', step: 2, fare: '₹78' },
-  { id: 'SW-10421', customer: 'Sana Iqbal', captain: '-', vehicle: '-', from: 'HSR', to: 'Bellandur', progress: 8, status: 'Pending', step: 1, fare: '₹112' }
-];
+const STATUSES = ['', 'SCHEDULED', 'SEARCHING', 'ACCEPTED', 'ARRIVING', 'STARTED', 'COMPLETED', 'CANCELLED'];
 
-const steps = ['Requested', 'Assigned', 'Pickup', 'On trip', 'Drop'];
+const fmt = (d) => (d ? new Date(d).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' }) : '—');
 
 export default function Rides() {
-  const [active, setActive] = useState(liveRides[0]);
+  const [status, setStatus] = useState('');
+  const [search, setSearch] = useState('');
+  const qc = useQueryClient();
+
+  const { data: rides = [], isLoading, refetch } = useQuery({
+    queryKey: ['admin-rides', status, search],
+    queryFn: async () =>
+      (await api.get('/admin/rides', { params: { status: status || undefined, search: search || undefined, limit: 200 } })).data.rides,
+    refetchInterval: 20000,
+  });
+
+  const cancelRide = useMutation({
+    mutationFn: async (id) => {
+      const reason = prompt('Cancellation reason:') || 'Cancelled by admin';
+      return (await api.patch(`/admin/rides/${id}/cancel`, { reason })).data;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['admin-rides'] }),
+  });
 
   return (
-    <Screen className="bg-zinc-950 text-white">
-      <div className="mb-5 flex items-center justify-between">
+    <Screen className="bg-amber-50/60">
+      <div className="mb-5 flex flex-wrap items-end justify-between gap-3">
         <div>
-          <p className="text-xs font-black uppercase tracking-[0.2em] text-brand-yellow">Live operations</p>
-          <h1 className="text-3xl font-black">Ride control room</h1>
+          <p className="text-xs font-black uppercase tracking-[0.18em] text-amber-700">Live ops</p>
+          <h1 className="text-3xl font-black text-zinc-900">All rides</h1>
         </div>
-        <span className="rounded-full bg-emerald-500/20 px-3 py-1 text-xs font-bold text-emerald-300">{liveRides.filter((ride) => ride.status === 'Ongoing').length} trips in motion</span>
+        <div className="flex gap-2">
+          <button onClick={() => refetch()} className="inline-flex items-center gap-2 rounded-xl border border-amber-200 bg-white px-3 py-2 text-sm font-bold"><RefreshCw className="h-4 w-4" />Refresh</button>
+        </div>
       </div>
 
-      <div className="grid gap-5 xl:grid-cols-[360px_1fr]">
-        <aside className="space-y-3">
-          {liveRides.map((ride) => (
-            <button key={ride.id} type="button" onClick={() => setActive(ride)} className={`w-full rounded-2xl border p-4 text-left ${active.id === ride.id ? 'border-brand-yellow bg-white/10' : 'border-white/10 bg-white/5'}`}>
-              <div className="flex items-center justify-between">
-                <p className="font-black">{ride.id}</p>
-                <Tone value={ride.status} />
-              </div>
-              <p className="mt-2 text-sm text-zinc-300">{ride.from} → {ride.to}</p>
-              <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-white/10">
-                <div className="h-full bg-brand-yellow" style={{ width: `${ride.progress}%` }} />
-              </div>
-            </button>
-          ))}
-        </aside>
+      <div className="mb-4 flex flex-wrap gap-2">
+        {STATUSES.map((s) => (
+          <button
+            key={s || 'ALL'}
+            onClick={() => setStatus(s)}
+            className={`rounded-full px-4 py-1.5 text-xs font-bold ${status === s ? 'bg-amber-600 text-white' : 'bg-white text-zinc-600 border border-amber-100'}`}
+          >
+            {s || 'All'}
+          </button>
+        ))}
+        <div className="relative ml-auto">
+          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-400" />
+          <input
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Search rider / address…"
+            className="rounded-xl border border-amber-200 bg-white py-2 pl-9 pr-4 text-sm outline-none"
+          />
+        </div>
+      </div>
 
-        <section className="rounded-3xl border border-white/10 bg-gradient-to-br from-zinc-900 to-zinc-950 p-6">
-          <div className="flex flex-wrap items-start justify-between gap-4">
-            <div className="flex items-center gap-3">
-              <Initials name={active.customer} />
-              <div>
-                <p className="text-xl font-black">{active.customer}</p>
-                <p className="text-sm text-zinc-400">Captain {active.captain} · {active.vehicle}</p>
-              </div>
-            </div>
-            <div className="flex gap-2">
-              <button type="button" className="rounded-xl bg-white/10 px-3 py-2 text-xs font-bold"><Phone className="mr-1 inline h-3 w-3" /> Call</button>
-              <button type="button" className="rounded-xl bg-rose-500/20 px-3 py-2 text-xs font-bold text-rose-200"><ShieldAlert className="mr-1 inline h-3 w-3" /> SOS</button>
-            </div>
-          </div>
-
-          <div className="mt-8 grid gap-3 md:grid-cols-5">
-            {steps.map((step, index) => (
-              <div key={step} className={`rounded-2xl px-3 py-3 text-center text-xs font-black ${index < active.step ? 'bg-brand-yellow text-zinc-900' : 'bg-white/5 text-zinc-400'}`}>
-                {step}
-              </div>
-            ))}
-          </div>
-
-          <div className="mt-8 overflow-hidden rounded-3xl border border-dashed border-white/20 bg-[linear-gradient(180deg,rgba(249,201,51,0.08),transparent)] p-6">
-            <p className="flex items-center gap-2 text-sm font-bold text-brand-yellow"><Navigation className="h-4 w-4" /> Live route</p>
-            <p className="mt-3 text-2xl font-black">{active.from} → {active.to}</p>
-            <p className="mt-2 text-sm text-zinc-400">Fare {active.fare} · trip progress {active.progress}%</p>
-            <div className="mt-6 h-40 rounded-2xl bg-[radial-gradient(circle_at_30%_40%,#F9C93333,transparent_35%),radial-gradient(circle_at_70%_60%,#22c55e33,transparent_32%)]">
-              <div className="flex h-full items-center justify-center text-xs font-bold uppercase tracking-[0.2em] text-zinc-500">City map overlay</div>
-            </div>
-          </div>
-        </section>
+      <div className="overflow-hidden rounded-3xl border border-amber-100 bg-white shadow-sm">
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead className="bg-amber-50 text-xs font-black uppercase text-amber-900">
+              <tr>
+                <th className="px-4 py-3 text-left">#</th>
+                <th className="px-4 py-3 text-left">Rider</th>
+                <th className="px-4 py-3 text-left">Driver</th>
+                <th className="px-4 py-3 text-left">Route</th>
+                <th className="px-4 py-3 text-left">Vehicle</th>
+                <th className="px-4 py-3 text-left">Status</th>
+                <th className="px-4 py-3 text-right">Fare</th>
+                <th className="px-4 py-3 text-left">Created</th>
+                <th className="px-4 py-3 text-right">Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              {isLoading && <tr><td colSpan={9} className="px-4 py-8 text-center text-zinc-400">Loading…</td></tr>}
+              {!isLoading && rides.length === 0 && <tr><td colSpan={9} className="px-4 py-8 text-center text-zinc-400">No rides found.</td></tr>}
+              {rides.map((r) => (
+                <tr key={r.id} className="border-t border-amber-50 hover:bg-amber-50/40">
+                  <td className="px-4 py-3 font-black">#{r.id}</td>
+                  <td className="px-4 py-3">
+                    <p className="font-bold">{r.rider_name}</p>
+                    <p className="text-xs text-zinc-500">{r.rider_phone}</p>
+                  </td>
+                  <td className="px-4 py-3">
+                    {r.driver_name ? (
+                      <>
+                        <p className="font-bold">{r.driver_name}</p>
+                        <p className="text-xs text-zinc-500">{r.vehicle_plate}</p>
+                      </>
+                    ) : <span className="text-xs text-zinc-400">—</span>}
+                  </td>
+                  <td className="max-w-xs px-4 py-3 text-xs">
+                    <p className="truncate">{r.pickup_address}</p>
+                    <p className="truncate text-zinc-500">→ {r.dropoff_address}</p>
+                  </td>
+                  <td className="px-4 py-3"><span className="rounded bg-zinc-100 px-2 py-0.5 text-xs font-bold">{r.vehicle_type}</span></td>
+                  <td className="px-4 py-3"><Tone value={r.status === 'COMPLETED' ? 'Completed' : r.status === 'CANCELLED' ? 'Cancelled' : r.status === 'STARTED' ? 'Ongoing' : r.status === 'SEARCHING' ? 'Pending' : r.status === 'SCHEDULED' ? 'Scheduled' : 'Live'} /></td>
+                  <td className="px-4 py-3 text-right">
+                    <p className="font-black">₹{Number(r.final_fare || r.estimated_fare || 0).toFixed(0)}</p>
+                    {r.discount_amount > 0 && <p className="text-xs text-emerald-600">−₹{r.discount_amount}</p>}
+                  </td>
+                  <td className="px-4 py-3 text-xs text-zinc-500">{fmt(r.created_at)}</td>
+                  <td className="px-4 py-3 text-right">
+                    {!['COMPLETED', 'CANCELLED'].includes(r.status) && (
+                      <button
+                        onClick={() => cancelRide.mutate(r.id)}
+                        className="inline-flex items-center gap-1 rounded-lg bg-rose-600 px-2 py-1 text-xs font-bold text-white hover:bg-rose-700"
+                      >
+                        <XCircle className="h-3 w-3" />Cancel
+                      </button>
+                    )}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </div>
     </Screen>
   );

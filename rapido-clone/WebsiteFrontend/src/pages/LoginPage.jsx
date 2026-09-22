@@ -72,6 +72,10 @@ export default function LoginPage() {
     onSuccess: (data) => {
       console.log("LOGIN SUCCESS:", data);
 
+      if (data.accessToken) {
+        localStorage.setItem('access_token', data.accessToken);
+      }
+
       queryClinet.invalidateQueries({
         queryKey: ["currentUser"],
       });

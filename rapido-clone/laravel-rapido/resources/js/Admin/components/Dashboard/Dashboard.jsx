@@ -1,13 +1,8 @@
 import React from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { Activity, Bike, Headset, IndianRupee, MapPin, TrendingUp, Users } from 'lucide-react';
 import { Screen } from '../adminUi';
-
-const kpis = [
-  { label: 'Today GMV', value: '₹8.42L', note: '+18.4% vs yesterday', icon: IndianRupee, tone: 'bg-brand-dark text-brand-yellow' },
-  { label: 'Rides today', value: '248', note: '214 completed · 18 live', icon: Bike, tone: 'bg-yellow-100 text-amber-800' },
-  { label: 'Captains online', value: '386', note: '78% city coverage', icon: Users, tone: 'bg-emerald-100 text-emerald-800' },
-  { label: 'Open tickets', value: '48', note: '6 urgent in queue', icon: Headset, tone: 'bg-rose-100 text-rose-800' }
-];
+import api from '../../../api/client';
 
 const hours = [
   { t: '6a', v: 18 }, { t: '8a', v: 62 }, { t: '10a', v: 48 }, { t: '12p', v: 70 },
@@ -30,6 +25,17 @@ const cities = [
 ];
 
 export default function Dashboard() {
+  const { data } = useQuery({
+    queryKey: ['admin-dashboard'],
+    queryFn: async () => (await api.get('/admin/dashboard')).data.stats,
+  });
+  const stats = data || {};
+  const kpis = [
+    { label: 'Today GMV', value: `₹${Number(stats.revenue || 0).toLocaleString('en-IN')}`, note: `${stats.completed_rides || 0} completed rides`, icon: IndianRupee, tone: 'bg-brand-dark text-brand-yellow' },
+    { label: 'Rides today', value: stats.rides_today || 0, note: `${stats.active_rides || 0} live · ${stats.cancelled_rides || 0} cancelled`, icon: Bike, tone: 'bg-yellow-100 text-amber-800' },
+    { label: 'Captains online', value: stats.online_drivers || 0, note: `${stats.approved_drivers || 0} approved`, icon: Users, tone: 'bg-emerald-100 text-emerald-800' },
+    { label: 'Open tickets', value: stats.open_complaints || 0, note: `${stats.pending_payouts || 0} payout requests pending`, icon: Headset, tone: 'bg-rose-100 text-rose-800' },
+  ];
   return (
     <Screen className="bg-[radial-gradient(circle_at_top_left,_#FEF3C7_0%,_#F4F4F5_42%)]">
       <div className="mb-6 flex flex-wrap items-end justify-between gap-3">

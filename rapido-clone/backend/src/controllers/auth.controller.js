@@ -143,6 +143,8 @@ export const Authcontroller = async (req, res) => {
                     ? 'Driver application submitted successfully'
                     : 'User registered successfully',
             user,
+            accessToken,
+            refreshToken,
         });
 
     } catch (error) {
@@ -221,16 +223,17 @@ export const login = async (req, res) => {
 // ===============================
 export const refreshToken = async (req, res) => {
     try {
-        const refreshToken = req.cookies.refreshToken;
+        const incomingRefreshToken =
+            req.cookies?.refreshToken || req.body?.refreshToken;
 
-        if (!refreshToken) {
+        if (!incomingRefreshToken) {
             return res.status(401).json({
                 success: false,
                 message: 'Refresh token is required',
             });
         }
 
-        const result = await refreshUserToken(refreshToken);
+        const result = await refreshUserToken(incomingRefreshToken);
 
         res.cookie('accessToken', result.accessToken, {
             httpOnly: true,
@@ -249,6 +252,8 @@ export const refreshToken = async (req, res) => {
         return res.status(200).json({
             success: true,
             message: 'Token refreshed successfully',
+            accessToken: result.accessToken,
+            refreshToken: result.refreshToken,
         });
 
     } catch (error) {
@@ -306,28 +311,33 @@ export const logout = async (req, res) => {
 // ===============================
 export const forgotPassword = async (req, res) => {
     try {
-        const { email } = req.body;
+        const { email, phone } = req.body;
 
-        if (!email) {
+        if (!email && !phone) {
             return res.status(400).json({
                 success: false,
-                message: 'Email is required',
+                message: 'Email or phone is required',
             });
         }
 
-        const result = await requestPasswordReset(
-            email.trim().toLowerCase()
-        );
-
-        return res.status(200).json({
-            success: true,
-            message: result.message,
+        const result = await requestPasswordReset({
+            email: email ? String(email).trim().toLowerCase() : null,
+            phone: phone ? String(phone).trim() : null,
         });
 
+        // Dev convenience: include resetToken in response when not in production.
+        // In production, this must be emailed/SMS'd to the user instead.
+        const isProd = process.env.NODE_ENV === 'production';
+        return res.status(200).json({
+            success: true,
+            message:
+                'If an account exists with these details, a reset link has been sent.',
+            ...(isProd ? {} : { resetToken: result.resetToken }),
+        });
     } catch (error) {
         console.error('FORGOT PASSWORD ERROR:', error);
 
-        return res.status(500).json({
+        return res.status(400).json({
             success: false,
             message: error.message || 'Password reset request failed',
         });
@@ -340,28 +350,26 @@ export const forgotPassword = async (req, res) => {
 // ===============================
 export const resetPassword = async (req, res) => {
     try {
-        const {
-            token,
-            password,
-        } = req.body;
+        const { token, password, newPassword } = req.body;
 
-        if (!token || !password) {
+        const finalPassword = password || newPassword;
+
+        if (!token || !finalPassword) {
             return res.status(400).json({
                 success: false,
                 message: 'Token and password are required',
             });
         }
 
-        const result = await resetUserPassword(
+        await resetUserPassword({
             token,
-            password
-        );
+            newPassword: finalPassword,
+        });
 
         return res.status(200).json({
             success: true,
-            message: result.message,
+            message: 'Password reset successfully',
         });
-
     } catch (error) {
         console.error('RESET PASSWORD ERROR:', error);
 

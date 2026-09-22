@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { Mail, Phone, ShieldAlert } from 'lucide-react';
 import { Initials, Screen, Tone } from '../adminUi';
+import api from '../../../api/client';
 
 const customers = [
   { name: 'Aarav Mehta', phone: '+91 90000 11122', email: 'aarav@example.com', rides: 42, spend: '₹8,420', last: 'Today · Bike', status: 'Active', flag: false },
@@ -11,7 +13,21 @@ const customers = [
 ];
 
 export default function Customers() {
-  const [selected, setSelected] = useState(customers[0]);
+  const { data: apiCustomers = [] } = useQuery({
+    queryKey: ['admin-customers'],
+    queryFn: async () => (await api.get('/admin/users', { params: { role: 'USER' } })).data.users,
+  });
+  const customerRows = apiCustomers.length ? apiCustomers.map((customer) => ({
+    name: customer.name,
+    phone: customer.phone,
+    email: customer.email || 'No email',
+    rides: customer.rides_count || 0,
+    spend: `₹${Number(customer.wallet_balance || 0).toLocaleString('en-IN')}`,
+    last: 'Sawaari rider',
+    status: customer.is_active ? 'Active' : 'Inactive',
+    flag: false,
+  })) : customers;
+  const [selected, setSelected] = useState(customerRows[0]);
 
   return (
     <Screen className="bg-violet-50/70">
@@ -22,7 +38,7 @@ export default function Customers() {
 
       <div className="grid gap-5 lg:grid-cols-[1.1fr_0.9fr]">
         <div className="overflow-hidden rounded-3xl border border-violet-100 bg-white shadow-sm">
-          {customers.map((customer) => (
+          {customerRows.map((customer) => (
             <button key={customer.email} type="button" onClick={() => setSelected(customer)} className={`flex w-full items-center gap-3 border-b border-violet-50 px-4 py-3 text-left hover:bg-violet-50 ${selected.email === customer.email ? 'bg-violet-50' : ''}`}>
               <Initials name={customer.name} className="bg-violet-700 text-white" />
               <div className="min-w-0 flex-1">

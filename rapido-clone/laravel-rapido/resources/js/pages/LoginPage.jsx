@@ -54,7 +54,16 @@ export default function LoginPage() {
 
     setLoading(true);
     try {
-      const authUser = await login(formData.identifier.trim(), formData.password);
+      const roleMap = {
+        rider: "USER",
+        captain: "DRIVER",
+        admin: "ADMIN",
+      };
+      const authUser = await login(
+        formData.identifier.trim(),
+        formData.password,
+        roleMap[role]
+      );
       setSuccessMessage("Login successful! Redirecting...");
 
       setTimeout(() => {
@@ -109,7 +118,7 @@ export default function LoginPage() {
 
         {/* ================= ROLE SWITCHER ================= */}
         <div className="p-4 sm:p-6 pb-0">
-          <div className="grid grid-cols-2 p-1 bg-gray-100 rounded-2xl">
+          <div className="grid grid-cols-3 p-1 bg-gray-100 rounded-2xl">
             {/* Rider */}
             <button
               type="button"
@@ -134,6 +143,19 @@ export default function LoginPage() {
               }`}
             >
               Captain (Driver)
+            </button>
+
+            {/* Admin */}
+            <button
+              type="button"
+              onClick={() => handleRoleChange("admin")}
+              className={`py-2 text-[11px] sm:text-xs font-bold rounded-xl transition-all ${
+                role === "admin"
+                  ? "bg-white text-brand-dark shadow-sm"
+                  : "text-gray-500 hover:text-black"
+              }`}
+            >
+              Admin
             </button>
           </div>
         </div>
@@ -237,7 +259,13 @@ export default function LoginPage() {
               ) : (
                 <>
                   <span>
-                    Login as {role === "rider" ? "Rider" : "Captain"}
+                    Login as {
+                      role === "rider"
+                        ? "Rider"
+                        : role === "captain"
+                          ? "Captain"
+                          : "Admin"
+                    }
                   </span>
                   <ArrowRight className="w-4 h-4" />
                 </>
@@ -254,10 +282,10 @@ export default function LoginPage() {
             <div className="grid grid-cols-2 gap-2">
               <button
                 type="button"
-                onClick={() => fillQuickLogin("sp5812070@gmail.com", "shivam", "rider")}
+                onClick={() => fillQuickLogin("sp5812070@gmail.com", "shivam", "admin")}
                 className="py-2 px-2 font-bold text-[10px] rounded-lg border bg-yellow-50 hover:bg-yellow-100 text-brand-dark border-yellow-200 transition-colors text-center"
               >
-                Super Admin (Shivam)
+                Super Admin
               </button>
 
               <button
@@ -265,7 +293,7 @@ export default function LoginPage() {
                 onClick={() => fillQuickLogin("harshpandey2005@gmail.com", "password", "rider")}
                 className="py-2 px-2 font-bold text-[10px] rounded-lg border bg-gray-50 hover:bg-gray-100 text-gray-800 border-gray-200 transition-colors text-center"
               >
-                Rider User (Harsh)
+                Rider Use
               </button>
             </div>
           </div>

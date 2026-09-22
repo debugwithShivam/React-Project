@@ -3,141 +3,173 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use App\Models\Ride;
-use App\Models\User;
+use App\Services\Fare;
+use App\Services\Matching;
+use App\Services\Ride as RideService;
 use Illuminate\Http\Request;
+use Throwable;
 
 class RideController extends Controller
 {
-    /**
-     * Estimate fare for different vehicle categories
-     */
-    public function estimate(Request $request)
+    private function fail(Throwable $e, int $status = 400)
     {
-        $distanceKm = floatval($request->distance ?? 6.4);
-
-        $fares = [
-            'bike' => [
-                'name' => 'Bike Taxi',
-                'base' => 38,
-                'total' => round(38 + ($distanceKm * 9)),
-                'eta' => '2-4 mins',
-            ],
-            'auto' => [
-                'name' => 'City Auto',
-                'base' => 59,
-                'total' => round(59 + ($distanceKm * 14)),
-                'eta' => '3-5 mins',
-            ],
-            'cab_mini' => [
-                'name' => 'Cab Mini',
-                'base' => 115,
-                'total' => round(115 + ($distanceKm * 18)),
-                'eta' => '4-6 mins',
-            ],
-            'cab_premium' => [
-                'name' => 'Cab Prime Sedan',
-                'base' => 155,
-                'total' => round(155 + ($distanceKm * 22)),
-                'eta' => '5-7 mins',
-            ],
-        ];
-
-        return response()->json([
-            'success' => true,
-            'distance_km' => $distanceKm,
-            'estimates' => $fares,
-        ]);
+        return response()->json(['success' => false, 'message' => $e->getMessage()], $status);
     }
 
-    /**
-     * Book a new ride
-     */
-    public function book(Request $request)
+    public function fareEstimate(Request $request)
     {
-        $request->validate([
-            'pickup_title' => 'required|string',
-            'drop_title' => 'required|string',
-            'vehicle_type' => 'required|string',
-            'fare' => 'required|numeric',
-        ]);
+        $q = $request->query();
+        if (empty($q['pickupLat']) || empty($q['pickupLng']) || empty($q['dropoffLat']) || empty($q['dropoffLng'])) {
+            return response()->json(['success' => false, 'message' => 'Coordinates required'], 400);
+        }
+        if (! empty($q['vehicleType'])) {
+            $est = Fare::calculate($q['vehicleType'], $q['pickupLat'], $q['pickupLng'], $q['dropoffLat'], $q['dropoffLng']);
 
-        $user = $request->user();
+            return response()->json(['success' => true, 'estimate' => $est]);
+        }
+        $estimates = Fare::estimateAll($q['pickupLat'], $q['pickupLng'], $q['dropoffLat'], $q['dropoffLng']);
 
-        // Find available driver or assign null/first driver
-        $driver = User::where('role', 'DRIVER')->where('is_active', true)->first();
-
-        $ride = Ride::create([
-            'user_id' => $user->id,
-            'driver_id' => $driver ? $driver->id : null,
-            'pickup_title' => $request->pickup_title,
-            'pickup_address' => $request->pickup_address ?? $request->pickup_title,
-            'drop_title' => $request->drop_title,
-            'drop_address' => $request->drop_address ?? $request->drop_title,
-            'vehicle_type' => $request->vehicle_type,
-            'distance' => $request->distance ?? '6.4 km',
-            'duration' => $request->duration ?? '18 mins',
-            'fare' => $request->fare,
-            'otp' => (string) rand(1000, 9999),
-            'status' => 'ACCEPTED',
-            'payment_method' => $request->payment_method ?? 'WALLET',
-        ]);
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Captain assigned! Ride booked successfully.',
-            'ride' => $ride->load('driver'),
-        ], 201);
+        return response()->json(['success' => true, 'estimates' => $estimates]);
     }
 
-    /**
-     * Get user rides history
-     */
+    public function nearbyVehicles(Request $request)
+    {
+        $lat = $request->query('lat');
+        $lng = $request->query('lng');
+        if ($lat === null || $lng === null) {
+            return response()->json(['success' => false, 'message' => 'lat,lng required'], 400);
+        }
+        $radiusKm = (float) $request->query('radiusKm', 5);
+        $vehicleType = $request->query('vehicleType');
+        $drivers = Matching::findNearbyDrivers($lat, $lng, $radiusKm, $vehicleType, 100);
+
+        $counts = [];
+        foreach ($drivers as $d) {
+            $k = strtoupper((string) ($d->vehicle_type ?? $d->vt_code ?? 'OTHER'));
+            $counts[$k] = ($counts[$k] ?? 0) + 1;
+        }
+
+        return response()->json(['success' => true, 'drivers' => $drivers, 'counts' => (object) $counts, 'total' => count($drivers)]);
+    }
+
+    public function store(Request $request)
+    {
+        $b = $request->all();
+        if (empty($b['pickupAddress']) || empty($b['dropoffAddress']) || empty($b['vehicleType'])) {
+            return response()->json(['success' => false, 'message' => 'pickupAddress, dropoffAddress, vehicleType required'], 400);
+        }
+        try {
+            $ride = RideService::create([
+                'userId' => $request->user()->id,
+                'pickupAddress' => $b['pickupAddress'],
+                'pickupLat' => $b['pickupLat'] ?? null,
+                'pickupLng' => $b['pickupLng'] ?? null,
+                'dropoffAddress' => $b['dropoffAddress'],
+                'dropoffLat' => $b['dropoffLat'] ?? null,
+                'dropoffLng' => $b['dropoffLng'] ?? null,
+                'vehicleType' => $b['vehicleType'],
+                'estimatedFare' => $b['estimatedFare'] ?? null,
+                'paymentMethod' => $b['paymentMethod'] ?? 'CASH',
+                'couponCode' => $b['couponCode'] ?? null,
+                'scheduledAt' => $b['scheduledAt'] ?? null,
+            ]);
+
+            return response()->json(['success' => true, 'ride' => $ride], 201);
+        } catch (Throwable $e) {
+            return $this->fail($e);
+        }
+    }
+
     public function myRides(Request $request)
     {
-        $user = $request->user();
+        $rides = RideService::forUser($request->user()->id, $request->query('status'), (int) $request->query('limit', 50));
 
-        $rides = Ride::where('user_id', $user->id)
-            ->orWhere('driver_id', $user->id)
-            ->with(['driver', 'user'])
-            ->orderBy('created_at', 'desc')
-            ->get();
-
-        return response()->json([
-            'success' => true,
-            'rides' => $rides,
-        ]);
+        return response()->json(['success' => true, 'rides' => $rides]);
     }
 
-    /**
-     * Cancel a ride
-     */
-    public function cancel(Request $request, $id)
+    public function active(Request $request)
     {
-        $ride = Ride::findOrFail($id);
-        $ride->status = 'CANCELLED';
-        $ride->save();
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Ride cancelled.',
-            'ride' => $ride,
-        ]);
+        return response()->json(['success' => true, 'ride' => RideService::activeForUser($request->user()->id)]);
     }
 
-    /**
-     * Submit rating
-     */
-    public function rate(Request $request, $id)
+    public function show(Request $request, int $id)
     {
-        $ride = Ride::findOrFail($id);
-        $ride->rating = $request->rating ?? 5;
-        $ride->save();
+        $ride = RideService::getById($id);
+        if (! $ride) {
+            return response()->json(['success' => false, 'message' => 'Ride not found'], 404);
+        }
+        if ((int) $ride->user_id !== $request->user()->id && $request->user()->role !== 'ADMIN') {
+            $driver = \App\Services\Driver::getByUserId($request->user()->id);
+            if (! $driver || (int) $driver->id !== (int) $ride->driver_id) {
+                return response()->json(['success' => false, 'message' => 'Forbidden'], 403);
+            }
+        }
 
-        return response()->json([
-            'success' => true,
-            'message' => 'Thank you for your rating!',
-            'ride' => $ride,
-        ]);
+        return response()->json(['success' => true, 'ride' => $ride]);
+    }
+
+    public function receipt(Request $request, int $id)
+    {
+        try {
+            return response()->json(array_merge(['success' => true], RideService::receipt($id, $request->user()->id)));
+        } catch (Throwable $e) {
+            return $this->fail($e);
+        }
+    }
+
+    public function events(int $id)
+    {
+        return response()->json(['success' => true, 'events' => RideService::events($id)]);
+    }
+
+    public function contactDriver(Request $request, int $id)
+    {
+        try {
+            return response()->json(array_merge(['success' => true], RideService::contactDriver($id, $request->user()->id)));
+        } catch (Throwable $e) {
+            return $this->fail($e);
+        }
+    }
+
+    public function share(Request $request, int $id)
+    {
+        try {
+            return response()->json(array_merge(['success' => true], RideService::shareLink($id, $request->user()->id)));
+        } catch (Throwable $e) {
+            return $this->fail($e);
+        }
+    }
+
+    public function cancel(Request $request, int $id)
+    {
+        try {
+            $result = RideService::cancel($id, $request->user()->id, $request->input('reason'));
+
+            return response()->json(array_merge(['success' => true], $result));
+        } catch (Throwable $e) {
+            return $this->fail($e);
+        }
+    }
+
+    public function sos(Request $request, int $id)
+    {
+        try {
+            $result = RideService::triggerSos($id, $request->user()->id, $request->input('lat'), $request->input('lng'));
+
+            return response()->json(array_merge(['success' => true], $result), 201);
+        } catch (Throwable $e) {
+            return $this->fail($e);
+        }
+    }
+
+    public function pay(Request $request, int $id)
+    {
+        try {
+            $result = RideService::pay($id, $request->user()->id, (string) $request->input('method'));
+
+            return response()->json(array_merge(['success' => true], $result));
+        } catch (Throwable $e) {
+            return $this->fail($e);
+        }
     }
 }

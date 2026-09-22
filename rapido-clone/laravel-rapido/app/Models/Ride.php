@@ -11,21 +11,28 @@ class Ride extends Model
 
     protected $table = 'rides';
 
-    protected $fillable = [
-        'user_id',
-        'driver_id',
-        'pickup_title',
-        'pickup_address',
-        'drop_title',
-        'drop_address',
-        'vehicle_type',
-        'distance',
-        'duration',
-        'fare',
-        'otp',
-        'status',
-        'payment_method',
-        'rating',
+    protected $guarded = ['id'];
+
+    protected $casts = [
+        'pickup_lat' => 'float',
+        'pickup_lng' => 'float',
+        'dropoff_lat' => 'float',
+        'dropoff_lng' => 'float',
+        'estimated_fare' => 'float',
+        'final_fare' => 'float',
+        'distance_km' => 'float',
+        'discount_amount' => 'float',
+        'commission_amount' => 'float',
+        'driver_earnings' => 'float',
+        'cancellation_charges' => 'float',
+        'is_scheduled' => 'boolean',
+        'is_sos' => 'boolean',
+        'scheduled_at' => 'datetime',
+        'accepted_at' => 'datetime',
+        'arrived_at' => 'datetime',
+        'started_at' => 'datetime',
+        'completed_at' => 'datetime',
+        'cancelled_at' => 'datetime',
     ];
 
     public function user()
@@ -33,8 +40,19 @@ class Ride extends Model
         return $this->belongsTo(User::class, 'user_id');
     }
 
+    /**
+     * Assigned driver profile (drivers table), not the users row.
+     */
+    public function driverProfile()
+    {
+        return $this->belongsTo(Driver::class, 'driver_id');
+    }
+
+    /**
+     * Legacy relation kept so existing admin eager-loads resolve.
+     */
     public function driver()
     {
-        return $this->belongsTo(User::class, 'driver_id');
+        return $this->belongsTo(Driver::class, 'driver_id');
     }
 }

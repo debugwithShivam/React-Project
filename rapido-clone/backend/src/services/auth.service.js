@@ -916,9 +916,53 @@ export const refreshUserToken = async (
             role: normalizeRole(user.role)
         });
 
+    // Rotate refresh token: issue a new one, delete the matched old row.
+    const newRefreshToken =
+        generateRefreshToken({
+            ...user,
+            role: normalizeRole(user.role)
+        });
+
+    const newRefreshTokenHash =
+        await bcrypt.hash(newRefreshToken, 12);
+
+    await pool.query(
+        `DELETE FROM refresh_tokens WHERE id = ?`,
+        [matchedToken.id]
+    );
+
+    await pool.query(
+        `
+        INSERT INTO refresh_tokens
+        (
+            user_id,
+            token_hash,
+            expires_at
+        )
+        VALUES
+        (
+            ?,
+            ?,
+            DATE_ADD(NOW(), INTERVAL 7 DAY)
+        )
+        `,
+        [
+            userId,
+            newRefreshTokenHash
+        ]
+    );
 
     return {
-        accessToken
+        accessToken,
+        refreshToken: newRefreshToken,
+        user: {
+            id: user.id,
+            name: user.name,
+            phone: user.phone,
+            email: user.email,
+            role: normalizeRole(user.role),
+            profileImage: user.profile_image
+        }
     };
 };
 

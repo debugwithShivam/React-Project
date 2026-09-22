@@ -8,26 +8,45 @@ return new class extends Migration
 {
     public function up(): void
     {
-        if (!Schema::hasTable('rides')) {
+        if (! Schema::hasTable('rides')) {
             Schema::create('rides', function (Blueprint $table) {
                 $table->id();
                 $table->unsignedBigInteger('user_id');
                 $table->unsignedBigInteger('driver_id')->nullable();
-                $table->string('pickup_title', 255);
                 $table->text('pickup_address');
-                $table->string('drop_title', 255);
-                $table->text('drop_address');
-                $table->string('vehicle_type', 50)->default('bike'); // bike, auto, cab_economy, cab_premium
-                $table->string('distance', 50)->nullable();
-                $table->string('duration', 50)->nullable();
-                $table->decimal('fare', 10, 2);
-                $table->string('otp', 10)->nullable();
-                $table->enum('status', ['PENDING', 'ACCEPTED', 'ON_TRIP', 'COMPLETED', 'CANCELLED'])->default('PENDING');
-                $table->string('payment_method', 50)->default('WALLET');
-                $table->unsignedTinyInteger('rating')->nullable();
+                $table->decimal('pickup_lat', 10, 7)->nullable();
+                $table->decimal('pickup_lng', 10, 7)->nullable();
+                $table->text('dropoff_address');
+                $table->decimal('dropoff_lat', 10, 7)->nullable();
+                $table->decimal('dropoff_lng', 10, 7)->nullable();
+                $table->string('vehicle_type', 50)->default('BIKE');
+                $table->enum('status', ['SCHEDULED', 'SEARCHING', 'ACCEPTED', 'ARRIVING', 'STARTED', 'COMPLETED', 'CANCELLED'])->default('SEARCHING');
+                $table->decimal('estimated_fare', 10, 2)->default(0);
+                $table->decimal('final_fare', 10, 2)->nullable();
+                $table->decimal('distance_km', 10, 2)->nullable();
+                $table->integer('duration_min')->nullable();
+                $table->string('start_otp', 6)->nullable();
+                $table->enum('payment_method', ['CASH', 'ONLINE', 'WALLET'])->default('CASH');
+                $table->enum('payment_status', ['PENDING', 'PAID', 'FAILED', 'REFUNDED'])->default('PENDING');
+                $table->unsignedBigInteger('coupon_id')->nullable();
+                $table->decimal('discount_amount', 10, 2)->default(0);
+                $table->decimal('commission_amount', 10, 2)->default(0);
+                $table->decimal('driver_earnings', 10, 2)->default(0);
+                $table->decimal('cancellation_charges', 10, 2)->default(0);
+                $table->enum('cancelled_by', ['USER', 'DRIVER', 'ADMIN', 'SYSTEM'])->nullable();
+                $table->string('cancellation_reason', 255)->nullable();
+                $table->boolean('is_scheduled')->default(false);
+                $table->boolean('is_sos')->default(false);
+                $table->dateTime('scheduled_at')->nullable();
+                $table->dateTime('accepted_at')->nullable();
+                $table->dateTime('arrived_at')->nullable();
+                $table->dateTime('started_at')->nullable();
+                $table->dateTime('completed_at')->nullable();
+                $table->dateTime('cancelled_at')->nullable();
                 $table->timestamps();
 
-                $table->foreign('user_id')->references('id')->on('users')->onDelete('cascade');
+                $table->index(['user_id', 'status']);
+                $table->index(['driver_id', 'status']);
             });
         }
     }

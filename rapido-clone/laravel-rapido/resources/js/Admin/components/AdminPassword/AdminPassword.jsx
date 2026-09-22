@@ -1,8 +1,7 @@
 import React, { useState } from 'react';
 import { CheckCircle2, LockKeyhole, Save } from 'lucide-react';
 import { Screen } from '../adminUi';
-import API_URL from '../../../api/content';
-import api from '../../../api/axios';
+import api from '../../../api/client';
 import { useMutation } from '@tanstack/react-query';
 
 export default function AdminPassword() {

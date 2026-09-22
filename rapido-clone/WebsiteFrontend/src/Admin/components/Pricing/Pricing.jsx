@@ -1,52 +1,96 @@
-import React, { useMemo, useState } from 'react';
-import { Bike, Calculator } from 'lucide-react';
-import { Screen, Tone } from '../adminUi';
+import React from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { Plus, Pencil, Trash2, Bike } from 'lucide-react';
+import { Screen } from '../adminUi';
+import api from '../../../api/axios';
+import { showFormModal } from '../CouponsOffers/CouponsOffers';
 
-const services = [
-  { name: 'Sawaari Bike', base: 25, km: 7, wait: 1, eta: '2 min', color: 'from-yellow-300 to-amber-400' },
-  { name: 'Sawaari Auto', base: 40, km: 11, wait: 1.5, eta: '4 min', color: 'from-emerald-300 to-emerald-500' },
-  { name: 'Cab Economy', base: 70, km: 14, wait: 2, eta: '6 min', color: 'from-sky-300 to-blue-500' },
-  { name: 'Comfort Sedan', base: 110, km: 18, wait: 2.5, eta: '8 min', color: 'from-violet-300 to-violet-500' }
-];
+const empty = {
+  code: '', name: '', description: '', capacity: 1, base_fare: 30, per_km_fare: 8, per_min_fare: 1.5,
+  minimum_fare: 30, cancellation_fee: 10, commission_percent: 15, sort_order: 0, is_active: true,
+};
 
 export default function Pricing() {
-  const [km, setKm] = useState(8);
-  const [service, setService] = useState(services[0]);
-  const estimate = useMemo(() => service.base + km * service.km, [km, service]);
+  const qc = useQueryClient();
+  const { data: vehicles = [], isLoading } = useQuery({
+    queryKey: ['admin-vehicles'],
+    queryFn: async () => (await api.get('/admin/vehicle-types')).data.vehicles,
+  });
+
+  const createMut = useMutation({ mutationFn: (p) => api.post('/admin/vehicle-types', p), onSuccess: () => qc.invalidateQueries({ queryKey: ['admin-vehicles'] }) });
+  const updateMut = useMutation({ mutationFn: ({ id, p }) => api.patch(`/admin/vehicle-types/${id}`, p), onSuccess: () => qc.invalidateQueries({ queryKey: ['admin-vehicles'] }) });
+  const deleteMut = useMutation({ mutationFn: (id) => api.delete(`/admin/vehicle-types/${id}`), onSuccess: () => qc.invalidateQueries({ queryKey: ['admin-vehicles'] }) });
+
+  const openForm = (v = null) => {
+    showFormModal({
+      title: v ? `Edit ${v.code}` : 'New vehicle type',
+      fields: [
+        ['code', 'Code (BIKE/AUTO/CAB)', 'text', !v],
+        ['name', 'Display name', 'text', true],
+        ['description', 'Description', 'text', false],
+        ['capacity', 'Capacity', 'number', true],
+        ['base_fare', 'Base fare (₹)', 'number', true],
+        ['per_km_fare', 'Per km (₹)', 'number', true],
+        ['per_min_fare', 'Per minute (₹)', 'number', true],
+        ['minimum_fare', 'Minimum fare (₹)', 'number', true],
+        ['cancellation_fee', 'Cancellation fee (₹)', 'number', true],
+        ['commission_percent', 'Commission %', 'number', true],
+        ['sort_order', 'Sort order', 'number', false],
+      ],
+      initial: v || empty,
+      onSubmit: (vals) => {
+        const payload = { ...vals, capacity: Number(vals.capacity), base_fare: Number(vals.base_fare), per_km_fare: Number(vals.per_km_fare), per_min_fare: Number(vals.per_min_fare), minimum_fare: Number(vals.minimum_fare), cancellation_fee: Number(vals.cancellation_fee), commission_percent: Number(vals.commission_percent), sort_order: Number(vals.sort_order || 0) };
+        if (v) updateMut.mutate({ id: v.id, p: payload });
+        else createMut.mutate(payload);
+      },
+    });
+  };
 
   return (
-    <Screen className="bg-orange-50">
-      <div className="mb-6">
-        <p className="text-xs font-black uppercase tracking-[0.18em] text-orange-700">Fare engine</p>
-        <h1 className="text-3xl font-black text-zinc-900">Pricing & fare rules</h1>
+    <Screen className="bg-amber-50/60">
+      <div className="mb-5 flex items-end justify-between">
+        <div>
+          <p className="text-xs font-black uppercase tracking-[0.18em] text-amber-700">Catalog</p>
+          <h1 className="text-3xl font-black text-zinc-900">Vehicle types & pricing</h1>
+        </div>
+        <button onClick={() => openForm()} className="inline-flex items-center gap-2 rounded-xl bg-amber-600 px-4 py-2 text-sm font-bold text-white shadow hover:bg-amber-700">
+          <Plus className="h-4 w-4" /> New vehicle
+        </button>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-        {services.map((item) => (
-          <button key={item.name} type="button" onClick={() => setService(item)} className={`rounded-3xl bg-gradient-to-br p-5 text-left text-zinc-900 shadow-card ${item.color} ${service.name === item.name ? 'ring-4 ring-zinc-900/20' : ''}`}>
-            <p className="text-sm font-bold opacity-80">{item.eta} pickup</p>
-            <p className="mt-2 text-xl font-black">{item.name}</p>
-            <p className="mt-4 text-3xl font-black">₹{item.base}</p>
-            <p className="text-sm font-semibold">+ ₹{item.km}/km · wait ₹{item.wait}/min</p>
-          </button>
+      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+        {isLoading && <p className="text-sm text-zinc-400">Loading…</p>}
+        {vehicles.map((v) => (
+          <div key={v.id} className={`rounded-2xl border bg-white p-5 shadow-sm ${v.is_active ? 'border-amber-100' : 'border-zinc-200 opacity-60'}`}>
+            <div className="flex items-start justify-between">
+              <div>
+                <p className="flex items-center gap-2 text-lg font-black"><Bike className="h-5 w-5 text-amber-600" />{v.name}</p>
+                <p className="text-xs font-bold uppercase text-zinc-400">{v.code} · capacity {v.capacity}</p>
+              </div>
+              <div className="flex gap-1">
+                <button onClick={() => openForm(v)} className="rounded-lg bg-zinc-100 p-2 hover:bg-zinc-200"><Pencil className="h-3 w-3" /></button>
+                <button onClick={() => { if (confirm(`Delete ${v.code}?`)) deleteMut.mutate(v.id); }} className="rounded-lg bg-rose-100 p-2 text-rose-700 hover:bg-rose-200"><Trash2 className="h-3 w-3" /></button>
+              </div>
+            </div>
+            {v.description && <p className="mt-2 text-xs text-zinc-500">{v.description}</p>}
+            <dl className="mt-4 grid grid-cols-2 gap-2 text-xs">
+              <Row k="Base fare" v={`₹${v.base_fare}`} />
+              <Row k="Per km" v={`₹${v.per_km_fare}`} />
+              <Row k="Per min" v={`₹${v.per_min_fare}`} />
+              <Row k="Minimum" v={`₹${v.minimum_fare}`} />
+              <Row k="Cancel fee" v={`₹${v.cancellation_fee}`} />
+              <Row k="Commission" v={`${v.commission_percent}%`} />
+            </dl>
+          </div>
         ))}
       </div>
-
-      <section className="mt-6 grid gap-5 lg:grid-cols-[1fr_280px]">
-        <div className="rounded-3xl border border-orange-100 bg-white p-6 shadow-sm">
-          <h2 className="flex items-center gap-2 font-black"><Calculator className="h-4 w-4" /> Sample fare calculator</h2>
-          <p className="mt-2 text-sm text-zinc-500">Estimate for {service.name} over {km} km, no surge.</p>
-          <input type="range" min="1" max="30" value={km} onChange={(event) => setKm(Number(event.target.value))} className="mt-6 w-full accent-amber-500" />
-          <p className="mt-4 text-4xl font-black text-zinc-900">₹{estimate}</p>
-        </div>
-        <div className="rounded-3xl bg-zinc-900 p-6 text-white">
-          <Bike className="h-6 w-6 text-brand-yellow" />
-          <p className="mt-4 text-sm font-bold text-zinc-400">Peak multiplier</p>
-          <p className="text-3xl font-black">1.4x</p>
-          <p className="mt-2 text-xs text-zinc-400">Rain + office rush in Bengaluru</p>
-          <Tone value="Active" />
-        </div>
-      </section>
     </Screen>
   );
 }
+
+const Row = ({ k, v }) => (
+  <div className="rounded-lg bg-amber-50 px-2 py-1.5">
+    <dt className="text-zinc-500">{k}</dt>
+    <dd className="font-black text-amber-900">{v}</dd>
+  </div>
+);

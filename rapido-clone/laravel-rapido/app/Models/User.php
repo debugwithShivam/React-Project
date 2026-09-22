@@ -21,6 +21,12 @@ class User extends Authenticatable
         'role',
         'profile_image',
         'is_active',
+        'wallet_balance',
+        'rating_avg',
+        'rating_count',
+        'referral_code',
+        'fcm_token',
+        'city',
     ];
 
     protected $hidden = [
@@ -29,6 +35,9 @@ class User extends Authenticatable
 
     protected $casts = [
         'is_active' => 'boolean',
+        'wallet_balance' => 'float',
+        'rating_avg' => 'float',
+        'rating_count' => 'integer',
     ];
 
     /**

@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { Navigation, Phone, ShieldAlert } from 'lucide-react';
 import { Initials, Screen, Tone } from '../adminUi';
+import api from '../../../api/client';
 
 const liveRides = [
   { id: 'SW-10428', customer: 'Aarav Mehta', captain: 'Ramesh Kumar', vehicle: 'KA-03-AB-2211', from: 'Indiranagar', to: 'Koramangala', progress: 62, status: 'Ongoing', step: 3, fare: '₹84' },
@@ -11,7 +13,23 @@ const liveRides = [
 const steps = ['Requested', 'Assigned', 'Pickup', 'On trip', 'Drop'];
 
 export default function Rides() {
-  const [active, setActive] = useState(liveRides[0]);
+  const { data: apiRides = [] } = useQuery({
+    queryKey: ['admin-rides'],
+    queryFn: async () => (await api.get('/admin/rides')).data.rides,
+  });
+  const rideRows = apiRides.length ? apiRides.map((ride) => ({
+    id: `SW-${ride.id}`,
+    customer: ride.rider_name || 'Rider',
+    captain: ride.driver_name || '-',
+    vehicle: ride.vehicle_type || '-',
+    from: ride.pickup_address,
+    to: ride.dropoff_address,
+    progress: ride.status === 'COMPLETED' ? 100 : ride.status === 'STARTED' ? 70 : 25,
+    status: ride.status,
+    step: ride.status === 'COMPLETED' ? 5 : 2,
+    fare: `₹${ride.final_fare || ride.estimated_fare || 0}`,
+  })) : liveRides;
+  const [active, setActive] = useState(rideRows[0]);
 
   return (
     <Screen className="bg-zinc-950 text-white">
@@ -25,7 +43,7 @@ export default function Rides() {
 
       <div className="grid gap-5 xl:grid-cols-[360px_1fr]">
         <aside className="space-y-3">
-          {liveRides.map((ride) => (
+          {rideRows.map((ride) => (
             <button key={ride.id} type="button" onClick={() => setActive(ride)} className={`w-full rounded-2xl border p-4 text-left ${active.id === ride.id ? 'border-brand-yellow bg-white/10' : 'border-white/10 bg-white/5'}`}>
               <div className="flex items-center justify-between">
                 <p className="font-black">{ride.id}</p>

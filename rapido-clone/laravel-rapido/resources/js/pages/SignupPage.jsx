@@ -11,6 +11,7 @@ import {
   MapPin,
   Car,
   CreditCard,
+  Upload,
   Lock,
   Eye,
   EyeOff,
@@ -28,6 +29,12 @@ export default function SignupPage() {
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
   const [submitted, setSubmitted] = useState(false);
+  const [documents, setDocuments] = useState({
+    dlFront: null,
+    rcFront: null,
+    aadhaarFront: null,
+    insuranceFront: null,
+  });
 
   const [formData, setFormData] = useState({
     fullname: '',
@@ -66,20 +73,25 @@ export default function SignupPage() {
 
     setLoading(true);
     try {
-      await register({
-        name: formData.fullname.trim(),
-        phone: formData.phone.trim(),
-        email: formData.email.trim() || null,
-        password: formData.password,
-        role: role === 'captain' ? 'DRIVER' : 'USER',
-        city: formData.city,
-        vehicleType: formData.vehicleType,
-        vehicleModel: formData.vehicleModel,
-        vehiclePlate: formData.vehiclePlate,
-        drivingLicense: formData.drivingLicense,
-        aadhaarNumber: formData.aadhaarNumber,
-        payoutUpi: formData.payoutUpi,
+      const data = new FormData();
+      data.append('name', formData.fullname.trim());
+      data.append('phone', formData.phone.trim());
+      data.append('email', formData.email.trim());
+      data.append('password', formData.password);
+      data.append('role', role === 'captain' ? 'DRIVER' : 'USER');
+      data.append('city', formData.city);
+      data.append('vehicleType', formData.vehicleType);
+      data.append('vehicleModel', formData.vehicleModel);
+      data.append('vehiclePlate', formData.vehiclePlate);
+      data.append('drivingLicense', formData.drivingLicense);
+      data.append('aadhaarNumber', formData.aadhaarNumber);
+      data.append('payoutUpi', formData.payoutUpi);
+
+      Object.entries(documents).forEach(([key, file]) => {
+        if (file) data.append(key, file);
       });
+
+      await register(data);
 
       setSubmitted(true);
       setTimeout(() => {
@@ -96,6 +108,13 @@ export default function SignupPage() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const updateDocument = (key, event) => {
+    setDocuments((current) => ({
+      ...current,
+      [key]: event.target.files?.[0] || null,
+    }));
   };
 
   return (
@@ -346,6 +365,26 @@ export default function SignupPage() {
                         placeholder="e.g. 9876543210@paytm"
                         className="w-full pl-8 pr-3 py-1.5 bg-white border border-gray-200 rounded-xl text-xs font-semibold"
                       />
+                    </div>
+                  </div>
+
+                  <div className="pt-1">
+                    <label className="block text-[10px] font-bold text-gray-700 mb-1">
+                      Upload Required Documents
+                    </label>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                      {[
+                        ['dlFront', 'Driving License'],
+                        ['rcFront', 'Vehicle RC'],
+                        ['aadhaarFront', 'Aadhaar ID'],
+                        ['insuranceFront', 'Insurance Policy'],
+                      ].map(([key, label]) => (
+                        <label key={key} className="flex items-center gap-2 p-2 bg-white rounded-xl border border-gray-200 text-[11px] font-semibold text-gray-700 cursor-pointer">
+                          <Upload className="w-4 h-4 text-gray-400 shrink-0" />
+                          <span className="truncate">{documents[key]?.name || label}</span>
+                          <input type="file" accept="image/*,.pdf" className="sr-only" onChange={(event) => updateDocument(key, event)} />
+                        </label>
+                      ))}
                     </div>
                   </div>
                 </div>

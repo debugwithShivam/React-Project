@@ -1,20 +1,27 @@
 import React, { useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { AlertTriangle, Bike, Car, Truck } from 'lucide-react';
 import { Screen, Tone } from '../adminUi';
-
-const fleet = [
-  { id: 'DRV-1021', name: 'Ramesh Kumar', type: 'Bike', plate: 'KA-03-AB-2211', model: 'Honda Activa 6G', insurance: '12 Nov 2026', rc: 'Valid', status: 'Active' },
-  { id: 'DRV-1184', name: 'Deepak Rao', type: 'Auto', plate: 'KA-05-CD-8821', model: 'Bajaj RE', insurance: '02 Oct 2026', rc: 'Valid', status: 'Active' },
-  { id: 'DRV-0902', name: 'Arjun Das', type: 'Cab', plate: 'TS-09-EF-4410', model: 'WagonR', insurance: '18 Sep 2026', rc: 'Expiring', status: 'Inactive' },
-  { id: 'DRV-1310', name: 'Imran Khan', type: 'Cab', plate: 'TN-07-GH-2298', model: 'Swift Dzire', insurance: '04 Jan 2027', rc: 'Valid', status: 'Active' },
-  { id: 'DRV-0771', name: 'Sanjay Patil', type: 'Bike', plate: 'MH-12-JK-7732', model: 'TVS Jupiter', insurance: '28 Sep 2026', rc: 'Expiring', status: 'Paused' }
-];
+import api from '../../../api/client';
 
 const iconMap = { Bike, Auto: Truck, Cab: Car };
 
 export default function Drivers() {
   const [type, setType] = useState('All');
-  const rows = fleet.filter((item) => type === 'All' || item.type === type);
+  const { data: drivers = [], isLoading } = useQuery({
+    queryKey: ['admin-drivers'],
+    queryFn: async () => (await api.get('/admin/drivers')).data.drivers,
+  });
+  const rows = drivers.map((driver) => ({
+    id: `DRV-${driver.id}`,
+    name: driver.name,
+    type: driver.vehicle_type === 'bike' ? 'Bike' : driver.vehicle_type === 'auto' ? 'Auto' : 'Cab',
+    plate: driver.vehicle_plate,
+    model: driver.vehicle_model,
+    insurance: driver.status,
+    rc: 'Valid',
+    status: driver.status,
+  })).filter((item) => type === 'All' || item.type === type);
 
   return (
     <Screen className="bg-white">
@@ -30,6 +37,7 @@ export default function Drivers() {
       </div>
 
       <div className="overflow-hidden rounded-3xl border border-zinc-200">
+        {isLoading && <p className="p-6 text-sm text-zinc-500">Loading drivers…</p>}
         {rows.map((driver, index) => {
           const Icon = iconMap[driver.type];
           return (

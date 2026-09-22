@@ -11,7 +11,6 @@ import { fileURLToPath } from "node:url";
 
 dns.setServers(["8.8.8.8", "8.8.4.4"]);
 
-
 dns.resolveSrv(
   "_mongodb._tcp.cluster0.inxslpo.mongodb.net",
   (err, records) => {
@@ -20,11 +19,8 @@ dns.resolveSrv(
   }
 );
 
-
-
 const app = express();
 const uploadsPath = fileURLToPath(new URL("../uploads", import.meta.url));
-
 
 connectDB()
 

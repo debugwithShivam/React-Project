@@ -21,6 +21,29 @@ class Driver extends Model
         'aadhaar_number',
         'payout_upi',
         'status',
+        'is_online',
+        'current_lat',
+        'current_lng',
+        'last_location_update',
+        'rating_avg',
+        'rating_count',
+        'total_rides',
+        'total_earnings',
+        'wallet_balance',
+        'fcm_token',
+        'rejection_reason',
+    ];
+
+    protected $casts = [
+        'is_online' => 'boolean',
+        'current_lat' => 'float',
+        'current_lng' => 'float',
+        'rating_avg' => 'float',
+        'rating_count' => 'integer',
+        'total_rides' => 'integer',
+        'total_earnings' => 'float',
+        'wallet_balance' => 'float',
+        'last_location_update' => 'datetime',
     ];
 
     public function user()
