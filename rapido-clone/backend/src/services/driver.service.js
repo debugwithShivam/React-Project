@@ -192,6 +192,9 @@ export const acceptRide = async ({ driverUserId, rideId }) => {
         emitToRide(rideId, 'ride:status', payload);
         emitToAdmins('admin:ride-updated', { rideId, status: 'ACCEPTED', driverId: driver.id });
 
+        // Notify all other drivers who got this request that it's no longer available
+        cancelPendingRequests(rideId, driver.user_id);
+
         await createNotification({
             userId: ride.user_id,
             title: 'Driver assigned',
@@ -391,25 +394,29 @@ export const cancelRideByDriver = async ({ driverUserId, rideId, reason = null }
     const ride = rows[0];
 
     await pool.execute(
-        `UPDATE rides SET status = 'CANCELLED', cancelled_at = NOW(), cancelled_by = 'DRIVER',
-                cancellation_reason = ?, driver_id = NULL WHERE id = ?`,
-        [reason, rideId]
+        `UPDATE rides SET status = 'SEARCHING', cancelled_at = NULL, cancelled_by = NULL,
+                cancellation_reason = NULL, driver_id = NULL WHERE id = ?`,
+        [rideId]
     );
     await pool.execute(
         `INSERT INTO ride_events (ride_id, driver_id, event_type, payload_json) VALUES (?, ?, 'CANCELLED_BY_DRIVER', ?)`,
         [rideId, driver.id, JSON.stringify({ reason })]
     );
 
-    const payload = { rideId, status: 'CANCELLED', by: 'DRIVER', reason };
+    const payload = { rideId, status: 'SEARCHING', by: 'DRIVER', reason };
     emitToUser(ride.user_id, 'ride:status', payload);
     emitToRide(rideId, 'ride:status', payload);
     await createNotification({
         userId: ride.user_id,
-        title: 'Ride cancelled by driver',
-        body: reason || 'The driver cancelled this ride. We are finding you a new one.',
+        title: 'Driver cancelled',
+        body: reason || 'Driver ne cancel kiya. Hum aapke liye naya driver dhundh rahe hain.',
         type: 'RIDE',
         data: { rideId },
     });
+
+    // Re-dispatch to find a new driver
+    dispatchRideRequests(rideId).catch((e) => console.error('[retry-dispatch]', e.message));
+
     return payload;
 };
 
@@ -483,6 +490,10 @@ export const getDriverEarnings = async ({ driverUserId, from = null, to = null }
 // Matching / dispatch
 // ============================================================
 
+// Track which drivers received a request for each ride (rideId -> Set<driverUserId>)
+// Used to: (1) avoid duplicate requests, (2) notify rejected drivers on accept
+const rideDispatchedTo = new Map();
+
 /**
  * Called after a ride is created — find nearby drivers and broadcast.
  * Returns number of drivers notified.
@@ -509,7 +520,18 @@ export const dispatchRideRequests = async (rideId) => {
     // captain app is actually connected before it receives a live request.
     const availableCaptains = nearby.filter((d) => isDriverOnline(d.user_id));
 
+    // Track dispatched drivers for this ride
+    if (!rideDispatchedTo.has(rideId)) rideDispatchedTo.set(rideId, new Set());
+    const dispatchedSet = rideDispatchedTo.get(rideId);
+
+    const timeoutSec = Number(await getSetting('ride_request_timeout_sec', 30));
+    let notifiedCount = 0;
+
     for (const d of availableCaptains) {
+        // Skip if already sent request to this driver for this ride
+        if (dispatchedSet.has(d.user_id)) continue;
+        dispatchedSet.add(d.user_id);
+
         const etaMinutes = Math.max(1, Math.ceil((d.distanceKm / 25) * 60));
         io.to(`user:${d.user_id}`).emit('ride:request', {
             ride: {
@@ -525,16 +547,75 @@ export const dispatchRideRequests = async (rideId) => {
                 distance_km: d.distanceKm,
                 eta_minutes: etaMinutes,
             },
-            expiresInSec: Number(await getSetting('ride_request_timeout_sec', 30)),
+            expiresInSec: timeoutSec,
         });
+        notifiedCount++;
     }
 
-    if (availableCaptains.length === 0) {
+    if (notifiedCount === 0 && dispatchedSet.size === 0) {
+        // No drivers at all — notify user immediately
         emitToUser(ride.user_id, 'ride:no-drivers', {
             rideId,
-            message: 'No online captain is available nearby right now. We will keep searching.',
+            message: 'Aapke aas-paas koi driver available nahi hai. Please thodi der mein try karein.',
         });
+        // Mark ride as FAILED
+        await pool.execute(
+            `UPDATE rides SET status = 'FAILED' WHERE id = ? AND status = 'SEARCHING'`,
+            [rideId]
+        );
+        rideDispatchedTo.delete(rideId);
+    } else if (notifiedCount > 0) {
+        // Schedule timeout — if no one accepts in timeoutSec, fail the ride
+        setTimeout(() => checkRideTimeout(rideId), timeoutSec * 1000);
     }
 
-    return availableCaptains.length;
+    return notifiedCount;
+};
+
+/**
+ * Called after timeout — if ride still SEARCHING, mark FAILED and notify user.
+ */
+export const checkRideTimeout = async (rideId) => {
+    try {
+        const [rows] = await pool.execute(
+            `SELECT id, user_id, status FROM rides WHERE id = ? LIMIT 1`,
+            [rideId]
+        );
+        if (!rows.length) return;
+        const ride = rows[0];
+        if (ride.status !== 'SEARCHING') return; // Already accepted or cancelled
+
+        await pool.execute(
+            `UPDATE rides SET status = 'FAILED' WHERE id = ? AND status = 'SEARCHING'`,
+            [rideId]
+        );
+        rideDispatchedTo.delete(rideId);
+
+        emitToUser(ride.user_id, 'ride:no-drivers', {
+            rideId,
+            message: 'Koi bhi driver request accept nahi kar saka. Please dobara try karein.',
+        });
+        console.log(`[dispatch] Ride ${rideId} timed out → FAILED`);
+    } catch (e) {
+        console.error('[checkRideTimeout]', e.message);
+    }
+};
+
+/**
+ * Notify all drivers who received a request for rideId that it is no longer available.
+ * Called when one driver accepts the ride.
+ */
+export const cancelPendingRequests = (rideId, winnerDriverUserId) => {
+    const io = getIo();
+    if (!io) return;
+    const dispatched = rideDispatchedTo.get(rideId);
+    if (!dispatched) return;
+    for (const driverUserId of dispatched) {
+        if (driverUserId === winnerDriverUserId) continue;
+        io.to(`user:${driverUserId}`).emit('ride:request-cancelled', {
+            rideId,
+            reason: 'Another driver accepted this ride.',
+        });
+    }
+    rideDispatchedTo.delete(rideId);
 };

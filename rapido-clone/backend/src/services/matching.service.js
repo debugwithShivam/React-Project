@@ -27,6 +27,12 @@ export const findNearbyDrivers = async ({ lat, lng, radiusKm = 5, vehicleType = 
            AND u.is_active = TRUE
            AND d.is_online = TRUE
            AND d.current_lat IS NOT NULL
+           AND d.last_location_update >= NOW() - INTERVAL 2 MINUTE
+           AND d.id NOT IN (
+               SELECT driver_id FROM rides
+               WHERE status IN ('ACCEPTED', 'ARRIVING', 'STARTED')
+               AND driver_id IS NOT NULL
+           )
            AND d.current_lat BETWEEN ? AND ?
            AND d.current_lng BETWEEN ? AND ?
            ${vehicleClause}
