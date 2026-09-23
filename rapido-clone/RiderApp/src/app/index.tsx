@@ -4,18 +4,18 @@ import { useState, useEffect, type ComponentProps } from 'react';
 import { Alert, KeyboardAvoidingView, Platform, Pressable, SafeAreaView, ScrollView, StyleSheet, Text, TextInput, View, ActivityIndicator } from 'react-native';
 import { COLORS } from '@/constants';
 import api from '@/api/axios';
-import { saveTokens, getAccessToken } from '@/storage/authStorage';
+import { saveTokens, getAccessToken, wasExplicitlySignedOut } from '@/storage/authStorage';
 
 export default function LoginScreen() {
-  const [phone, setPhone] = useState('');
+  const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
   const [busy, setBusy] = useState(false);
   const [checking, setChecking] = useState(true);
 
   useEffect(() => {
     (async () => {
-      const token = await getAccessToken();
-      if (token) {
+      const [token, signedOut] = await Promise.all([getAccessToken(), wasExplicitlySignedOut()]);
+      if (token && !signedOut) {
         try {
           await api.get('/driver/profile');
           router.replace('/dashboard');
@@ -26,28 +26,72 @@ export default function LoginScreen() {
     })();
   }, []);
 
-  const submit = async () => {
-    if (busy) return;
-    if (phone.trim().length < 10 || password.trim().length < 6) {
-      Alert.alert('Check your details', 'Enter a valid mobile number and a password of at least 6 characters.');
+const submit = async () => {
+  if (busy) return;
+
+  const value = identifier.trim();
+
+  if (!value || password.length < 6) {
+    Alert.alert(
+      'Check your details',
+      'Enter your email/mobile number and a password of at least 6 characters.'
+    );
+    return;
+  }
+
+  setBusy(true);
+
+  try {
+    console.log('LOGIN REQUEST:', {
+      identifier: value,
+      role: 'DRIVER',
+    });
+
+    const res = await api.post('/auth/login', {
+      identifier: value,
+      password,
+      role: 'DRIVER',
+    });
+
+    console.log('LOGIN RESPONSE:', res.data);
+
+    const {
+      accessToken,
+      refreshToken,
+      user,
+    } = res.data;
+
+    if (user?.role !== 'DRIVER') {
+      Alert.alert(
+        'Wrong app',
+        'This account is not a captain account.'
+      );
       return;
     }
-    setBusy(true);
-    try {
-      const res = await api.post('/auth/login', { phone: phone.trim(), password: password.trim(), role: 'DRIVER' });
-      const { accessToken, refreshToken, user } = res.data;
-      if (user?.role !== 'DRIVER') {
-        Alert.alert('Wrong app', 'This account is not a captain account.');
-        return;
-      }
-      await saveTokens(accessToken, refreshToken);
-      router.replace('/dashboard');
-    } catch (e: any) {
-      Alert.alert('Login failed', e?.response?.data?.message || 'Please try again.');
-    } finally {
-      setBusy(false);
-    }
-  };
+
+    await saveTokens(
+      accessToken,
+      refreshToken
+    );
+
+    router.replace('/dashboard');
+
+  } catch (e: any) {
+    console.log(
+      'LOGIN ERROR:',
+      e?.response?.data || e
+    );
+
+    Alert.alert(
+      'Login failed',
+      e?.response?.data?.message ||
+      'Please try again.'
+    );
+
+  } finally {
+    setBusy(false);
+  }
+};
 
   if (checking) {
     return <SafeAreaView style={[styles.safe, { alignItems: 'center', justifyContent: 'center' }]}><ActivityIndicator color={COLORS.yellow} size="large" /></SafeAreaView>;
@@ -67,7 +111,14 @@ export default function LoginScreen() {
           <Text style={styles.subtitle}>Sign in to start earning with every trip.</Text>
 
           <View style={styles.form}>
-            <Field icon="call-outline" placeholder="Mobile number" value={phone} onChangeText={setPhone} keyboardType="phone-pad" maxLength={10} />
+           <Field
+  icon="person-outline"
+  placeholder="Email or mobile number"
+  value={identifier}
+  onChangeText={setIdentifier}
+  autoCapitalize="none"
+  autoCorrect={false}
+/>
             <Field icon="lock-closed-outline" placeholder="Password" value={password} onChangeText={setPassword} secureTextEntry />
             <Pressable style={[styles.primaryButton, busy && { opacity: 0.6 }]} onPress={submit} disabled={busy}>
               {busy ? <ActivityIndicator color={COLORS.ink} /> : <Text style={styles.primaryText}>Sign in</Text>}

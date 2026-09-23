@@ -76,7 +76,13 @@ class Ride
             'created_at' => now(),
         ]);
 
-        return DB::table('rides')->where('id', $rideId)->first();
+        $ride = DB::table('rides')->where('id', $rideId)->first();
+        // Scheduled rides are dispatched only when the scheduler promotes them.
+        $ride->dispatch = $initialStatus === 'SEARCHING'
+            ? Matching::dispatchRide($rideId)
+            : ['notifiedDrivers' => 0, 'drivers' => []];
+
+        return $ride;
     }
 
     public static function forUser(int $userId, ?string $status = null, int $limit = 50): array
@@ -268,6 +274,12 @@ class Ride
      */
     public static function promoteScheduled(): int
     {
-        return DB::table('rides')->where('status', 'SCHEDULED')->where('scheduled_at', '<=', now())->update(['status' => 'SEARCHING', 'updated_at' => now()]);
+        $rides = DB::table('rides')->where('status', 'SCHEDULED')->where('scheduled_at', '<=', now())->get(['id']);
+        foreach ($rides as $ride) {
+            DB::table('rides')->where('id', $ride->id)->update(['status' => 'SEARCHING', 'updated_at' => now()]);
+            Matching::dispatchRide((int) $ride->id);
+        }
+
+        return count($rides);
     }
 }

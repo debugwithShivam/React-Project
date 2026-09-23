@@ -19,7 +19,10 @@ import {
   Bell,
   Headset,
   Shield,
-  Settings
+  Settings,
+  Banknote,
+  FileText,
+  Siren
 } from 'lucide-react';
 import logo from '../../image/topbar.png'
 
@@ -60,6 +63,7 @@ const groups = [
       { to: 'Wallet', icon: Wallet },
       { to: 'Revenue', icon: IndianRupee },
       { to: 'Refunds', icon: IndianRupee },
+      { to: 'Payouts', icon: Banknote },
       { to: 'Reports', icon: BarChart3 }
     ]
   },
@@ -68,7 +72,9 @@ const groups = [
     items: [
       { to: 'Reviews', icon: Star },
       { to: 'Support', icon: Headset },
+      { to: 'SosAlerts', icon: Siren },
       { to: 'Notifications', icon: Bell },
+      { to: 'DynamicPages', icon: FileText },
       { to: 'StaffRoles', icon: Shield },
       { to: 'Settings', icon: Settings },
       { to: 'Password', icon: Shield }

@@ -53,8 +53,10 @@ import RiderHistory from './Admin/pages/RiderHistory';
 import DriverRideHistory from './Admin/pages/DriverRideHistory';
 import Refunds from './Admin/pages/Refunds';
 import Password from './Admin/pages/Password';
+import Payouts from './Admin/pages/Payouts';
+import DynamicPages from './Admin/pages/DynamicPages';
+import SosAlerts from './Admin/pages/SosAlerts';
 import { SiteContentProvider } from './context/SiteContentContext';
-import { AuthProvider } from './context/AuthContext';
 import ProtectiveRouter from './routes/ProtectiveRouter';
 import AdminProtectedRouter from './routes/AdminProtectedRouter';
 
@@ -262,6 +264,9 @@ const router = createHashRouter([
           { path: 'Password', element: <Password /> },
           { path: 'StaffRoles', element: <StaffRoles /> },
           { path: 'Support', element: <Support /> },
+          { path: 'Payouts', element: <Payouts /> },
+          { path: 'DynamicPages', element: <DynamicPages /> },
+          { path: 'SosAlerts', element: <SosAlerts /> },
         ],
       },
     ],
@@ -273,11 +278,9 @@ const router = createHashRouter([
 export default function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <AuthProvider>
-        <SiteContentProvider>
-          <RouterProvider router={router} />
-        </SiteContentProvider>
-      </AuthProvider>
+      <SiteContentProvider>
+        <RouterProvider router={router} />
+      </SiteContentProvider>
     </QueryClientProvider>
   );
 }

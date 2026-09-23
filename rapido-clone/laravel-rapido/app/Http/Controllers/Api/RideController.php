@@ -58,6 +58,9 @@ class RideController extends Controller
         if (empty($b['pickupAddress']) || empty($b['dropoffAddress']) || empty($b['vehicleType'])) {
             return response()->json(['success' => false, 'message' => 'pickupAddress, dropoffAddress, vehicleType required'], 400);
         }
+        if (! array_key_exists('pickupLat', $b) || ! array_key_exists('pickupLng', $b) || $b['pickupLat'] === null || $b['pickupLng'] === null) {
+            return response()->json(['success' => false, 'message' => 'Your current pickup coordinates are required to find nearby captains'], 422);
+        }
         try {
             $ride = RideService::create([
                 'userId' => $request->user()->id,

@@ -6,7 +6,7 @@ import VehicleCard from '../components/VehicleCard';
 import MapPreview from '../components/MapPreview';
 import RideStatusModal from '../components/RideStatusModal';
 import { useSiteContent } from '../context/SiteContentContext';
-import api from '../api/client';
+import api from '../api/axios';
 
 export default function BookingPage() {
   const [searchParams] = useSearchParams();
@@ -39,9 +39,7 @@ export default function BookingPage() {
   const [promoCode, setPromoCode] = useState('');
   const [promoApplied, setPromoApplied] = useState(false);
   const [isBookingModalOpen, setIsBookingModalOpen] = useState(false);
-  const [isBooking, setIsBooking] = useState(false);
-  const [bookingError, setBookingError] = useState('');
-  const [createdRide, setCreatedRide] = useState(null);
+    const [isBooking, setIsBooking] = useState(false);
   const [showMobileMap, setShowMobileMap] = useState(true);
 
   // Sync if URL params change
@@ -79,27 +77,21 @@ export default function BookingPage() {
       alert('Please choose both pickup and dropoff locations.');
       return;
     }
-
-    setBookingError('');
-    setIsBooking(true);
-
     try {
-      const response = await api.post('/rides/book', {
-        pickup_title: pickup,
-        pickup_address: pickup,
-        drop_title: dropoff,
-        drop_address: dropoff,
-        vehicle_type: selectedVehicle.id,
-        distance: `${distance} km`,
-        duration: '18 mins',
-        fare: finalFare,
-        payment_method: paymentMethod.toUpperCase(),
+      setIsBooking(true);
+      await api.post('/rides', {
+        pickupAddress: pickup,
+        pickupLat: 0,
+        pickupLng: 0,
+        dropoffAddress: dropoff,
+        dropoffLat: 0,
+        dropoffLng: 0,
+        vehicleType: String(selectedVehicle.id || 'bike').toUpperCase() === 'BIKE' ? 'BIKE' : String(selectedVehicle.id || '').toUpperCase() === 'AUTO' ? 'AUTO' : 'CAB',
+        estimatedFare: finalFare,
       });
-
-      setCreatedRide(response.data.ride);
       setIsBookingModalOpen(true);
     } catch (error) {
-      setBookingError(error.response?.data?.message || 'Unable to book this ride. Please try again.');
+      alert(error?.response?.data?.message || 'Unable to book this ride. Please login and try again.');
     } finally {
       setIsBooking(false);
     }
@@ -396,16 +388,10 @@ export default function BookingPage() {
                 className="w-full sm:w-auto px-6 sm:px-8 py-3.5 sm:py-4 bg-brand-yellow hover:bg-brand-yellow-hover text-brand-dark font-black rounded-2xl shadow-md transition-all duration-200 text-xs sm:text-sm flex items-center justify-center gap-2 hover:scale-105 active:scale-95"
               >
                 <span>
-                  {isBooking ? 'Booking Ride...' : bookingMode === 'schedule' ? 'Schedule Booking for Later' : 'Confirm & Request Ride'}
+                  {isBooking ? 'Booking...' : bookingMode === 'schedule' ? 'Schedule Booking for Later' : 'Confirm & Request Ride'}
                 </span>
               </button>
             </div>
-
-            {bookingError && (
-              <p className="text-center text-xs font-semibold text-rose-600" role="alert">
-                {bookingError}
-              </p>
-            )}
 
           </div>
 
@@ -448,9 +434,7 @@ export default function BookingPage() {
           paymentMethod,
           bookingMode,
           scheduleDate,
-          scheduleTime,
-          id: createdRide?.id,
-          otp: createdRide?.otp,
+          scheduleTime
         }}
       />
     </div>

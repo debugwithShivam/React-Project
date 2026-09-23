@@ -3,24 +3,41 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Menu, X, ArrowRight, LogOut, UserCircle } from 'lucide-react';
 import logo from '../image/logo.png';
 import { useSiteContent } from '../context/SiteContentContext';
-import { useAuth } from '../context/AuthContext';
+import { useQuery } from '@tanstack/react-query';
+import api from '../api/axios';
 
 export default function Navbar() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
   const { content } = useSiteContent();
-  const { user, logout } = useAuth();
   const navLinks = content.navigation;
+
+  const {
+  data,
+  isLoading,
+} = useQuery({
+  queryKey: ['currentUser'],
+  queryFn: async () => {
+    const response = await api.get('/users/me');
+
+    return response.data;
+  },
+  retry: false,
+});
+
+const user = data?.success ? data.user : null;
 
 const handleLogout = async () => {
   try {
-    await logout();
+    await api.post('/auth/logout');
   } catch (error) {
     console.error('Logout error:', error);
   } finally {
+    localStorage.removeItem('access_token');
     setMobileMenuOpen(false);
     navigate('/');
+    window.location.reload();
   }
 };
 

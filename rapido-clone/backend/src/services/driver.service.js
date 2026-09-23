@@ -1,6 +1,6 @@
 import pool from '../config/DBconfig/database.js';
 import { ApiError } from '../utils/apiError.js';
-import { emitToUser, emitToRide, emitToAdmins, getIo } from '../socket/index.js';
+import { emitToUser, emitToRide, emitToAdmins, getIo, isDriverOnline } from '../socket/index.js';
 import { findNearbyDrivers } from './matching.service.js';
 import { createNotification } from './notification.service.js';
 import { adjustWallet } from './wallet.service.js';
@@ -505,29 +505,36 @@ export const dispatchRideRequests = async (rideId) => {
     const io = getIo();
     if (!io) return 0;
 
-    for (const d of nearby) {
+    // A database `is_online` flag shows intent; the socket check ensures the
+    // captain app is actually connected before it receives a live request.
+    const availableCaptains = nearby.filter((d) => isDriverOnline(d.user_id));
+
+    for (const d of availableCaptains) {
+        const etaMinutes = Math.max(1, Math.ceil((d.distanceKm / 25) * 60));
         io.to(`user:${d.user_id}`).emit('ride:request', {
-            rideId,
-            pickupAddress: ride.pickup_address,
-            dropoffAddress: ride.dropoff_address,
-            pickupLat: ride.pickup_lat,
-            pickupLng: ride.pickup_lng,
-            dropoffLat: ride.dropoff_lat,
-            dropoffLng: ride.dropoff_lng,
-            vehicleType: ride.vehicle_type,
-            estimatedFare: Number(ride.estimated_fare),
-            distanceKm: d.distanceKm,
-            customer: { name: null, rating: null }, // hide until accept
+            ride: {
+                id: rideId,
+                pickup_address: ride.pickup_address,
+                dropoff_address: ride.dropoff_address,
+                pickup_lat: ride.pickup_lat,
+                pickup_lng: ride.pickup_lng,
+                dropoff_lat: ride.dropoff_lat,
+                dropoff_lng: ride.dropoff_lng,
+                vehicle_type: ride.vehicle_type,
+                estimated_fare: Number(ride.estimated_fare),
+                distance_km: d.distanceKm,
+                eta_minutes: etaMinutes,
+            },
             expiresInSec: Number(await getSetting('ride_request_timeout_sec', 30)),
         });
     }
 
-    if (nearby.length === 0) {
+    if (availableCaptains.length === 0) {
         emitToUser(ride.user_id, 'ride:no-drivers', {
             rideId,
-            message: 'No drivers available right now. We will keep searching.',
+            message: 'No online captain is available nearby right now. We will keep searching.',
         });
     }
 
-    return nearby.length;
+    return availableCaptains.length;
 };

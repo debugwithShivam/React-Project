@@ -69,11 +69,24 @@ export const initSocket = (httpServer) => {
         console.log(`[socket] ${role} ${userId} connected (${socket.id})`);
 
         // Driver: join ride room, broadcast location, update online state.
-        socket.on('driver:online', async ({ isOnline = true } = {}) => {
-            await pool.execute(`UPDATE drivers SET is_online = ? WHERE user_id = ?`, [!!isOnline, userId]);
-            socket.data.isOnline = !!isOnline;
-            io.to('admins').emit('driver:online-change', { userId, isOnline: !!isOnline });
-        });
+        socket.on('driver:online', async ({ isOnline } = {}) => {
+    if (role !== 'DRIVER') return;
+    const online = Boolean(isOnline);
+    await pool.execute(
+        `UPDATE drivers
+         SET is_online = ?
+         WHERE user_id = ?`,
+        [online, userId]
+    );
+    socket.data.isOnline = online;
+    io.to('admins').emit('driver:online-change', {
+        userId,
+        isOnline: online,
+    });
+    console.log(
+        `[socket] driver ${userId} is now ${online ? 'ONLINE' : 'OFFLINE'}`
+    );
+});
 
         socket.on('driver:location', async ({ lat, lng, heading = 0, speed = 0 }) => {
             if (lat == null || lng == null) return;

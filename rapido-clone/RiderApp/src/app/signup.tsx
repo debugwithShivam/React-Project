@@ -83,8 +83,8 @@ export default function SignupScreen() {
   const handleSubmit = async () => {
     if (submitting) return;
 
-    if (!formData.fullname || !formData.phone) {
-      Alert.alert('Missing details', 'Please fill the required fields!');
+    if (!formData.fullname || !formData.phone || !formData.email.trim()) {
+      Alert.alert('Missing details', 'Please enter your name, mobile number, and email address.');
       return;
     }
     if (!formData.password) {
@@ -180,7 +180,7 @@ export default function SignupScreen() {
           <View style={styles.form}>
             <Field icon="person-outline" label="Full Name *" placeholder="e.g. Vikramaditya Singh" value={formData.fullname} onChangeText={(t) => set('fullname', t)} />
             <Field icon="call-outline" label="Mobile Phone *" placeholder="+91 98765 43210" value={formData.phone} onChangeText={(t) => set('phone', t.replace(/[^0-9]/g, '').slice(0, 10))} keyboardType="phone-pad" maxLength={10} />
-            <Field icon="mail-outline" label="Email (Optional)" placeholder="vikram@mail.com" value={formData.email} onChangeText={(t) => set('email', t)} keyboardType="email-address" autoCapitalize="none" />
+            <Field icon="mail-outline" label="Email *" placeholder="Enter your email" value={formData.email} onChangeText={(t) => set('email', t)} keyboardType="email-address" autoCapitalize="none" />
 
             <View style={styles.gridRow}>
               <View style={{ flex: 1 }}>

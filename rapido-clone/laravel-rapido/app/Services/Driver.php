@@ -108,6 +108,12 @@ class Driver
             ->whereNull('r.driver_id')
             ->whereNotNull('r.pickup_lat')
             ->where(DB::raw('UPPER(r.vehicle_type)'), strtoupper((string) $driver->vehicle_type))
+            ->whereExists(function ($q) use ($driver) {
+                $q->selectRaw('1')->from('ride_events as re')
+                    ->whereColumn('re.ride_id', 'r.id')
+                    ->where('re.driver_id', $driver->id)
+                    ->where('re.event_type', 'DISPATCHED');
+            })
             ->orderByDesc('r.created_at')->limit(30)
             ->get(['r.*', 'u.name as user_name', 'u.phone as user_phone', 'u.rating_avg as user_rating']);
 
@@ -130,11 +136,26 @@ class Driver
         if ($driver->status !== 'APPROVED') {
             throw new RuntimeException('Driver not approved');
         }
+        if (! $driver->is_online || $driver->current_lat === null || $driver->current_lng === null || ! $driver->last_location_update || strtotime($driver->last_location_update) < now()->subMinutes(5)->getTimestamp()) {
+            throw new RuntimeException('Go online and share a recent location before accepting rides');
+        }
 
         return DB::transaction(function () use ($driver, $rideId) {
             $ride = DB::table('rides')->where('id', $rideId)->where('status', 'SEARCHING')->whereNull('driver_id')->lockForUpdate()->first();
             if (! $ride) {
                 throw new RuntimeException('Ride no longer available');
+            }
+            $wasDispatched = DB::table('ride_events')
+                ->where('ride_id', $rideId)->where('driver_id', $driver->id)->where('event_type', 'DISPATCHED')->exists();
+            if (! $wasDispatched) {
+                throw new RuntimeException('This ride was not dispatched to you');
+            }
+            $distanceKm = Geo::haversineKm(
+                (float) $driver->current_lat, (float) $driver->current_lng,
+                (float) $ride->pickup_lat, (float) $ride->pickup_lng
+            );
+            if ($distanceKm > 5) {
+                throw new RuntimeException('You are no longer close enough to this pickup');
             }
             $otp = Gen::rideOtp();
             DB::table('rides')->where('id', $rideId)->update([

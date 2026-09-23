@@ -9,14 +9,19 @@ import { clearTokens } from '@/storage/authStorage';
 import * as Location from 'expo-location';
 
 type Tab = 'home' | 'rides' | 'earnings' | 'profile';
-type RideRequest = { id: number; pickup_address: string; dropoff_address: string; estimated_fare: number; distance_km?: number; vehicle_type?: string; expiresAt?: number };
+type RideRequest = { id: number; pickup_address: string; dropoff_address: string; estimated_fare: number; distance_km?: number; eta_minutes?: number; vehicle_type?: string; expiresAt?: number };
 type ActiveRide = { id: number; status: string; pickup_address: string; dropoff_address: string; pickup_lat?: number; pickup_lng?: number; dropoff_lat?: number; dropoff_lng?: number; ride_otp?: string; estimated_fare?: number; final_fare?: number; user?: { name: string; phone?: string } };
+
+// The API returns the driver's KYC decision as `status`. Older API versions
+// used `kyc_status`, so accept either shape while clients are being updated.
+const isDriverApproved = (driver: any) =>
+  String(driver?.status ?? driver?.kyc_status ?? '').toUpperCase() === 'APPROVED';
 
 export default function Dashboard() {
   const [tab, setTab] = useState<Tab>('home');
   const [loading, setLoading] = useState(true);
   const [profile, setProfile] = useState<any>(null);
-  const [online, setOnline] = useState(false);
+  const [isOnline , setOnline] = useState(false);
   const [request, setRequest] = useState<RideRequest | null>(null);
   const [activeRide, setActiveRide] = useState<ActiveRide | null>(null);
   const [otpInput, setOtpInput] = useState('');
@@ -32,7 +37,7 @@ export default function Dashboard() {
       const driver = res.data?.driver;
       setProfile(driver);
       setOnline(driver?.is_online === 1 || driver?.is_online === true);
-      if (driver?.kyc_status !== 'APPROVED' && driver?.kyc_status !== 'approved') {
+      if (!isDriverApproved(driver)) {
         Alert.alert('KYC pending', 'Upload and get your documents approved before going online.', [
           { text: 'Go to KYC', onPress: () => router.push('/kyc') },
           { text: 'Later', style: 'cancel' },
@@ -78,6 +83,7 @@ export default function Dashboard() {
           dropoff_address: data?.ride?.dropoff_address,
           estimated_fare: data?.ride?.estimated_fare,
           distance_km: data?.ride?.distance_km,
+          eta_minutes: data?.ride?.eta_minutes,
           vehicle_type: data?.ride?.vehicle_type,
         };
         setRequest(req);
@@ -113,17 +119,17 @@ export default function Dashboard() {
 
   const toggleOnline = async () => {
     if (busy) return;
-    if (profile?.kyc_status !== 'APPROVED' && profile?.kyc_status !== 'approved') {
+    if (!isDriverApproved(profile)) {
       Alert.alert('KYC not approved', 'Wait for admin approval before going online.');
       return;
     }
     setBusy(true);
-    const next = !online;
+    const next = !isOnline ;
     try {
       await api.post('/driver/online', { isOnline: next });
       setOnline(next);
       const socket = await getSocket();
-      socket.emit('driver:online', { online: next });
+      socket.emit('driver:online', { isOnline : next });
       if (next) await startLocationWatch();
       else locationSub.current?.remove();
     } catch (e: any) {
@@ -235,17 +241,17 @@ export default function Dashboard() {
               <View>
                 <Text style={styles.muted}>STATUS</Text>
                 <View style={styles.statusLine}>
-                  <View style={[styles.statusDot, { backgroundColor: online ? COLORS.green : COLORS.red }]} />
-                  <Text style={styles.statusText}>{online ? 'Online' : 'Offline'}</Text>
+                  <View style={[styles.statusDot, { backgroundColor: isOnline  ? COLORS.green : COLORS.red }]} />
+                  <Text style={styles.statusText}>{isOnline  ? 'Online' : 'Offline'}</Text>
                 </View>
-                <Text style={styles.statusHint}>{online ? 'Receiving ride requests' : 'Go online to earn'}</Text>
+                <Text style={styles.statusHint}>{isOnline  ? 'Receiving ride requests' : 'Go online to earn'}</Text>
               </View>
-              <Pressable style={[styles.toggle, online && styles.toggleOn]} onPress={toggleOnline} disabled={busy}>
-                <View style={[styles.toggleThumb, online && styles.toggleThumbOn]} />
+              <Pressable style={[styles.toggle, isOnline  && styles.toggleOn]} onPress={toggleOnline} disabled={busy}>
+                <View style={[styles.toggleThumb, isOnline  && styles.toggleThumbOn]} />
               </Pressable>
             </View>
 
-            {profile?.kyc_status !== 'APPROVED' && profile?.kyc_status !== 'approved' && (
+            {!isDriverApproved(profile) && (
               <Pressable style={styles.kycBanner} onPress={() => router.push('/kyc')}>
                 <Ionicons name="document-text-outline" size={20} color={COLORS.ink} />
                 <Text style={styles.kycBannerText}>Complete KYC to start earning</Text>
@@ -258,7 +264,11 @@ export default function Dashboard() {
                 <View style={styles.requestHeader}>
                   <View>
                     <Text style={styles.yellowKicker}>NEW RIDE REQUEST</Text>
-                    <Text style={styles.requestTimer}>{request.vehicle_type || 'Ride'} · {request.distance_km ? `${Number(request.distance_km).toFixed(1)} km` : ''}</Text>
+                    <Text style={styles.requestTimer}>
+                      {request.vehicle_type || 'Ride'}
+                      {request.distance_km != null ? ` · ${Number(request.distance_km).toFixed(1)} km away` : ''}
+                      {request.eta_minutes != null ? ` · ~${request.eta_minutes} min` : ''}
+                    </Text>
                   </View>
                   <View style={styles.fare}>
                     <Text style={styles.fareValue}>₹{request.estimated_fare ?? 0}</Text>
@@ -366,9 +376,9 @@ export default function Dashboard() {
 
             {!request && !activeRide && (
               <View style={styles.waiting}>
-                <Ionicons name={online ? 'radio-outline' : 'moon-outline'} size={30} color={COLORS.muted} />
-                <Text style={styles.waitingTitle}>{online ? 'Waiting for rides...' : 'You are offline'}</Text>
-                <Text style={styles.waitingText}>{online ? 'New requests will appear here automatically.' : 'Toggle online to start receiving requests.'}</Text>
+                <Ionicons name={isOnline  ? 'radio-outline' : 'moon-outline'} size={30} color={COLORS.muted} />
+                <Text style={styles.waitingTitle}>{isOnline  ? 'Waiting for rides...' : 'You are offline'}</Text>
+                <Text style={styles.waitingText}>{isOnline  ? 'New requests will appear here automatically.' : 'Toggle online to start receiving requests.'}</Text>
               </View>
             )}
 
@@ -441,7 +451,7 @@ export default function Dashboard() {
             </View>
             <Pressable style={styles.menuRow} onPress={() => router.push('/kyc')}>
               <View style={styles.menuIcon}><Ionicons name="document-text-outline" size={18} color={COLORS.ink} /></View>
-              <View style={{ flex: 1 }}><Text style={styles.menuTitle}>KYC Documents</Text><Text style={styles.muted}>{profile?.kyc_status || 'PENDING'}</Text></View>
+              <View style={{ flex: 1 }}><Text style={styles.menuTitle}>KYC Documents</Text><Text style={styles.muted}>{profile?.status ?? profile?.kyc_status ?? 'PENDING'}</Text></View>
               <Ionicons name="chevron-forward" size={18} color={COLORS.muted} />
             </Pressable>
             <Pressable style={styles.menuRow} onPress={() => router.push('/vehicle')}>

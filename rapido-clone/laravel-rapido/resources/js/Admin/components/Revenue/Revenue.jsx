@@ -1,67 +1,72 @@
 import React from 'react';
-import { IndianRupee } from 'lucide-react';
+import { useQuery } from '@tanstack/react-query';
+import { IndianRupee, TrendingUp } from 'lucide-react';
 import { Screen } from '../adminUi';
-
-const mix = [
-  { name: 'Bike', gross: 14820, take: 2223, w: 28 },
-  { name: 'Auto', gross: 18440, take: 2766, w: 34 },
-  { name: 'Cab', gross: 20100, take: 3015, w: 38 }
-];
-
-const week = [62, 70, 58, 81, 76, 90, 84];
+import api from '../../../api/axios';
 
 export default function Revenue() {
+  const { data: report = [], isLoading } = useQuery({
+    queryKey: ['admin-revenue'],
+    queryFn: async () => (await api.get('/admin/reports/revenue', { params: { groupBy: 'day' } })).data.report,
+  });
+
+  const totals = report.reduce(
+    (acc, r) => ({
+      rides: acc.rides + Number(r.rides),
+      gross: acc.gross + Number(r.gross),
+      commission: acc.commission + Number(r.commission),
+      payout: acc.payout + Number(r.driver_payout),
+    }),
+    { rides: 0, gross: 0, commission: 0, payout: 0 }
+  );
+
   return (
-    <Screen className="bg-gradient-to-b from-zinc-900 to-zinc-800 text-white">
-      <div className="mb-6">
-        <p className="text-xs font-black uppercase tracking-[0.18em] text-brand-yellow">Finance</p>
-        <h1 className="text-3xl font-black">Revenue</h1>
-        <p className="mt-1 text-sm text-zinc-400">GMV, take-rate and captain payouts for today.</p>
+    <Screen className="bg-emerald-50/60">
+      <div className="mb-5">
+        <p className="text-xs font-black uppercase tracking-[0.18em] text-emerald-700">Finance</p>
+        <h1 className="flex items-center gap-2 text-3xl font-black text-zinc-900"><IndianRupee className="h-7 w-7 text-emerald-600" />Revenue report</h1>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-3">
-        <div className="rounded-3xl bg-brand-yellow p-5 text-zinc-900">
-          <p className="text-xs font-black uppercase">Gross bookings</p>
-          <p className="mt-2 text-4xl font-black">₹8.42L</p>
-        </div>
-        <div className="rounded-3xl border border-white/10 bg-white/5 p-5">
-          <p className="text-xs font-black uppercase text-zinc-400">Platform take</p>
-          <p className="mt-2 text-4xl font-black">₹1.26L</p>
-          <p className="text-xs font-semibold text-emerald-400">15% take rate</p>
-        </div>
-        <div className="rounded-3xl border border-white/10 bg-white/5 p-5">
-          <p className="text-xs font-black uppercase text-zinc-400">Captain payouts</p>
-          <p className="mt-2 text-4xl font-black">₹6.88L</p>
-        </div>
+      <div className="mb-5 grid grid-cols-2 gap-3 md:grid-cols-4">
+        <Stat label="Completed rides" value={totals.rides} />
+        <Stat label="Gross revenue" value={`₹${totals.gross.toFixed(0)}`} />
+        <Stat label="Commission" value={`₹${totals.commission.toFixed(0)}`} tone="text-emerald-700" />
+        <Stat label="Driver payouts" value={`₹${totals.payout.toFixed(0)}`} tone="text-rose-600" />
       </div>
 
-      <div className="mt-6 grid gap-5 lg:grid-cols-2">
-        <section className="rounded-3xl border border-white/10 bg-white/5 p-5">
-          <h2 className="font-black">This week</h2>
-          <div className="mt-4 flex h-40 items-end gap-3">
-            {week.map((value, index) => (
-              <div key={index} className="flex-1 rounded-t-xl bg-brand-yellow" style={{ height: `${value}%` }} />
+      <div className="overflow-hidden rounded-3xl border border-emerald-100 bg-white shadow-sm">
+        <table className="w-full text-sm">
+          <thead className="bg-emerald-50 text-xs font-black uppercase text-emerald-900">
+            <tr>
+              <th className="px-4 py-3 text-left">Period</th>
+              <th className="px-4 py-3 text-right">Rides</th>
+              <th className="px-4 py-3 text-right">Gross</th>
+              <th className="px-4 py-3 text-right">Commission</th>
+              <th className="px-4 py-3 text-right">Driver payout</th>
+            </tr>
+          </thead>
+          <tbody>
+            {isLoading && <tr><td colSpan={5} className="px-4 py-8 text-center text-zinc-400">Loading…</td></tr>}
+            {!isLoading && report.length === 0 && <tr><td colSpan={5} className="px-4 py-8 text-center text-zinc-400">No completed rides yet.</td></tr>}
+            {report.map((r) => (
+              <tr key={r.period} className="border-t border-emerald-50 hover:bg-emerald-50/40">
+                <td className="px-4 py-3 font-bold">{r.period}</td>
+                <td className="px-4 py-3 text-right">{r.rides}</td>
+                <td className="px-4 py-3 text-right font-black">₹{Number(r.gross).toFixed(2)}</td>
+                <td className="px-4 py-3 text-right text-emerald-700">₹{Number(r.commission).toFixed(2)}</td>
+                <td className="px-4 py-3 text-right text-rose-600">₹{Number(r.driver_payout).toFixed(2)}</td>
+              </tr>
             ))}
-          </div>
-          <div className="mt-2 flex justify-between text-[10px] font-bold uppercase text-zinc-500">
-            {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map((d) => <span key={d}>{d}</span>)}
-          </div>
-        </section>
-        <section className="rounded-3xl bg-white p-5 text-zinc-900">
-          <h2 className="flex items-center gap-2 font-black"><IndianRupee className="h-4 w-4" /> Mix by vehicle</h2>
-          {mix.map((item) => (
-            <div key={item.name} className="mt-4">
-              <div className="flex justify-between text-sm font-bold">
-                <span>{item.name}</span>
-                <span>₹{item.take.toLocaleString()} take</span>
-              </div>
-              <div className="mt-2 h-3 overflow-hidden rounded-full bg-zinc-100">
-                <div className="h-full bg-zinc-900" style={{ width: `${item.w}%` }} />
-              </div>
-            </div>
-          ))}
-        </section>
+          </tbody>
+        </table>
       </div>
     </Screen>
   );
 }
+
+const Stat = ({ label, value, tone = '' }) => (
+  <div className="rounded-2xl border border-emerald-100 bg-white p-4 shadow-sm">
+    <p className={`text-2xl font-black ${tone}`}>{value}</p>
+    <p className="mt-1 text-xs font-semibold text-zinc-500">{label}</p>
+  </div>
+);

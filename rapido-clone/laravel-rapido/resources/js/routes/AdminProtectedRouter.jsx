@@ -1,8 +1,22 @@
 import { Navigate, Outlet } from "react-router-dom";
-import { useAuth } from "../context/AuthContext";
+import { useQuery } from "@tanstack/react-query";
+import api from "../api/axios";
+
+const getCurrentUser = async () => {
+  const response = await api.get("/users/me");
+  return response.data;
+};
 
 export default function AdminProtectedRouter() {
-  const { user, isLoading } = useAuth();
+  const {
+    data,
+    isLoading,
+    isError,
+  } = useQuery({
+    queryKey: ["currentUser"],
+    queryFn: getCurrentUser,
+    retry: false,
+  });
 
   if (isLoading) {
     return (
@@ -14,8 +28,10 @@ export default function AdminProtectedRouter() {
     );
   }
 
+  const user = data?.success ? data.user : null;
+
   // Login nahi hai
-  if (!user) {
+  if (isError || !user) {
     return <Navigate to="/login" replace />;
   }
 

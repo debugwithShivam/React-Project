@@ -1,8 +1,22 @@
 import { Navigate, Outlet } from "react-router-dom";
-import { useAuth } from "../context/AuthContext";
+import { useQuery } from "@tanstack/react-query";
+import api from "../api/axios";
+
+const getCurrentUser = async () => {
+  const response = await api.get("/users/me");
+  return response.data;
+};
 
 export default function ProtectiveRouter({ type = "protected" }) {
-  const { user, isLoading } = useAuth();
+  const {
+    data,
+    isLoading,
+    isError,
+  } = useQuery({
+    queryKey: ["currentUser"],
+    queryFn: getCurrentUser,
+    retry: false,
+  });
 
   if (isLoading) {
     return (
@@ -14,14 +28,15 @@ export default function ProtectiveRouter({ type = "protected" }) {
     );
   }
 
-  const isAuthenticated = Boolean(user);
+  const isAuthenticated =
+    !isError && data?.success && data?.user;
 
   if (type === "protected") {
     if (!isAuthenticated) {
       return <Navigate to="/login" replace />;
     }
 
-    return <Outlet context={{ user }} />;
+    return <Outlet context={{ user: data.user }} />;
   }
 
   if (type === "guest") {
