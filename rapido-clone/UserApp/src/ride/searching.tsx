@@ -33,7 +33,7 @@ export default function SearchingScreen() {
 
     (async () => {
       socket = await getSocket();
-      socket.emit('ride:join', rideId);
+      socket.emit('ride:join', { rideId });
 
       socket.on('ride:accepted', (data: any) => {
         if (!mounted) return;
@@ -53,7 +53,7 @@ export default function SearchingScreen() {
       if (socket) {
         socket.off('ride:accepted');
         socket.off('ride:cancelled');
-        socket.emit('ride:leave', rideId);
+        socket.emit('ride:leave', { rideId });
       }
     };
   }, [rideId]);

@@ -18,15 +18,20 @@ import { getSocket } from '@/api/socket';
 type RideData = {
   id: number;
   status: string;
+
   pickup_address?: string;
   dropoff_address?: string;
+
   pickup_lat?: number;
   pickup_lng?: number;
   dropoff_lat?: number;
   dropoff_lng?: number;
+
   estimated_fare?: number;
   final_fare?: number;
+
   ride_otp?: string;
+
   driver?: {
     id: number;
     name: string;
@@ -35,221 +40,516 @@ type RideData = {
     total_rides?: number;
     vehicle_model?: string;
     vehicle_plate?: string;
+
     current_lat?: number;
     current_lng?: number;
   } | null;
 };
 
+
+const calculateDistanceKm = (
+  lat1: number,
+  lng1: number,
+  lat2: number,
+  lng2: number
+) => {
+  const R = 6371;
+
+  const dLat = ((lat2 - lat1) * Math.PI) / 180;
+  const dLng = ((lng2 - lng1) * Math.PI) / 180;
+
+  const a =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos((lat1 * Math.PI) / 180) *
+      Math.cos((lat2 * Math.PI) / 180) *
+      Math.sin(dLng / 2) ** 2;
+
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+
+  return R * c;
+};
+
 export default function TrackingScreen() {
   const params = useLocalSearchParams<{ rideId?: string }>();
+
   const rideId = params.rideId;
+
   const [ride, setRide] = useState<RideData | null>(null);
   const [loading, setLoading] = useState(true);
 
+  
   const loadRide = useCallback(async () => {
     if (!rideId) return;
+
     try {
       const res = await api.get(`/rides/${rideId}`);
+
       setRide(res.data?.ride || null);
     } catch (e: any) {
-      console.log('RIDE LOAD ERROR', e?.response?.data || e?.message);
+      console.log(
+        'RIDE LOAD ERROR',
+        e?.response?.data || e?.message
+      );
     } finally {
       setLoading(false);
     }
   }, [rideId]);
 
+  
   useEffect(() => {
     loadRide();
   }, [loadRide]);
 
+ 
   useEffect(() => {
     if (!rideId) return;
+
     let socket: any;
     let mounted = true;
 
     (async () => {
       socket = await getSocket();
-      socket.emit('ride:join', rideId);
 
+      if (!mounted) return;
+
+      
+      socket.emit('ride:join', {
+        rideId,
+      });
+
+   
       socket.on('ride:status', (data: any) => {
         if (!mounted) return;
-        if (data?.ride) setRide(data.ride);
-        else loadRide();
+
+        if (data?.ride) {
+          setRide(data.ride);
+        } else {
+          loadRide();
+        }
+
+     
         if (data?.status === 'COMPLETED') {
-          router.replace({ pathname: '/ride/receipt', params: { rideId: String(rideId) } });
+          router.replace({
+            pathname: '/ride/receipt',
+            params: {
+              rideId: String(rideId),
+            },
+          });
         }
       });
 
-      socket.on('driver:location', (data: any) => {
-        if (!mounted || !data?.lat || !data?.lng) return;
-        setRide((prev) => prev?.driver ? { ...prev, driver: { ...prev.driver, current_lat: data.lat, current_lng: data.lng } } : prev);
+      socket.on('ride:driver-location', (data: any) => {
+        if (
+          !mounted ||
+          data?.lat == null ||
+          data?.lng == null
+        ) {
+          return;
+        }
+
+        setRide((prev) =>
+          prev?.driver
+            ? {
+                ...prev,
+                driver: {
+                  ...prev.driver,
+                  current_lat: Number(data.lat),
+                  current_lng: Number(data.lng),
+                },
+              }
+            : prev
+        );
       });
 
+     
       socket.on('ride:cancelled', (data: any) => {
         if (!mounted) return;
-        Alert.alert('Ride cancelled', data?.reason || 'The ride was cancelled.', [
-          { text: 'OK', onPress: () => router.replace('/main/home') },
-        ]);
+
+        Alert.alert(
+          'Ride cancelled',
+          data?.reason || 'The ride was cancelled.',
+          [
+            {
+              text: 'OK',
+              onPress: () => router.replace('/main/home'),
+            },
+          ]
+        );
       });
     })();
 
+ 
     return () => {
       mounted = false;
+
       if (socket) {
         socket.off('ride:status');
-        socket.off('driver:location');
+        socket.off('ride:driver-location');
         socket.off('ride:cancelled');
-        socket.emit('ride:leave', rideId);
+
+        socket.emit('ride:leave', {
+          rideId,
+        });
       }
     };
   }, [rideId, loadRide]);
 
+
   const handleCall = async () => {
     if (!rideId) return;
+
     try {
-      const res = await api.get(`/rides/${rideId}/contact-driver`);
+      const res = await api.get(
+        `/rides/${rideId}/contact-driver`
+      );
+
       const phone = res.data?.driverPhone;
-      if (phone) Linking.openURL(`tel:${phone}`);
-      else Alert.alert('Unavailable', 'Driver contact is not available yet.');
-    } catch { Alert.alert('Error', 'Unable to reach driver.'); }
+
+      if (phone) {
+        Linking.openURL(`tel:${phone}`);
+      } else {
+        Alert.alert(
+          'Unavailable',
+          'Driver contact is not available yet.'
+        );
+      }
+    } catch {
+      Alert.alert(
+        'Error',
+        'Unable to reach driver.'
+      );
+    }
   };
 
+  
   const handleSos = async () => {
     if (!rideId) return;
-    Alert.alert('SOS', 'Send emergency alert to safety team?', [
-      { text: 'Cancel', style: 'cancel' },
-      { text: 'Send SOS', style: 'destructive', onPress: async () => {
-        try { await api.post(`/rides/${rideId}/sos`); Alert.alert('SOS sent', 'Our safety team has been alerted.'); }
-        catch { Alert.alert('Error', 'Unable to send SOS.'); }
-      } },
-    ]);
+
+    Alert.alert(
+      'SOS',
+      'Send emergency alert to safety team?',
+      [
+        {
+          text: 'Cancel',
+          style: 'cancel',
+        },
+        {
+          text: 'Send SOS',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await api.post(`/rides/${rideId}/sos`);
+
+              Alert.alert(
+                'SOS sent',
+                'Our safety team has been alerted.'
+              );
+            } catch {
+              Alert.alert(
+                'Error',
+                'Unable to send SOS.'
+              );
+            }
+          },
+        },
+      ]
+    );
   };
 
+ 
   const handleCancel = () => {
     if (!rideId) return;
-    Alert.alert('Cancel ride', 'Are you sure? Cancellation charges may apply.', [
-      { text: 'Keep ride', style: 'cancel' },
-      { text: 'Cancel ride', style: 'destructive', onPress: async () => {
-        try {
-          const res = await api.patch(`/rides/${rideId}/cancel`, { reason: 'User cancelled' });
-          const charges = res.data?.cancellationCharges;
-          Alert.alert('Ride cancelled', charges ? `Cancellation charge: ₹${charges}` : 'Your ride has been cancelled.', [
-            { text: 'OK', onPress: () => router.replace('/main/home') },
-          ]);
-        } catch (e: any) { Alert.alert('Error', e?.response?.data?.message || 'Unable to cancel.'); }
-      } },
-    ]);
+
+    Alert.alert(
+      'Cancel ride',
+      'Are you sure? Cancellation charges may apply.',
+      [
+        {
+          text: 'Keep ride',
+          style: 'cancel',
+        },
+        {
+          text: 'Cancel ride',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              const res = await api.patch(
+                `/rides/${rideId}/cancel`,
+                {
+                  reason: 'User cancelled',
+                }
+              );
+
+              const charges =
+                res.data?.cancellationCharges;
+
+              Alert.alert(
+                'Ride cancelled',
+                charges
+                  ? `Cancellation charge: ₹${charges}`
+                  : 'Your ride has been cancelled.',
+                [
+                  {
+                    text: 'OK',
+                    onPress: () =>
+                      router.replace('/main/home'),
+                  },
+                ]
+              );
+            } catch (e: any) {
+              Alert.alert(
+                'Error',
+                e?.response?.data?.message ||
+                  'Unable to cancel.'
+              );
+            }
+          },
+        },
+      ]
+    );
   };
 
-  const statusLabel = {
-    SEARCHING: 'Finding driver',
-    ACCEPTED: 'Driver on the way',
-    ARRIVING: 'Driver arriving',
-    STARTED: 'On trip',
-    COMPLETED: 'Completed',
-    CANCELLED: 'Cancelled',
-    SCHEDULED: 'Scheduled',
-  }[ride?.status || ''] || ride?.status || 'Loading';
+
+  const getDriverEta = () => {
+    const driverLat = ride?.driver?.current_lat;
+    const driverLng = ride?.driver?.current_lng;
+
+    const pickupLat = ride?.pickup_lat;
+    const pickupLng = ride?.pickup_lng;
+
+    if (
+      driverLat == null ||
+      driverLng == null ||
+      pickupLat == null ||
+      pickupLng == null
+    ) {
+      return null;
+    }
+
+    const distanceKm = calculateDistanceKm(
+      Number(driverLat),
+      Number(driverLng),
+      Number(pickupLat),
+      Number(pickupLng)
+    );
+
+    const etaMinutes = Math.max(
+      1,
+      Math.ceil((distanceKm / 25) * 60)
+    );
+
+    return {
+      distanceKm,
+      etaMinutes,
+    };
+  };
+
+  const driverEta = getDriverEta();
+
+  const statusLabel =
+    {
+      SEARCHING: 'Finding driver',
+      ACCEPTED: 'Driver on the way',
+      ARRIVING: 'Driver arriving',
+      STARTED: 'On trip',
+      COMPLETED: 'Completed',
+      CANCELLED: 'Cancelled',
+      SCHEDULED: 'Scheduled',
+    }[ride?.status || ''] ||
+    ride?.status ||
+    'Loading';
 
   if (loading) {
     return (
-      <SafeAreaView style={[styles.container, { alignItems: 'center', justifyContent: 'center' }]}>
-        <ActivityIndicator size="large" color="#111111" />
+      <SafeAreaView
+        style={[
+          styles.container,
+          {
+            alignItems: 'center',
+            justifyContent: 'center',
+          },
+        ]}
+      >
+        <ActivityIndicator
+          size="large"
+          color="#111111"
+        />
       </SafeAreaView>
     );
   }
 
   return (
     <SafeAreaView style={styles.container}>
-      {/* Map Placeholder */}
       <View style={styles.map}>
         <View style={styles.mapHeader}>
           <TouchableOpacity
             style={styles.backButton}
-            onPress={() => router.replace('/main/home')}
+            onPress={() =>
+              router.replace('/main/home')
+            }
           >
-            <Ionicons name="arrow-back" size={22} color="#111111" />
+            <Ionicons
+              name="arrow-back"
+              size={22}
+              color="#111111"
+            />
           </TouchableOpacity>
 
           <View style={styles.statusBadge}>
             <View style={styles.statusDot} />
-            <Text style={styles.statusText}>{statusLabel}</Text>
+
+            <Text style={styles.statusText}>
+              {statusLabel}
+            </Text>
           </View>
         </View>
 
         <View style={styles.routePath} />
 
         <View style={styles.pickupMarker}>
-          <Ionicons name="location" size={25} color="#ffffff" />
+          <Ionicons
+            name="location"
+            size={25}
+            color="#ffffff"
+          />
         </View>
 
         <View style={styles.driverMarker}>
-          <Ionicons name="car" size={22} color="#ffffff" />
+          <Ionicons
+            name="car"
+            size={22}
+            color="#ffffff"
+          />
         </View>
 
         <View style={styles.destinationMarker}>
-          <Ionicons name="flag" size={18} color="#ffffff" />
+          <Ionicons
+            name="flag"
+            size={18}
+            color="#ffffff"
+          />
         </View>
       </View>
 
-      {/* Ride Details */}
-      <ScrollView style={styles.bottomSheet} contentContainerStyle={{ paddingBottom: 20 }}>
+      <ScrollView
+        style={styles.bottomSheet}
+        contentContainerStyle={{
+          paddingBottom: 20,
+        }}
+      >
         <View style={styles.handle} />
 
         <View style={styles.etaRow}>
           <View>
-            <Text style={styles.arrivalLabel}>{ride?.status === 'STARTED' ? 'Trip fare' : 'Arriving in'}</Text>
-            <Text style={styles.arrivalTime}>
-              {ride?.status === 'STARTED' || ride?.status === 'COMPLETED'
-                ? `₹${ride?.final_fare ?? ride?.estimated_fare ?? 0}`
-                : '5 min'}
+            <Text style={styles.arrivalLabel}>
+              {ride?.status === 'STARTED'
+                ? 'Trip fare'
+                : 'Arriving in'}
             </Text>
+
+            <Text style={styles.arrivalTime}>
+              {ride?.status === 'STARTED' ||
+              ride?.status === 'COMPLETED'
+                ? `₹${
+                    ride?.final_fare ??
+                    ride?.estimated_fare ??
+                    0
+                  }`
+                : driverEta
+                  ? `${driverEta.etaMinutes} min`
+                  : 'Calculating...'}
+            </Text>
+
+            {ride?.status !== 'STARTED' &&
+              ride?.status !== 'COMPLETED' &&
+              driverEta && (
+                <Text style={styles.distanceText}>
+                  {driverEta.distanceKm.toFixed(1)} km
+                  away
+                </Text>
+              )}
           </View>
 
           <View style={styles.rideStatus}>
-            <Text style={styles.rideStatusText}>{statusLabel}</Text>
+            <Text style={styles.rideStatusText}>
+              {statusLabel}
+            </Text>
           </View>
         </View>
 
-        {ride?.ride_otp && ride?.status === 'ACCEPTED' && (
-          <View style={styles.otpCard}>
-            <Text style={styles.otpLabel}>Share this OTP with driver to start</Text>
-            <Text style={styles.otpValue}>{ride.ride_otp}</Text>
-          </View>
-        )}
+        {ride?.ride_otp &&
+          ride?.status === 'ACCEPTED' && (
+            <View style={styles.otpCard}>
+              <Text style={styles.otpLabel}>
+                Share this OTP with driver to start
+              </Text>
 
-        {/* Driver */}
+              <Text style={styles.otpValue}>
+                {ride.ride_otp}
+              </Text>
+            </View>
+          )}
+
         {ride?.driver && (
           <View style={styles.driverCard}>
             <View style={styles.driverAvatar}>
-              <Ionicons name="person" size={28} color="#777777" />
+              <Ionicons
+                name="person"
+                size={28}
+                color="#777777"
+              />
             </View>
 
             <View style={styles.driverInfo}>
-              <Text style={styles.driverName}>{ride.driver.name}</Text>
+              <Text style={styles.driverName}>
+                {ride.driver.name}
+              </Text>
+
               <View style={styles.ratingRow}>
-                <Ionicons name="star" size={14} color="#111111" />
-                <Text style={styles.rating}>{Number(ride.driver.rating || 0).toFixed(1)}</Text>
-                <Text style={styles.tripCount}> • {ride.driver.total_rides || 0} rides</Text>
+                <Ionicons
+                  name="star"
+                  size={14}
+                  color="#111111"
+                />
+
+                <Text style={styles.rating}>
+                  {Number(
+                    ride.driver.rating || 0
+                  ).toFixed(1)}
+                </Text>
+
+                <Text style={styles.tripCount}>
+                  {' '}
+                  • {ride.driver.total_rides || 0}{' '}
+                  rides
+                </Text>
               </View>
             </View>
 
             <View style={styles.carInfo}>
-              <Text style={styles.carNumber}>{ride.driver.vehicle_plate}</Text>
-              <Text style={styles.carModel}>{ride.driver.vehicle_model}</Text>
+              <Text style={styles.carNumber}>
+                {ride.driver.vehicle_plate}
+              </Text>
+
+              <Text style={styles.carModel}>
+                {ride.driver.vehicle_model}
+              </Text>
             </View>
           </View>
         )}
 
-        {/* Route */}
         <View style={styles.locationCard}>
           <View style={styles.locationRow}>
             <View style={styles.pickupDot} />
 
             <View style={styles.locationText}>
-              <Text style={styles.locationLabel}>Pickup</Text>
+              <Text style={styles.locationLabel}>
+                Pickup
+              </Text>
+
               <Text style={styles.locationValue}>
-                {ride?.pickup_address || 'Current location'}
+                {ride?.pickup_address ||
+                  'Current location'}
               </Text>
             </View>
           </View>
@@ -260,35 +560,68 @@ export default function TrackingScreen() {
             <View style={styles.destinationDot} />
 
             <View style={styles.locationText}>
-              <Text style={styles.locationLabel}>Destination</Text>
+              <Text style={styles.locationLabel}>
+                Destination
+              </Text>
+
               <Text style={styles.locationValue}>
-                {ride?.dropoff_address || 'Your destination'}
+                {ride?.dropoff_address ||
+                  'Your destination'}
               </Text>
             </View>
           </View>
         </View>
 
-        {/* Actions */}
         <View style={styles.actions}>
-          <TouchableOpacity style={styles.actionButton} onPress={handleCall}>
-            <Ionicons name="call-outline" size={20} color="#111111" />
-            <Text style={styles.actionText}>Call</Text>
+          <TouchableOpacity
+            style={styles.actionButton}
+            onPress={handleCall}
+          >
+            <Ionicons
+              name="call-outline"
+              size={20}
+              color="#111111"
+            />
+
+            <Text style={styles.actionText}>
+              Call
+            </Text>
           </TouchableOpacity>
 
-          <TouchableOpacity style={styles.actionButton} onPress={handleSos}>
-            <Ionicons name="shield-checkmark-outline" size={20} color="#DC2626" />
-            <Text style={[styles.actionText, { color: '#DC2626' }]}>SOS</Text>
+          <TouchableOpacity
+            style={styles.actionButton}
+            onPress={handleSos}
+          >
+            <Ionicons
+              name="shield-checkmark-outline"
+              size={20}
+              color="#DC2626"
+            />
+
+            <Text
+              style={[
+                styles.actionText,
+                {
+                  color: '#DC2626',
+                },
+              ]}
+            >
+              SOS
+            </Text>
           </TouchableOpacity>
         </View>
 
-        {ride?.status !== 'COMPLETED' && ride?.status !== 'CANCELLED' && (
-          <TouchableOpacity
-            style={styles.cancelButton}
-            onPress={handleCancel}
-          >
-            <Text style={styles.cancelText}>Cancel Ride</Text>
-          </TouchableOpacity>
-        )}
+        {ride?.status !== 'COMPLETED' &&
+          ride?.status !== 'CANCELLED' && (
+            <TouchableOpacity
+              style={styles.cancelButton}
+              onPress={handleCancel}
+            >
+              <Text style={styles.cancelText}>
+                Cancel Ride
+              </Text>
+            </TouchableOpacity>
+          )}
       </ScrollView>
     </SafeAreaView>
   );
@@ -432,6 +765,12 @@ const styles = StyleSheet.create({
     fontSize: 26,
     fontWeight: '800',
     color: '#111111',
+    marginTop: 2,
+  },
+
+  distanceText: {
+    fontSize: 12,
+    color: '#888888',
     marginTop: 2,
   },
 
