@@ -9,8 +9,8 @@
     "dev": "nodemon src/server.js",
     "seed:admin": "node src/seed/createAdmin.js",
     "seed:demo": "node src/seed/seedDemo.js",
-    "test": "node --experimental-test-coverage --test tests/auth.test.mjs",
-    "test:watch": "node --watch --test tests/auth.test.mjs"
+    "test": "node --experimental-test-coverage --experimental-test-module-mocks --test tests/auth.test.mjs",
+    "test:watch": "node --experimental-test-module-mocks --watch --test tests/auth.test.mjs"
   },
   "keywords": [],
   "author": "",

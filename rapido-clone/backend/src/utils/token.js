@@ -7,7 +7,7 @@ const REFRESH_TOKEN_EXPIRY = '7d';
 const RESET_TOKEN_EXPIRY = '30m';
 
 const baseClaims = (userId, role) => ({
-    sub: String(userId),
+    user: String(userId),
     role,
     iat: Math.floor(Date.now() / 1000),
 });

@@ -1,6 +1,3 @@
-import bcrypt from 'bcrypt';
-import pool from '../config/DBconfig/database.js';
-
 import {
     registerUser,
     loginUser,
@@ -164,7 +161,7 @@ export const login = async (req, res) => {
         });
 
     } catch (error) {
-        // Do not log the full error -- may contain credentials.
+        console.error('LOGIN ERROR:', error);
 
         return res.status(401).json({
             success: false,
@@ -285,18 +282,12 @@ export const forgotPassword = async (req, res) => {
             });
         }
 
-        const result = await requestPasswordReset({
+        await requestPasswordReset({
             email: email ? String(email).trim().toLowerCase() : null,
             phone: phone ? String(phone).trim() : null,
         });
 
-        // In production: deliver resetToken via email/SMS, never expose in response.
-        // In development: expose it in the response for easier testing.
-        const isProd = process.env.NODE_ENV === 'production';
-        if (!isProd && result.sent) {
-            return res.status(200).json({ ...GENERIC_OK, resetToken: result.resetToken });
-        }
-
+        // Reset token is NOT returned in response; it must be delivered via email/SMS.
         return res.status(200).json(GENERIC_OK);
     } catch (error) {
         // Do NOT surface the error message — it might reveal account existence.
