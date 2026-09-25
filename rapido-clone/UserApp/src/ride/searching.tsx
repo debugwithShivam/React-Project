@@ -37,14 +37,25 @@ export default function SearchingScreen() {
 
       socket.on('ride:accepted', (data: any) => {
         if (!mounted) return;
-        router.replace({ pathname: '/ride/tracking', params: { rideId: String(data?.ride?.id || rideId) } });
+        router.replace({ pathname: '/ride/tracking', params: { rideId: String(data?.rideId || data?.ride?.id || rideId) } });
       });
 
-      socket.on('ride:cancelled', (data: any) => {
+      socket.on('ride:no-drivers', (data: any) => {
         if (!mounted) return;
-        Alert.alert('Ride cancelled', data?.reason || 'The ride was cancelled.', [
+        Alert.alert('No captain available', data?.message || 'No drivers nearby right now. Please try again.', [
           { text: 'OK', onPress: () => router.replace('/main/home') },
         ]);
+      });
+
+      socket.on('ride:status', (data: any) => {
+        if (!mounted) return;
+        if (data?.status === 'CANCELLED') {
+          Alert.alert('Ride cancelled', data?.reason || 'The ride was cancelled.', [
+            { text: 'OK', onPress: () => router.replace('/main/home') },
+          ]);
+        } else if (data?.status === 'ACCEPTED') {
+          router.replace({ pathname: '/ride/tracking', params: { rideId: String(data?.rideId || rideId) } });
+        }
       });
     })();
 
@@ -52,7 +63,8 @@ export default function SearchingScreen() {
       mounted = false;
       if (socket) {
         socket.off('ride:accepted');
-        socket.off('ride:cancelled');
+        socket.off('ride:no-drivers');
+        socket.off('ride:status');
         socket.emit('ride:leave', { rideId });
       }
     };

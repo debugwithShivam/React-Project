@@ -88,16 +88,51 @@ export default function Dashboard() {
         };
         setRequest(req);
         if (requestTimer.current) clearTimeout(requestTimer.current);
-        requestTimer.current = setTimeout(() => setRequest(null), 30000);
+        const ttl = Number(data?.expiresInSec) > 0 ? Number(data.expiresInSec) * 1000 : 30000;
+        requestTimer.current = setTimeout(() => setRequest(null), ttl);
+      });
+      // Another captain won this request — hide the stale card.
+      socket.on('ride:request-cancelled', (data: any) => {
+        if (!mounted) return;
+        setRequest((prev) => (prev && String(prev.id) === String(data?.rideId) ? null : prev));
+        if (requestTimer.current) clearTimeout(requestTimer.current);
+      });
+      // The rider cancelled an assigned ride.
+      socket.on('ride:cancelled-by-user', () => {
+        if (!mounted) return;
+        setActiveRide(null);
+        setRequest(null);
+        Alert.alert('Ride cancelled', 'The rider cancelled this ride.');
       });
       socket.on('ride:cancelled', () => { if (mounted) { setActiveRide(null); setRequest(null); } });
     })();
     return () => {
       mounted = false;
       if (requestTimer.current) clearTimeout(requestTimer.current);
-      if (socket) { socket.off('ride:request'); socket.off('ride:cancelled'); }
+      if (socket) {
+        socket.off('ride:request');
+        socket.off('ride:request-cancelled');
+        socket.off('ride:cancelled-by-user');
+        socket.off('ride:cancelled');
+      }
     };
   }, [activeRide]);
+
+  // Join the active ride's socket room so the rider receives live location.
+  useEffect(() => {
+    const rideId = activeRide?.id;
+    if (!rideId) return;
+    let socket: any;
+    let mounted = true;
+    (async () => {
+      socket = await getSocket();
+      if (mounted) socket.emit('ride:join', { rideId });
+    })();
+    return () => {
+      mounted = false;
+      if (socket) socket.emit('ride:leave', { rideId });
+    };
+  }, [activeRide?.id]);
 
   const startLocationWatch = useCallback(async () => {
     const { status } = await Location.requestForegroundPermissionsAsync();
@@ -320,6 +355,12 @@ export default function Dashboard() {
                       <Text style={styles.routeValue}>{activeRide.user.name}</Text>
                       {activeRide.user.phone && <Text style={styles.metaText}>{activeRide.user.phone}</Text>}
                     </View>
+                    <Pressable
+                      style={styles.callButton}
+                      onPress={() => router.push({ pathname: '/chat', params: { rideId: String(activeRide.id) } })}
+                    >
+                      <Ionicons name="chatbubble-ellipses-outline" size={18} color={COLORS.ink} />
+                    </Pressable>
                     {activeRide.user.phone && (
                       <Pressable style={styles.callButton} onPress={() => Linking.openURL(`tel:${activeRide.user!.phone}`)}>
                         <Ionicons name="call" size={18} color={COLORS.green} />

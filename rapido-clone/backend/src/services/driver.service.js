@@ -129,13 +129,13 @@ export const listNearbyRideRequests = async ({ driverUserId, radiusKm = 5 }) => 
                 (
                     Math.acos(
                         Math.sin((Number(driver.current_lat) * Math.PI) / 180) *
-                            Math.sin((Number(r.pickup_lat) * Math.PI) / 180) +
-                            Math.cos((Number(driver.current_lat) * Math.PI) / 180) *
-                                Math.cos((Number(r.pickup_lat) * Math.PI) / 180) *
-                                Math.cos(
-                                    (Number(r.pickup_lng) * Math.PI) / 180 -
-                                        (Number(driver.current_lng) * Math.PI) / 180
-                                )
+                        Math.sin((Number(r.pickup_lat) * Math.PI) / 180) +
+                        Math.cos((Number(driver.current_lat) * Math.PI) / 180) *
+                        Math.cos((Number(r.pickup_lat) * Math.PI) / 180) *
+                        Math.cos(
+                            (Number(r.pickup_lng) * Math.PI) / 180 -
+                            (Number(driver.current_lng) * Math.PI) / 180
+                        )
                     ) * 6371
                 ).toFixed(2)
             ),
@@ -152,14 +152,44 @@ export const acceptRide = async ({ driverUserId, rideId }) => {
     try {
         await conn.beginTransaction();
         const [rows] = await conn.execute(
-            `SELECT * FROM rides WHERE id = ? AND status = 'SEARCHING' AND driver_id IS NULL FOR UPDATE`,
+            `SELECT * FROM rides
+     WHERE id = ?
+       AND status = 'SEARCHING'
+       AND driver_id IS NULL
+     FOR UPDATE`,
             [rideId]
         );
+
         if (!rows.length) {
             await conn.rollback();
             throw new ApiError(409, 'Ride no longer available');
         }
+
         const ride = rows[0];
+
+        // Lock and re-check the driver's current state inside the transaction.
+        // The driver may have accepted another ride after the request was sent.
+        const [driverRows] = await conn.execute(
+            `SELECT d.*
+     FROM drivers d
+     WHERE d.id = ?
+       AND d.status = 'APPROVED'
+       AND d.is_online = TRUE
+       AND d.id NOT IN (
+           SELECT driver_id
+           FROM rides
+           WHERE status IN ('ACCEPTED', 'ARRIVING', 'STARTED')
+             AND driver_id IS NOT NULL
+       )
+     FOR UPDATE`,
+            [driver.id]
+        );
+
+        if (!driverRows.length) {
+            await conn.rollback();
+            throw new ApiError(409, 'Driver is no longer available');
+        }
+
         const otp = generateRideOtp();
 
         await conn.execute(
@@ -213,10 +243,26 @@ export const acceptRide = async ({ driverUserId, rideId }) => {
 };
 
 export const rejectRide = async ({ driverUserId, rideId, reason = null }) => {
+    const driver = await getDriverByUserId(driverUserId);
+
     await pool.execute(
-        `INSERT INTO ride_events (ride_id, event_type, payload_json) VALUES (?, 'REJECTED', ?)`,
-        [rideId, JSON.stringify({ driverUserId, reason })]
+        `INSERT INTO ride_events (ride_id, driver_id, event_type, payload_json) VALUES (?, ?, 'REJECTED', ?)`,
+        [rideId, driver?.id ?? null, JSON.stringify({ driverUserId, reason })]
     );
+
+    // Free this driver from the dispatch set so a re-dispatch can reach
+    // additional nearby captains instead of waiting for the timeout.
+    const dispatched = rideDispatchedTo.get(rideId);
+    if (dispatched) dispatched.delete(driverUserId);
+
+    const [rows] = await pool.execute(
+        `SELECT id, status FROM rides WHERE id = ? LIMIT 1`,
+        [rideId]
+    );
+    if (rows.length && rows[0].status === 'SEARCHING') {
+        dispatchRideRequests(rideId).catch((e) => console.error('[reject-redispatch]', e.message));
+    }
+
     return { rideId, rejected: true };
 };
 
@@ -558,14 +604,14 @@ export const dispatchRideRequests = async (rideId) => {
             rideId,
             message: 'Aapke aas-paas koi driver available nahi hai. Please thodi der mein try karein.',
         });
-        // Mark ride as FAILED
+        // Mark ride as CANCELLED
         await pool.execute(
-            `UPDATE rides SET status = 'FAILED' WHERE id = ? AND status = 'SEARCHING'`,
+            `UPDATE rides SET status = 'CANCELLED' WHERE id = ? AND status = 'SEARCHING'`,
             [rideId]
         );
         rideDispatchedTo.delete(rideId);
     } else if (notifiedCount > 0) {
-        // Schedule timeout — if no one accepts in timeoutSec, fail the ride
+        // Schedule timeout — if no one accepts in timeoutSec, cancel the ride
         setTimeout(() => checkRideTimeout(rideId), timeoutSec * 1000);
     }
 
@@ -573,7 +619,7 @@ export const dispatchRideRequests = async (rideId) => {
 };
 
 /**
- * Called after timeout — if ride still SEARCHING, mark FAILED and notify user.
+ * Called after timeout — if ride is still SEARCHING, cancel it and notify the user.
  */
 export const checkRideTimeout = async (rideId) => {
     try {
@@ -586,7 +632,7 @@ export const checkRideTimeout = async (rideId) => {
         if (ride.status !== 'SEARCHING') return; // Already accepted or cancelled
 
         await pool.execute(
-            `UPDATE rides SET status = 'FAILED' WHERE id = ? AND status = 'SEARCHING'`,
+            `UPDATE rides SET status = 'CANCELLED' WHERE id = ? AND status = 'SEARCHING'`,
             [rideId]
         );
         rideDispatchedTo.delete(rideId);
@@ -595,7 +641,7 @@ export const checkRideTimeout = async (rideId) => {
             rideId,
             message: 'Koi bhi driver request accept nahi kar saka. Please dobara try karein.',
         });
-        console.log(`[dispatch] Ride ${rideId} timed out → FAILED`);
+        console.log(`[dispatch] Ride ${rideId} timed out → CANCELLED`);
     } catch (e) {
         console.error('[checkRideTimeout]', e.message);
     }

@@ -136,6 +136,19 @@ export default function TrackingScreen() {
             },
           });
         }
+
+        if (data?.status === 'CANCELLED') {
+          Alert.alert(
+            'Ride cancelled',
+            data?.reason || 'The ride was cancelled.',
+            [
+              {
+                text: 'OK',
+                onPress: () => router.replace('/main/home'),
+              },
+            ]
+          );
+        }
       });
 
       socket.on('ride:driver-location', (data: any) => {
@@ -587,6 +600,28 @@ export default function TrackingScreen() {
               Call
             </Text>
           </TouchableOpacity>
+
+          {ride?.driver && (
+            <TouchableOpacity
+              style={styles.actionButton}
+              onPress={() =>
+                router.push({
+                  pathname: '/ride/chat',
+                  params: { rideId: String(rideId) },
+                })
+              }
+            >
+              <Ionicons
+                name="chatbubble-ellipses-outline"
+                size={20}
+                color="#111111"
+              />
+
+              <Text style={styles.actionText}>
+                Chat
+              </Text>
+            </TouchableOpacity>
+          )}
 
           <TouchableOpacity
             style={styles.actionButton}

@@ -28,10 +28,10 @@ export default function SignupScreen() {
 		<ScrollView contentContainerStyle={styles.content}>
 			<Text style={styles.title}>Create your account</Text>
 			<Text style={styles.subtitle}>Book rides faster with Sawaari.</Text>
-			<TextInput style={styles.input} placeholder="Full name" value={name} onChangeText={setName} />
-			<TextInput style={styles.input} placeholder="10-digit mobile number" keyboardType="phone-pad" value={phone} onChangeText={setPhone} maxLength={10} />
-			<TextInput style={styles.input} placeholder="Email (optional)" keyboardType="email-address" autoCapitalize="none" value={email} onChangeText={setEmail} />
-			<TextInput style={styles.input} placeholder="Password" secureTextEntry value={password} onChangeText={setPassword} />
+			<TextInput style={styles.input} placeholderTextColor="#999" placeholder="Full name" value={name} onChangeText={setName} />
+			<TextInput style={styles.input} placeholderTextColor="#999" placeholder="10-digit mobile number" keyboardType="phone-pad" value={phone} onChangeText={setPhone} maxLength={10} />
+			<TextInput style={styles.input} placeholderTextColor="#999" placeholder="Email (optional)" keyboardType="email-address" autoCapitalize="none" value={email} onChangeText={setEmail} />
+			<TextInput style={styles.input} placeholderTextColor="#999" placeholder="Password" secureTextEntry value={password} onChangeText={setPassword} />
 			<TouchableOpacity style={styles.button} onPress={submit} disabled={saving}><Text style={styles.buttonText}>{saving ? 'Creating...' : 'Create account'}</Text></TouchableOpacity>
 			<TouchableOpacity onPress={() => router.back()}><Text style={styles.back}>Already have an account? Login</Text></TouchableOpacity>
 		</ScrollView>

@@ -39,27 +39,62 @@ export default function RideDetailsScreen() {
   const fareFor = (vt: string) => estimates[vt]?.finalFare ?? (vt === 'BIKE' ? 49 : vt === 'AUTO' ? 89 : 149);
   const fare = fareFor(vehicleType);
 
-  const handleConfirmRide = async () => {
-    if (!params.pickup || !params.destination) return;
-    try {
-      setBooking(true);
-      const res = await api.post('/rides', {
-        pickupAddress: params.pickup,
-        dropoffAddress: params.destination,
-        pickupLat,
-        pickupLng,
-        dropoffLat,
-        dropoffLng,
-        vehicleType,
-      });
-      const rideId = res.data?.ride?.id;
-      router.replace({ pathname: '/ride/searching', params: { rideId: String(rideId || '') } });
-    } catch (error: any) {
-      Alert.alert('Booking failed', error?.response?.data?.message || 'Please try again.');
-    } finally {
-      setBooking(false);
+  
+const handleConfirmRide = async () => {
+  if (!params.pickup || !params.destination) {
+    Alert.alert('Missing details', 'Please select pickup and destination.');
+    return;
+  }
+
+  try {
+    setBooking(true);
+
+    const res = await api.post('/rides', {
+      pickupAddress: params.pickup,
+      dropoffAddress: params.destination,
+      pickupLat,
+      pickupLng,
+      dropoffLat,
+      dropoffLng,
+      vehicleType,
+    });
+
+    console.log('CREATE RIDE RESPONSE:', res.data);
+
+    const rideId = res.data?.ride?.id;
+
+    if (!rideId) {
+      console.log('CREATE RIDE ERROR: ride ID missing', res.data);
+      Alert.alert(
+        'Booking failed',
+        'Ride was created but no ride ID was returned.'
+      );
+      return;
     }
-  };
+
+    console.log('CREATED RIDE ID:', rideId);
+
+    router.replace({
+      pathname: '/ride/searching',
+      params: {
+        rideId: String(rideId),
+      },
+    });
+  } catch (error: any) {
+    console.log(
+      'CREATE RIDE ERROR:',
+      error?.response?.data || error?.message
+    );
+
+    Alert.alert(
+      'Booking failed',
+      error?.response?.data?.message || 'Please try again.'
+    );
+  } finally {
+    setBooking(false);
+  }
+};
+
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>

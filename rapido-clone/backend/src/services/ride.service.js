@@ -110,8 +110,9 @@ export const getRideById = async (rideId) => {
         `SELECT r.*,
                 u.name AS user_name, u.phone AS user_phone, u.rating_avg AS user_rating,
                 d.id AS driver_id, d.vehicle_type AS driver_vehicle_type, d.vehicle_model, d.vehicle_plate,
-                d.rating_avg AS driver_rating,
-                du.name AS driver_name, du.phone AS driver_phone, du.profile_image AS driver_image
+                d.rating_avg AS driver_rating, d.total_rides AS driver_total_rides,
+                d.current_lat AS driver_lat, d.current_lng AS driver_lng,
+                du.id AS driver_user_id, du.name AS driver_name, du.phone AS driver_phone, du.profile_image AS driver_image
          FROM rides r
          JOIN users u ON u.id = r.user_id
          LEFT JOIN drivers d ON d.id = r.driver_id
@@ -119,7 +120,40 @@ export const getRideById = async (rideId) => {
          WHERE r.id = ? LIMIT 1`,
         [rideId]
     );
-    return rows[0] || null;
+    const row = rows[0];
+    if (!row) return null;
+    return decorateRide(row);
+};
+
+// Attach nested `driver` / `user` objects and a `ride_otp` alias so the mobile
+// apps (which expect a nested shape) render the driver card, OTP and passenger.
+export const decorateRide = (row) => {
+    if (!row) return row;
+    const out = { ...row };
+    out.ride_otp = row.start_otp ?? row.ride_otp ?? null;
+    out.user = {
+        id: row.user_id,
+        name: row.user_name ?? null,
+        phone: row.user_phone ?? null,
+        rating: row.user_rating != null ? Number(row.user_rating) : null,
+    };
+    out.driver = row.driver_id
+        ? {
+              id: row.driver_id,
+              userId: row.driver_user_id ?? null,
+              name: row.driver_name ?? null,
+              phone: row.driver_phone ?? null,
+              profileImage: row.driver_image ?? null,
+              rating: row.driver_rating != null ? Number(row.driver_rating) : null,
+              total_rides: row.driver_total_rides ?? 0,
+              vehicle_type: row.driver_vehicle_type ?? row.vehicle_type ?? null,
+              vehicle_model: row.vehicle_model ?? null,
+              vehicle_plate: row.vehicle_plate ?? null,
+              current_lat: row.driver_lat != null ? Number(row.driver_lat) : null,
+              current_lng: row.driver_lng != null ? Number(row.driver_lng) : null,
+          }
+        : null;
+    return out;
 };
 
 export const getRidesForUser = async (userId, { status = null, limit = 50 } = {}) => {
@@ -151,11 +185,21 @@ export const getActiveRideForDriver = async (driverUserId) => {
     const [d] = await pool.execute(`SELECT id FROM drivers WHERE user_id = ?`, [driverUserId]);
     if (!d.length) return null;
     const [rows] = await pool.execute(
-        `SELECT * FROM rides WHERE driver_id = ? AND status IN ('ACCEPTED','ARRIVING','STARTED')
-         ORDER BY accepted_at DESC LIMIT 1`,
+        `SELECT r.*,
+                u.name AS user_name, u.phone AS user_phone, u.rating_avg AS user_rating,
+                dr.vehicle_model, dr.vehicle_plate, dr.rating_avg AS driver_rating,
+                dr.total_rides AS driver_total_rides, dr.current_lat AS driver_lat, dr.current_lng AS driver_lng,
+                du.id AS driver_user_id, du.name AS driver_name, du.phone AS driver_phone, du.profile_image AS driver_image,
+                dr.id AS driver_id, dr.vehicle_type AS driver_vehicle_type
+         FROM rides r
+         JOIN users u ON u.id = r.user_id
+         LEFT JOIN drivers dr ON dr.id = r.driver_id
+         LEFT JOIN users du ON du.id = dr.user_id
+         WHERE r.driver_id = ? AND r.status IN ('ACCEPTED','ARRIVING','STARTED')
+         ORDER BY r.accepted_at DESC LIMIT 1`,
         [d[0].id]
     );
-    return rows[0] || null;
+    return rows[0] ? decorateRide(rows[0]) : null;
 };
 
 export const cancelRide = async (rideId, userId, { reason = null } = {}) => {

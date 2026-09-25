@@ -1,7 +1,7 @@
 import { asyncHandler } from '../utils/apiError.js';
 import * as svc from '../services/driver.service.js';
 import { findNearbyDrivers } from '../services/matching.service.js';
-import { getActiveRideForDriver } from '../services/ride.service.js';
+import { getActiveRideForDriver, getRideById } from '../services/ride.service.js';
 
 export const activeRideController = asyncHandler(async (req, res) => {
     const ride = await getActiveRideForDriver(req.user.user);
@@ -62,7 +62,8 @@ export const nearbyDriversController = asyncHandler(async (req, res) => {
 
 export const acceptRideController = asyncHandler(async (req, res) => {
     const result = await svc.acceptRide({ driverUserId: req.user.user, rideId: req.params.rideId });
-    res.json({ success: true, ...result });
+    const ride = await getRideById(req.params.rideId);
+    res.json({ success: true, ...result, ride });
 });
 
 export const rejectRideController = asyncHandler(async (req, res) => {
@@ -101,7 +102,8 @@ export const completeRideController = asyncHandler(async (req, res) => {
         distanceKm: req.body?.distanceKm,
         durationMin: req.body?.durationMin,
     });
-    res.json({ success: true, ...result });
+    const ride = await getRideById(req.params.rideId);
+    res.json({ success: true, ...result, ride });
 });
 
 export const cancelRideByDriverController = asyncHandler(async (req, res) => {
