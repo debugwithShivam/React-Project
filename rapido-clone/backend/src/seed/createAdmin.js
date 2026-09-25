@@ -3,10 +3,16 @@ import pool from '../config/DBconfig/database.js';
 
 const createAdmin = async () => {
   try {
-    const name = 'shivam pandey';
-    const phone = '9811442710';
-    const email = 'sp5812070@gmail.com';
-    const password = 'shivam';
+    const name = process.env.ADMIN_NAME;
+    const phone = process.env.ADMIN_PHONE;
+    const email = process.env.ADMIN_EMAIL;
+    const password = process.env.ADMIN_PASSWORD;
+
+    if (!name || !phone || !email || !password) {
+      throw new Error(
+        'Missing ADMIN_NAME, ADMIN_PHONE, ADMIN_EMAIL or ADMIN_PASSWORD in environment variables.'
+      );
+    }
 
     const passwordHash = await bcrypt.hash(password, 12);
 

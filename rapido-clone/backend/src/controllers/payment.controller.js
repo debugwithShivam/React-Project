@@ -9,7 +9,7 @@ export const createOrderController = asyncHandler(async (req, res) => {
 });
 
 export const verifyPaymentController = asyncHandler(async (req, res) => {
-    const { orderId, razorpayPaymentId, signature, creditWallet = false } = req.body;
+    const { orderId, razorpayPaymentId, signature } = req.body;
     if (!orderId || !razorpayPaymentId || !signature)
         throw new ApiError(400, 'orderId, razorpayPaymentId, signature required');
     const result = await pay.verifyPayment({
@@ -17,7 +17,6 @@ export const verifyPaymentController = asyncHandler(async (req, res) => {
         orderId,
         razorpayPaymentId,
         signature,
-        creditWallet: !!creditWallet,
     });
     res.json({ success: true, ...result });
 });

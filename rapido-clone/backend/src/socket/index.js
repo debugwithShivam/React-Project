@@ -70,23 +70,23 @@ export const initSocket = (httpServer) => {
 
         // Driver: join ride room, broadcast location, update online state.
         socket.on('driver:online', async ({ isOnline } = {}) => {
-    if (role !== 'DRIVER') return;
-    const online = Boolean(isOnline);
-    await pool.execute(
-        `UPDATE drivers
+            if (role !== 'DRIVER') return;
+            const online = Boolean(isOnline);
+            await pool.execute(
+                `UPDATE drivers
          SET is_online = ?
          WHERE user_id = ?`,
-        [online, userId]
-    );
-    socket.data.isOnline = online;
-    io.to('admins').emit('driver:online-change', {
-        userId,
-        isOnline: online,
-    });
-    console.log(
-        `[socket] driver ${userId} is now ${online ? 'ONLINE' : 'OFFLINE'}`
-    );
-});
+                [online, userId]
+            );
+            socket.data.isOnline = online;
+            io.to('admins').emit('driver:online-change', {
+                userId,
+                isOnline: online,
+            });
+            console.log(
+                `[socket] driver ${userId} is now ${online ? 'ONLINE' : 'OFFLINE'}`
+            );
+        });
 
         socket.on('driver:location', async ({ lat, lng, heading = 0, speed = 0 }) => {
             if (lat == null || lng == null) return;
@@ -101,8 +101,69 @@ export const initSocket = (httpServer) => {
         });
 
         // User & Driver: join a ride room for live updates.
-        socket.on('ride:join', ({ rideId }) => {
-            if (rideId) socket.join(`ride:${rideId}`);
+        socket.on('ride:join', async ({ rideId } = {}) => {
+            try {
+                if (!rideId) {
+                    socket.emit('ride:error', {
+                        message: 'Ride ID is required',
+                    });
+                    return;
+                }
+
+                const [rows] = await pool.execute(
+                    `SELECT
+                r.id,
+                r.user_id,
+                r.driver_id,
+                d.user_id AS driver_user_id
+             FROM rides r
+             LEFT JOIN drivers d ON d.id = r.driver_id
+             WHERE r.id = ?
+             LIMIT 1`,
+                    [rideId]
+                );
+
+                if (!rows.length) {
+                    socket.emit('ride:error', {
+                        message: 'Ride not found',
+                    });
+                    return;
+                }
+
+                const ride = rows[0];
+
+                const isAdmin = role === 'ADMIN';
+
+                const isCustomer =
+                    String(ride.user_id) === String(userId);
+
+                const isDriver =
+                    ride.driver_user_id != null &&
+                    String(ride.driver_user_id) === String(userId);
+
+                if (!isAdmin && !isCustomer && !isDriver) {
+                    socket.emit('ride:error', {
+                        message: 'You are not authorized to join this ride',
+                    });
+                    return;
+                }
+
+                socket.join(`ride:${rideId}`);
+
+                socket.emit('ride:joined', {
+                    rideId,
+                });
+
+                console.log(
+                    `[socket] ${role} ${userId} joined ride:${rideId}`
+                );
+            } catch (error) {
+                console.error('[socket] ride:join error:', error);
+
+                socket.emit('ride:error', {
+                    message: 'Unable to join ride',
+                });
+            }
         });
         socket.on('ride:leave', ({ rideId }) => {
             if (rideId) socket.leave(`ride:${rideId}`);

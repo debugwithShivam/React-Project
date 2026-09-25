@@ -29,6 +29,28 @@ export const adjustWallet = async ({ userId, amount, type, reason, referenceType
     try {
         await conn.beginTransaction();
 
+        if (referenceType && referenceId != null) {
+            const [existingTx] = await conn.execute(
+                `SELECT id, balance_after
+         FROM wallet_transactions
+         WHERE reference_type = ?
+           AND reference_id = ?
+           AND user_id = ?
+         LIMIT 1
+         FOR UPDATE`,
+                [referenceType, referenceId, userId]
+            );
+
+            if (existingTx.length) {
+                await conn.commit();
+
+                return {
+                    balance: Number(existingTx[0].balance_after),
+                    transactionId: existingTx[0].id,
+                    alreadyProcessed: true,
+                };
+            }
+        }
         const [userRows] = await conn.execute(
             `SELECT wallet_balance, role FROM users WHERE id = ? FOR UPDATE`,
             [userId]

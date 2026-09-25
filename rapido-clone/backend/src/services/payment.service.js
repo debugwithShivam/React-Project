@@ -149,10 +149,23 @@ export const verifyPayment = async ({ userId, orderId, razorpayPaymentId, signat
         }
         payment = rows[0];
 
+        if (payment.status === 'SUCCESS') {
+            await conn.commit();
+
+            return {
+                success: true,
+                paymentId: payment.id,
+                alreadyProcessed: true,
+            };
+        }
+
         await conn.execute(
             `UPDATE payments
-             SET status = 'SUCCESS', gateway_payment_id = ?, gateway_signature = ?, paid_at = NOW()
-             WHERE id = ?`,
+     SET status = 'SUCCESS',
+         gateway_payment_id = ?,
+         gateway_signature = ?,
+         paid_at = NOW()
+     WHERE id = ?`,
             [razorpayPaymentId, signature, payment.id]
         );
 
