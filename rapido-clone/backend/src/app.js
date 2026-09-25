@@ -34,16 +34,26 @@ app.use(
     })
 );
 
-app.post('/api/webhooks/razorpay', express.raw({ type: 'application/json' }), (req, res, next) => {
-    try {
-        req.body = JSON.parse(req.body.toString());
-    } catch {}
-    next();
-}, razorpayWebhookController);
+// Razorpay webhook: raw body must be preserved for HMAC verification.
+// Limit body size to 10 MB to prevent oversized payloads.
+app.post(
+    '/api/webhooks/razorpay',
+    express.raw({ type: 'application/json', limit: '10mb' }),
+    (req, res, next) => {
+        req.rawBody = req.body;
+        try {
+            req.body = JSON.parse(req.body.toString('utf8'));
+        } catch {
+            return res.status(400).json({ success: false, message: 'Invalid JSON body' });
+        }
+        next();
+    },
+    razorpayWebhookController
+);
 
 app.use(express.json({ limit: '5mb' }));
 app.use(cookieParser());
-app.use(express.urlencoded({ extended: true }));
+app.use(express.urlencoded({ extended: true, limit: '5mb' }));
 app.use(morgan('dev'));
 
 app.get('/api/health', (req, res) => {
@@ -61,7 +71,6 @@ app.get('/api/db-test', async (req, res) => {
 });
 
 // Public
-app.use('/api/pages', miscRouter);   // /api/pages, /api/pages/:slug are public inside misc router
 app.use('/api', vehicleRouter);      // /api/vehicles, /api/cities
 app.use('/api/auth', authRouter);
 app.use('/api', profileRouter);
@@ -71,7 +80,7 @@ app.use('/api/users', userRouter);
 app.use('/api', rideRouter);
 app.use('/api/driver', driverRouter);
 app.use('/api', paymentRouter);      // /api/order, /api/verify, /api/wallet, etc.
-app.use('/api', miscRouter);
+app.use('/api', miscRouter);         // /api/pages, /api/coupons/validate, etc.
 
 // Admin
 app.use('/api/admin', adminRouter);

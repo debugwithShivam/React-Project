@@ -39,8 +39,9 @@ export default function BookingPage() {
   const [promoCode, setPromoCode] = useState('');
   const [promoApplied, setPromoApplied] = useState(false);
   const [isBookingModalOpen, setIsBookingModalOpen] = useState(false);
-    const [isBooking, setIsBooking] = useState(false);
+  const [isBooking, setIsBooking] = useState(false);
   const [showMobileMap, setShowMobileMap] = useState(true);
+  const [errorMessage, setErrorMessage] = useState('');
 
   // Sync if URL params change
   useEffect(() => {
@@ -62,9 +63,9 @@ export default function BookingPage() {
     e.preventDefault();
     if (promoCode.trim().toUpperCase() === 'RAPIDO50' || promoCode.trim().toUpperCase() === 'WELCOME') {
       setPromoApplied(true);
-      alert('Promo Code Applied! ₹25 Flat Discount added.');
+      setErrorMessage('');
     } else {
-      alert('Invalid coupon! Try using RAPIDO50 or WELCOME');
+      setErrorMessage('Invalid coupon! Try using RAPIDO50 or WELCOME');
     }
   };
 
@@ -74,11 +75,12 @@ export default function BookingPage() {
 
   const handleConfirmBooking = async () => {
     if (!pickup || !dropoff) {
-      alert('Please choose both pickup and dropoff locations.');
+      setErrorMessage('Please choose both pickup and dropoff locations.');
       return;
     }
     try {
       setIsBooking(true);
+      setErrorMessage('');
       await api.post('/rides', {
         pickupAddress: pickup,
         pickupLat: 0,
@@ -91,7 +93,7 @@ export default function BookingPage() {
       });
       setIsBookingModalOpen(true);
     } catch (error) {
-      alert(error?.response?.data?.message || 'Unable to book this ride. Please login and try again.');
+      setErrorMessage(error?.response?.data?.message || 'Unable to book this ride. Please login and try again.');
     } finally {
       setIsBooking(false);
     }
@@ -154,6 +156,13 @@ export default function BookingPage() {
         {/* 2-Column Responsive Layout */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 sm:gap-8 items-start">
           
+          {errorMessage && (
+            <div className="lg:col-span-12 p-3 bg-rose-50 border border-rose-200 rounded-xl text-sm text-rose-700 flex items-center gap-2" role="alert">
+              <span>{errorMessage}</span>
+              <button onClick={() => setErrorMessage('')} className="ml-auto text-rose-500 hover:text-rose-700">✕</button>
+            </div>
+          )}
+
           {/* Left Column: Form & Vehicle Pickers (7 Cols) */}
           <div className="lg:col-span-7 space-y-5 sm:space-y-6">
             

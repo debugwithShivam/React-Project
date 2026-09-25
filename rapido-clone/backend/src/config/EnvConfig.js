@@ -2,12 +2,25 @@ import dotenv from 'dotenv';
 
 dotenv.config();
 
+const requiredSecrets = [
+    'ACCESS_TOKEN_SECRET',
+    'REFRESH_TOKEN_SECRET',
+    'PASSWORD_RESET_TOKEN_SECRET',
+];
+
+for (const secret of requiredSecrets) {
+    if (!process.env[secret]) {
+        throw new Error(`Missing required environment variable: ${secret}`);
+    }
+}
+
 const envConfig = {
     NODE_ENV: process.env.NODE_ENV || 'development',
     PORT: Number(process.env.PORT || 4000),
 
     ACCESS_TOKEN_SECRET: process.env.ACCESS_TOKEN_SECRET,
     REFRESH_TOKEN_SECRET: process.env.REFRESH_TOKEN_SECRET,
+    PASSWORD_RESET_TOKEN_SECRET: process.env.PASSWORD_RESET_TOKEN_SECRET,
 
     DB_HOST: process.env.DB_HOST,
     DB_PORT: Number(process.env.DB_PORT || 3306),

@@ -35,7 +35,6 @@ export const createRide = async ({
     couponCode = null,
     scheduledAt = null,
 }) => {
-    // Recompute fare server-side (don't trust client).
     const est = await calculateFare({ vehicleType, pickupLat, pickupLng, dropoffLat, dropoffLng });
     const finalEstimated = Number(estimatedFare || est.totalFare);
 
@@ -56,53 +55,65 @@ export const createRide = async ({
     const isScheduled = !!scheduledAt && new Date(scheduledAt) > new Date();
     const initialStatus = isScheduled ? 'SCHEDULED' : 'SEARCHING';
 
-    const [r] = await pool.execute(
-        `INSERT INTO rides
-         (user_id, pickup_address, pickup_lat, pickup_lng, dropoff_address, dropoff_lat, dropoff_lng,
-          vehicle_type, status, estimated_fare, distance_km, duration_min, payment_method,
-          coupon_id, discount_amount, scheduled_at, is_scheduled)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-        [
-            userId,
-            pickupAddress,
-            pickupLat,
-            pickupLng,
-            dropoffAddress,
-            dropoffLat,
-            dropoffLng,
-            vehicleType,
-            initialStatus,
-            finalEstimated,
-            est.distanceKm,
-            est.durationMin,
-            paymentMethod,
-            couponId,
-            discount,
-            scheduledAt,
-            isScheduled,
-        ]
-    );
+    const conn = await pool.getConnection();
+    try {
+        await conn.beginTransaction();
+        const [r] = await conn.execute(
+            `INSERT INTO rides
+             (user_id, pickup_address, pickup_lat, pickup_lng, dropoff_address, dropoff_lat, dropoff_lng,
+              vehicle_type, status, estimated_fare, distance_km, duration_min, payment_method,
+              coupon_id, discount_amount, scheduled_at, is_scheduled)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+            [
+                userId,
+                pickupAddress,
+                pickupLat,
+                pickupLng,
+                dropoffAddress,
+                dropoffLat,
+                dropoffLng,
+                vehicleType,
+                initialStatus,
+                finalEstimated,
+                est.distanceKm,
+                est.durationMin,
+                paymentMethod,
+                couponId,
+                discount,
+                scheduledAt,
+                isScheduled,
+            ]
+        );
 
-    const rideId = r.insertId;
+        const rideId = r.insertId;
 
-    if (couponId) {
-        await redeemCoupon({ couponId, userId, rideId, discount });
-    }
+        await conn.execute(
+            `INSERT INTO ride_events (ride_id, event_type, payload_json) VALUES (?, 'CREATED', ?)`,
+            [rideId, JSON.stringify({ initialStatus, estimatedFare: finalEstimated, discount })]
+        );
 
-    await pool.execute(
-        `INSERT INTO ride_events (ride_id, event_type, payload_json) VALUES (?, 'CREATED', ?)`,
-        [rideId, JSON.stringify({ initialStatus, estimatedFare: finalEstimated, discount })]
-    );
+        await conn.commit();
 
-    emitToAdmins('admin:ride-created', { rideId, status: initialStatus });
+        // Coupon redemption is independent — keep outside the ride txn so a
+        // coupon failure does not void the created ride.
+        let redeemed = false;
+        if (couponId) {
+            try {
+                await redeemCoupon({ couponId, userId, rideId, discount });
+                redeemed = true;
+            } catch (e) {
+                console.error('[createRide] coupon redemption failed', e.message);
+            }
+        }
 
-    if (!isScheduled) {
-        // Fire-and-forget driver dispatch.
-        dispatchRideRequests(rideId).catch((e) => console.error('[dispatch]', e.message));
-    }
+        emitToAdmins('admin:ride-created', { rideId, status: initialStatus });
 
-    const [rows] = await pool.execute(`SELECT * FROM rides WHERE id = ?`, [rideId]);
-    return rows[0];
+        if (!isScheduled) {
+            dispatchRideRequests(rideId).catch((e) => console.error('[dispatch]', e.message));
+        }
+
+        const [rows] = await pool.execute(`SELECT * FROM rides WHERE id = ?`, [rideId]);
+        const ride = decor
 };
 
 export const getRideById = async (rideId) => {

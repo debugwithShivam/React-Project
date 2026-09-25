@@ -45,21 +45,56 @@ export const razorpayConfigController = asyncHandler(async (req, res) => {
     });
 });
 
-// Razorpay webhook — must be raw-body verified at the gateway level.
+// Razorpay webhook — receives the raw body (express.raw) and verifies HMAC
+// before any event is processed. Mount this route with express.raw().
 export const razorpayWebhookController = asyncHandler(async (req, res) => {
-    // For simplicity, accept JSON body and verify event type. In production,
-    // mount this route with express.raw() and verify HMAC of the raw body.
+    const signature = req.get('x-razorpay-signature');
+    const rawBody = req.rawBody;
+
+    if (!pay.verifyWebhookSignature(rawBody, signature, process.env.RAZORPAY_WEBHOOK_SECRET)) {
+        throw new ApiError(401, 'Invalid webhook signature');
+    }
+
     const event = req.body?.event;
     if (event === 'payment.captured') {
         const entity = req.body.payload?.payment?.entity;
         if (entity?.order_id) {
-            await import('../config/DBconfig/database.js').then(async ({ default: pool }) => {
-                await pool.execute(
+            const { default: pool } = await import('../config/DBconfig/database.js');
+            const conn = await pool.getConnection();
+            try {
+                await conn.beginTransaction();
+                await conn.execute(
                     `UPDATE payments SET status = 'SUCCESS', gateway_payment_id = ?, paid_at = NOW() WHERE gateway_order_id = ?`,
                     [entity.id, entity.order_id]
                 );
-            });
+                await conn.commit();
+            } catch (e) {
+                await conn.rollback();
+                throw e;
+            } finally {
+                conn.release();
+            }
+        }
+    } else if (event === 'payment.failed') {
+        const entity = req.body.payload?.payment?.entity;
+        if (entity?.order_id) {
+            const { default: pool } = await import('../config/DBconfig/database.js');
+            const conn = await pool.getConnection();
+            try {
+                await conn.beginTransaction();
+                await conn.execute(
+                    `UPDATE payments SET status = 'FAILED', failure_reason = ? WHERE gateway_order_id = ?`,
+                    [entity.failure_reason || 'Payment failed', entity.order_id]
+                );
+                await conn.commit();
+            } catch (e) {
+                await conn.rollback();
+                throw e;
+            } finally {
+                conn.release();
+            }
         }
     }
+
     res.json({ received: true });
 });

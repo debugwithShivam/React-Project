@@ -10,36 +10,35 @@ import {
     resetPassword,
 } from '../controllers/auth.controller.js';
 import { uploadDriverDocuments } from '../middleware/upload.middleware.js';
-import { authenticateUser } from '../middleware/auth.middleware.js';
-import { requireRole } from '../middleware/auth.middleware.js';
+import { authenticateUser, requireRole } from '../middleware/auth.middleware.js';
+import {
+    authRateLimiter,
+    passwordResetRateLimiter,
+} from '../middleware/rateLimit.middleware.js';
 
 const authRouter = Router();
 
-authRouter.post('/register', uploadDriverDocuments, Authcontroller);
-authRouter.post('/login', login);
+// Registration: rate-limited to prevent mass account creation
+authRouter.post('/register', authRateLimiter, uploadDriverDocuments, Authcontroller);
 
-authRouter.post('/changeAdminPassword',authenticateUser,
-requireRole('ADMIN'),changeAdminPassword
-);
+// Login: rate-limited to prevent brute force
+authRouter.post('/login', authRateLimiter, login);
 
+// Admin password change: protected + rate-limited
 authRouter.post(
-    '/forgot-password',
-    forgotPassword
+    '/changeAdminPassword',
+    authRateLimiter,
+    authenticateUser,
+    requireRole('ADMIN'),
+    changeAdminPassword
 );
 
-authRouter.post(
-    '/reset-password',
-    resetPassword
-);
+// Password reset: dedicated tighter limiter
+authRouter.post('/forgot-password', passwordResetRateLimiter, forgotPassword);
+authRouter.post('/reset-password', passwordResetRateLimiter, resetPassword);
 
-authRouter.post(
-    '/refreshToken',
-    refreshToken
-);
-
-authRouter.post(
-    '/logout',
-    logout
-);
+// Token refresh and logout: rate-limited to prevent token harvesting
+authRouter.post('/refreshToken', authRateLimiter, refreshToken);
+authRouter.post('/logout', authRateLimiter, logout);
 
 export default authRouter;

@@ -8,7 +8,9 @@
     "start": "node src/server.js",
     "dev": "nodemon src/server.js",
     "seed:admin": "node src/seed/createAdmin.js",
-    "seed:demo": "node src/seed/seedDemo.js"
+    "seed:demo": "node src/seed/seedDemo.js",
+    "test": "node --experimental-test-coverage --test tests/auth.test.mjs",
+    "test:watch": "node --watch --test tests/auth.test.mjs"
   },
   "keywords": [],
   "author": "",
@@ -21,6 +23,7 @@
     "cors": "^2.8.6",
     "dotenv": "^17.4.2",
     "express": "^5.2.1",
+    "express-rate-limit": "^7.5.0",
     "helmet": "^8.3.0",
     "jsonwebtoken": "^9.0.3",
     "multer": "^2.4.0",

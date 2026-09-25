@@ -1,27 +1,61 @@
 import jwt from 'jsonwebtoken';
 import envConfig from '../config/envConfig.js';
 
-export const generateAccessToken = (user) => {
+const JWT_ALGORITHM = 'HS256';
+const ACCESS_TOKEN_EXPIRY = '15m';
+const REFRESH_TOKEN_EXPIRY = '7d';
+const RESET_TOKEN_EXPIRY = '30m';
+
+const baseClaims = (userId, role) => ({
+    sub: String(userId),
+    role,
+    iat: Math.floor(Date.now() / 1000),
+});
+
+export const generateAccessToken = (userId, role) => {
     return jwt.sign(
-        {
-            user: user.id,
-            role: user.role
-        },
+        baseClaims(userId, role),
         envConfig.ACCESS_TOKEN_SECRET,
         {
-            expiresIn: '15m'
+            expiresIn: ACCESS_TOKEN_EXPIRY,
+            algorithm: JWT_ALGORITHM,
         }
     );
 };
 
-export const generateRefreshToken = (user) => {
+export const generateRefreshToken = (userId, role) => {
     return jwt.sign(
-        {
-            user: user.id
-        },
+        baseClaims(userId, role),
         envConfig.REFRESH_TOKEN_SECRET,
         {
-            expiresIn: '7d'
+            expiresIn: REFRESH_TOKEN_EXPIRY,
+            algorithm: JWT_ALGORITHM,
         }
     );
+};
+
+export const generatePasswordResetToken = (userId, role) => {
+    return jwt.sign(
+        {
+            ...baseClaims(userId, role),
+            purpose: 'password_reset',
+        },
+        envConfig.PASSWORD_RESET_TOKEN_SECRET,
+        {
+            expiresIn: RESET_TOKEN_EXPIRY,
+            algorithm: JWT_ALGORITHM,
+        }
+    );
+};
+
+export const verifyAccessToken = (token) => {
+    return jwt.verify(token, envConfig.ACCESS_TOKEN_SECRET, { algorithms: [JWT_ALGORITHM] });
+};
+
+export const verifyRefreshToken = (token) => {
+    return jwt.verify(token, envConfig.REFRESH_TOKEN_SECRET, { algorithms: [JWT_ALGORITHM] });
+};
+
+export const verifyPasswordResetToken = (token) => {
+    return jwt.verify(token, envConfig.PASSWORD_RESET_TOKEN_SECRET, { algorithms: [JWT_ALGORITHM] });
 };

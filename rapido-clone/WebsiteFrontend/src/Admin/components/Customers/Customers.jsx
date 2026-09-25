@@ -1,12 +1,16 @@
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Mail, Phone, ShieldAlert, ShieldCheck, Search, RefreshCw } from 'lucide-react';
+import { Mail, Phone, ShieldAlert, ShieldCheck, Search, RefreshCw, AlertCircle, X, DollarSign } from 'lucide-react';
 import { Initials, Screen, Tone } from '../adminUi';
 import api from '../../../api/axios';
 
 export default function Customers() {
   const [search, setSearch] = useState('');
   const [selectedId, setSelectedId] = useState(null);
+  const [walletModal, setWalletModal] = useState({ open: false, type: 'CREDIT' });
+  const [walletAmount, setWalletAmount] = useState('');
+  const [walletReason, setWalletReason] = useState('ADMIN_CREDIT');
+  const [errorMessage, setErrorMessage] = useState('');
   const qc = useQueryClient();
 
   const { data: users = [], isLoading } = useQuery({
@@ -25,6 +29,7 @@ export default function Customers() {
     mutationFn: async ({ id, isActive }) =>
       (await api.patch(`/admin/users/${id}/toggle-active`, { isActive })).data,
     onSuccess: () => qc.invalidateQueries({ queryKey: ['admin-users'] }),
+    onError: () => setErrorMessage('Failed to update user status'),
   });
 
   const adjustWallet = useMutation({
@@ -33,13 +38,40 @@ export default function Customers() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['admin-users'] });
       qc.invalidateQueries({ queryKey: ['admin-user'] });
+      setWalletModal({ open: false, type: 'CREDIT' });
+      setWalletAmount('');
+      setWalletReason('ADMIN_CREDIT');
     },
+    onError: () => setErrorMessage('Failed to adjust wallet'),
   });
 
   const selected = detail || users.find((u) => u.id === selectedId);
 
+  const handleWalletAction = (type) => {
+    setWalletModal({ open: true, type });
+    setWalletAmount('');
+    setWalletReason('ADMIN_CREDIT');
+  };
+
+  const handleWalletSubmit = () => {
+    const amount = Number(walletAmount);
+    if (!amount || amount <= 0) {
+      setErrorMessage('Please enter a valid amount');
+      return;
+    }
+    adjustWallet.mutate({ id: selected.id, amount, type: walletModal.type, reason: walletReason });
+  };
+
   return (
     <Screen className="bg-violet-50/70">
+      {errorMessage && (
+        <div className="mb-4 p-3 bg-rose-50 border border-rose-200 rounded-xl text-sm text-rose-700 flex items-center gap-2" role="alert">
+          <AlertCircle className="w-4 h-4 shrink-0" />
+          <span>{errorMessage}</span>
+          <button onClick={() => setErrorMessage('')} className="ml-auto text-rose-500 hover:text-rose-700">✕</button>
+        </div>
+      )}
+
       <div className="mb-5 flex flex-wrap items-end justify-between gap-3">
         <div>
           <p className="text-xs font-black uppercase tracking-[0.18em] text-violet-700">Rider CRM</p>
@@ -107,12 +139,7 @@ export default function Customers() {
                 {selected.is_active ? 'Block user' : 'Unblock user'}
               </button>
               <button
-                onClick={() => {
-                  const amt = prompt('Amount to credit (₹):');
-                  if (!amt) return;
-                  const reason = prompt('Reason (e.g. GOODWILL):') || 'ADMIN_CREDIT';
-                  adjustWallet.mutate({ id: selected.id, amount: Number(amt), type: 'CREDIT', reason });
-                }}
+                onClick={() => handleWalletAction('CREDIT')}
                 className="rounded-xl bg-brand-yellow px-3 py-2 text-sm font-bold text-violet-950"
               >
                 Credit wallet
@@ -140,6 +167,51 @@ export default function Customers() {
           </aside>
         )}
       </div>
+
+      {walletModal.open && selected && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4" onClick={() => setWalletModal({ open: false, type: 'CREDIT' })}>
+          <div className="bg-white rounded-2xl p-6 w-full max-w-md" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-black">{walletModal.type} Wallet</h3>
+              <button onClick={() => setWalletModal({ open: false, type: 'CREDIT' })} className="text-gray-400 hover:text-gray-600">✕</button>
+            </div>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-bold text-gray-700 mb-1">Amount (₹)</label>
+                <div className="relative">
+                  <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                  <input
+                    type="number"
+                    value={walletAmount}
+                    onChange={(e) => setWalletAmount(e.target.value)}
+                    placeholder="Enter amount"
+                    className="w-full pl-9 pr-3 py-2 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-yellow"
+                    min="1"
+                    step="1"
+                  />
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm font-bold text-gray-700 mb-1">Reason</label>
+                <input
+                  type="text"
+                  value={walletReason}
+                  onChange={(e) => setWalletReason(e.target.value)}
+                  placeholder="e.g. GOODWILL, REFUND, PROMO"
+                  className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-yellow"
+                />
+              </div>
+              <button
+                onClick={handleWalletSubmit}
+                disabled={adjustWallet.isPending}
+                className="w-full py-2.5 bg-brand-yellow hover:bg-brand-yellow-hover text-brand-dark font-black rounded-xl shadow-sm disabled:opacity-50"
+              >
+                {adjustWallet.isPending ? 'Processing...' : `Apply ${walletModal.type}`}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </Screen>
   );
 }

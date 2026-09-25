@@ -1,14 +1,27 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useSearchParams, useNavigate } from 'react-router-dom';
-import { Bike, Shield, ArrowRight, CheckCircle2, User, Phone, Mail, MapPin, Car, Upload, FileText, CreditCard } from 'lucide-react';
+import { Bike, Shield, ArrowRight, CheckCircle2, User, Phone, Mail, MapPin, Car, Upload, FileText, CreditCard, AlertCircle } from 'lucide-react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import axios from 'axios';
-import API_URL from '../api/content';
+import api from '../api/axios';
+
+const ALLOWED_FILE_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'application/pdf'];
+const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
+
+function validateFile(file) {
+  if (!file) return null;
+  if (!ALLOWED_FILE_TYPES.includes(file.type)) {
+    return 'Only JPEG, PNG, WebP, and PDF files are allowed';
+  }
+  if (file.size > MAX_FILE_SIZE) {
+    return 'File size must be less than 5MB';
+  }
+  return null;
+}
 
 export default function SignupPage() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
-  const querClient = useQueryClient()
+  const queryClient = useQueryClient();
 
   const [role, setRole] = useState(searchParams.get('role') === 'captain' ? 'captain' : 'user');
 
@@ -31,18 +44,17 @@ export default function SignupPage() {
   const [documents, setDocuments] = useState({
     dlFront: null,
     dlBack: null,
-
     rcFront: null,
     rcBack: null,
-
     aadhaarFront: null,
     aadhaarBack: null,
-
     insuranceFront: null,
     insuranceBack: null,
   });
 
+  const [docErrors, setDocErrors] = useState({});
   const [submitted, setSubmitted] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
 
   useEffect(() => {
     if (searchParams.get('role') === 'captain') {
@@ -50,16 +62,17 @@ export default function SignupPage() {
     }
   }, [searchParams]);
 
-
-
+  const handleFileChange = (field, file) => {
+    const error = validateFile(file);
+    setDocErrors(prev => ({ ...prev, [field]: error }));
+    if (!error) {
+      setDocuments(prev => ({ ...prev, [field]: file }));
+    }
+  };
 
   const registerMutation = useMutation({
     mutationFn: async () => {
-
-      const selectedRole =
-        role === 'captain'
-          ? 'DRIVER'
-          : 'USER';
+      const selectedRole = role === 'captain' ? 'DRIVER' : 'USER';
 
       const data = new FormData();
 
@@ -78,110 +91,73 @@ export default function SignupPage() {
         data.append('aadhaarNumber', formData.aadhaarNumber || '');
         data.append('payoutUpi', formData.payoutUpi || '');
 
-        if (documents.dlFront) {
-          data.append('dlFront', documents.dlFront);
-        }
-
-        if (documents.dlBack) {
-          data.append('dlBack', documents.dlBack);
-        }
-
-        if (documents.rcFront) {
-          data.append('rcFront', documents.rcFront);
-        }
-
-        if (documents.rcBack) {
-          data.append('rcBack', documents.rcBack);
-        }
-
-        if (documents.aadhaarFront) {
-          data.append('aadhaarFront', documents.aadhaarFront);
-        }
-
-        if (documents.aadhaarBack) {
-          data.append('aadhaarBack', documents.aadhaarBack);
-        }
-
-        if (documents.insuranceFront) {
-          data.append('insuranceFront', documents.insuranceFront);
-        }
-
-        if (documents.insuranceBack) {
-          data.append('insuranceBack', documents.insuranceBack);
-        }
+        const docFields = ['dlFront', 'dlBack', 'rcFront', 'rcBack', 'aadhaarFront', 'aadhaarBack', 'insuranceFront', 'insuranceBack'];
+        docFields.forEach(field => {
+          if (documents[field]) {
+            data.append(field, documents[field]);
+          }
+        });
       }
 
-      const response = await axios.post(
-        `${API_URL}/auth/register`,
-        data,
-        {
-          withCredentials: true,
-        }
-      );
-
+      const response = await api.post('/auth/register', data);
       return response.data;
     },
 
     onSuccess: (data) => {
       console.log('REGISTER SUCCESS:', data);
       setSubmitted(true);
-      querClient.invalidateQueries({
-        queryKey: ['currentUser'],
-      });
+      queryClient.invalidateQueries({ queryKey: ['currentUser'] });
     },
 
     onError: (error) => {
-      console.error(
-        'REGISTER ERROR:',
-        error.response?.data || error.message
-      );
-
-      alert(
-        error.response?.data?.message ||
-        'Registration failed'
-      );
+      console.error('REGISTER ERROR:', error.response?.data || error.message);
+      const message = error.response?.data?.message || 'Registration failed';
+      setErrorMessage(message);
     }
   });
 
   const handleSubmit = (e) => {
     e.preventDefault();
+    setErrorMessage('');
 
     if (!formData.fullname || !formData.phone) {
-      alert('Please fill the required fields!');
+      setErrorMessage('Please fill the required fields!');
       return;
     }
 
     if (!formData.password) {
-      alert('Please create a password!');
+      setErrorMessage('Please create a password!');
+      return;
+    }
+
+    if (formData.password.length < 8) {
+      setErrorMessage('Password must be at least 8 characters long');
       return;
     }
 
     if (formData.password !== formData.confirmPassword) {
-      alert('Passwords do not match!');
+      setErrorMessage('Passwords do not match!');
       return;
     }
 
     if (!formData.agreeTerms) {
-      alert('Please accept Terms of Service and Privacy Policy.');
+      setErrorMessage('Please accept Terms of Service and Privacy Policy.');
       return;
     }
 
-    if (
-      role === 'captain' &&
-      (
-        !formData.vehiclePlate ||
-        !formData.drivingLicense
-      )
-    ) {
-      alert(
-        'Vehicle plate and driving license are required.'
-      );
+    if (role === 'captain' && (!formData.vehiclePlate || !formData.drivingLicense)) {
+      setErrorMessage('Vehicle plate and driving license are required.');
+      return;
+    }
+
+    const hasDocErrors = Object.values(docErrors).some(e => e);
+    if (role === 'captain' && hasDocErrors) {
+      setErrorMessage('Please fix document upload errors before submitting.');
       return;
     }
 
     registerMutation.mutate();
   };
-
 
   return (
     <div className="min-h-[85vh] bg-gradient-to-b from-yellow-50/40 via-white to-gray-50 flex items-center justify-center px-3 sm:px-4 py-8 sm:py-12 w-full">
@@ -211,7 +187,7 @@ export default function SignupPage() {
               className={`py-2 text-[11px] sm:text-xs font-bold rounded-xl transition-all ${role === 'user'
                 ? 'bg-white text-brand-dark shadow-sm'
                 : 'text-gray-500 hover:text-black'
-                }`}
+              }`}
             >
               I want to Ride
             </button>
@@ -221,7 +197,7 @@ export default function SignupPage() {
               className={`py-2 text-[11px] sm:text-xs font-bold rounded-xl transition-all ${role === 'captain'
                 ? 'bg-brand-yellow text-brand-dark shadow-sm'
                 : 'text-gray-500 hover:text-black'
-                }`}
+              }`}
             >
               I want to Drive / Earn
             </button>
@@ -239,12 +215,18 @@ export default function SignupPage() {
               <p className="text-xs text-gray-600">
                 {role === 'captain'
                   ? `Thank you ${formData.fullname}. Your driver application has been submitted and is currently pending verification.`
-                  : `Welcome to Sawaari, ${formData.fullname}. Your account has been created successfully.`
-                }
+                  : `Welcome to Sawaari, ${formData.fullname}. Your account has been created successfully.`}
               </p>
             </div>
           ) : (
             <form onSubmit={handleSubmit} className="space-y-3.5 sm:space-y-4">
+
+              {errorMessage && (
+                <div className="p-3 bg-rose-50 border border-rose-200 rounded-xl text-sm text-rose-700 flex items-start gap-2" role="alert">
+                  <AlertCircle className="w-4 h-4 mt-0.5 shrink-0" />
+                  {errorMessage}
+                </div>
+              )}
 
               {/* Full Name */}
               <div>
@@ -301,7 +283,7 @@ export default function SignupPage() {
                   <input
                     type="password"
                     required
-                    minLength={6}
+                    minLength={8}
                     value={formData.password}
                     onChange={(e) =>
                       setFormData({
@@ -309,7 +291,7 @@ export default function SignupPage() {
                         password: e.target.value
                       })
                     }
-                    placeholder="Create password"
+                    placeholder="Create password (min 8 chars)"
                     className="w-full px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-xs sm:text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-brand-yellow"
                   />
                 </div>
@@ -322,7 +304,7 @@ export default function SignupPage() {
                   <input
                     type="password"
                     required
-                    minLength={6}
+                    minLength={8}
                     value={formData.confirmPassword}
                     onChange={(e) =>
                       setFormData({
@@ -395,7 +377,7 @@ export default function SignupPage() {
                       <label className="block text-[10px] font-bold text-gray-700 mb-0.5">Vehicle Plate No. *</label>
                       <input
                         type="text"
-                        required={role === 'captain'}
+                        required
                         value={formData.vehiclePlate}
                         onChange={(e) => setFormData({ ...formData, vehiclePlate: e.target.value })}
                         placeholder="KA 03 EX 1234"
@@ -406,7 +388,7 @@ export default function SignupPage() {
                       <label className="block text-[10px] font-bold text-gray-700 mb-0.5">Driving License No. *</label>
                       <input
                         type="text"
-                        required={role === 'captain'}
+                        required
                         value={formData.drivingLicense}
                         onChange={(e) => setFormData({ ...formData, drivingLicense: e.target.value })}
                         placeholder="DL-0420110012345"
@@ -426,52 +408,36 @@ export default function SignupPage() {
                         <input
                           type="file"
                           accept="image/*,.pdf"
-                          onChange={(e) =>
-                            setDocuments({
-                              ...documents,
-                              dlFront: e.target.files[0]
-                            })
-                          }
+                          onChange={(e) => handleFileChange('dlFront', e.target.files[0])}
                         />
+                        {docErrors.dlFront && <span className="text-red-500 text-[9px] ml-2">{docErrors.dlFront}</span>}
                       </div>
                       <div className="p-2 bg-white rounded-xl border border-gray-200 flex items-center justify-between">
                         <span className="text-[11px] font-semibold text-gray-700 truncate">2. Vehicle RC</span>
                         <input
                           type="file"
                           accept="image/*,.pdf"
-                          onChange={(e) =>
-                            setDocuments({
-                              ...documents,
-                              rcFront: e.target.files[0]
-                            })
-                          }
+                          onChange={(e) => handleFileChange('rcFront', e.target.files[0])}
                         />
+                        {docErrors.rcFront && <span className="text-red-500 text-[9px] ml-2">{docErrors.rcFront}</span>}
                       </div>
                       <div className="p-2 bg-white rounded-xl border border-gray-200 flex items-center justify-between">
                         <span className="text-[11px] font-semibold text-gray-700 truncate">3. Aadhaar ID</span>
                         <input
                           type="file"
                           accept="image/*,.pdf"
-                          onChange={(e) =>
-                            setDocuments({
-                              ...documents,
-                              aadhaarFront: e.target.files[0]
-                            })
-                          }
+                          onChange={(e) => handleFileChange('aadhaarFront', e.target.files[0])}
                         />
+                        {docErrors.aadhaarFront && <span className="text-red-500 text-[9px] ml-2">{docErrors.aadhaarFront}</span>}
                       </div>
                       <div className="p-2 bg-white rounded-xl border border-gray-200 flex items-center justify-between">
                         <span className="text-[11px] font-semibold text-gray-700 truncate">4. Insurance Policy</span>
                         <input
                           type="file"
                           accept="image/*,.pdf"
-                          onChange={(e) =>
-                            setDocuments({
-                              ...documents,
-                              insuranceFront: e.target.files[0]
-                            })
-                          }
+                          onChange={(e) => handleFileChange('insuranceFront', e.target.files[0])}
                         />
+                        {docErrors.insuranceFront && <span className="text-red-500 text-[9px] ml-2">{docErrors.insuranceFront}</span>}
                       </div>
                     </div>
                   </div>
@@ -523,8 +489,7 @@ export default function SignupPage() {
                     ? 'Creating Account...'
                     : role === 'captain'
                       ? 'Submit Captain KYC Application'
-                      : 'Create Free Account'
-                  }
+                      : 'Create Free Account'}
                 </span>
 
                 <ArrowRight className="w-4 h-4" />

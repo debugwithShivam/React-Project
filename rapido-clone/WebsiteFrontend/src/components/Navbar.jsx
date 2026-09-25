@@ -4,8 +4,7 @@ import { Menu, X, ArrowRight, LogOut, UserCircle } from 'lucide-react';
 import logo from '../image/logo.png';
 import { useSiteContent } from '../context/SiteContentContext';
 import { useQuery } from '@tanstack/react-query';
-import axios from 'axios';
-import API_URL from '../api/content';
+import api, { clearAuth } from '../api/axios';
 
 export default function Navbar() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -15,42 +14,30 @@ export default function Navbar() {
   const navLinks = content.navigation;
 
   const {
-  data,
-  isLoading,
-} = useQuery({
-  queryKey: ['currentUser'],
-  queryFn: async () => {
-    const response = await axios.get(
-      `${API_URL}/users/me`,
-      {
-        withCredentials: true,
-      }
-    );
+    data,
+    isLoading,
+  } = useQuery({
+    queryKey: ['currentUser'],
+    queryFn: async () => {
+      const response = await api.get('/users/me');
+      return response.data;
+    },
+    retry: false,
+  });
 
-    return response.data;
-  },
-  retry: false,
-});
+  const user = data?.success ? data.user : null;
 
-const user = data?.success ? data.user : null;
-
-const handleLogout = async () => {
-  try {
-    await axios.post(
-      `${API_URL}/auth/logout`,
-      {},
-      {
-        withCredentials: true,
-      }
-    );
-  } catch (error) {
-    console.error('Logout error:', error);
-  } finally {
-    setMobileMenuOpen(false);
-    navigate('/');
-    window.location.reload();
-  }
-};
+  const handleLogout = async () => {
+    try {
+      await api.post('/auth/logout');
+    } catch (error) {
+      console.error('Logout error:', error);
+    } finally {
+      clearAuth();
+      setMobileMenuOpen(false);
+      navigate('/');
+    }
+  };
 
   const isActive = (path) => {
     if (path === '/' && location.pathname === '/') return true;

@@ -1,5 +1,4 @@
-import jwt from 'jsonwebtoken'
-import envConfig from '../config/envConfig.js';
+import { verifyAccessToken } from '../utils/token.js';
 
 
 export const authenticateUser = (req, res, next) => {
@@ -17,10 +16,7 @@ export const authenticateUser = (req, res, next) => {
             });
         }
 
-        const decoded = jwt.verify(
-            accessToken,
-            envConfig.ACCESS_TOKEN_SECRET
-        );
+        const decoded = verifyAccessToken(accessToken);
 
         req.user = decoded;
 

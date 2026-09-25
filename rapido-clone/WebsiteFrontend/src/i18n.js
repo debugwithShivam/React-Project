@@ -42,7 +42,7 @@ i18n.use(initReactI18next).init({
   resources: translations,
   lng: savedLanguage,
   fallbackLng: 'en',
-  interpolation: { escapeValue: false }
+  interpolation: { escapeValue: true }
 });
 
 export default i18n;

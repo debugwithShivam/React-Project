@@ -10,11 +10,6 @@ import {
     resetUserPassword,
 } from '../services/auth.service.js';
 
-import {
-    generateAccessToken,
-    generateRefreshToken,
-} from '../utils/token.js';
-
 
 // ===============================
 // REGISTER
@@ -78,58 +73,16 @@ export const Authcontroller = async (req, res) => {
         });
 
         // ===============================
-        // GENERATE TOKENS
-        // ===============================
-        const accessToken = generateAccessToken({
-            id: user.id,
-            role: user.role,
-        });
-
-        const refreshToken = generateRefreshToken({
-            id: user.id,
-            role: user.role,
-        });
-
-        // ===============================
-        // STORE REFRESH TOKEN HASH
-        // ===============================
-        const refreshTokenHash = await bcrypt.hash(
-            refreshToken,
-            12
-        );
-
-        await pool.query(
-            `
-            INSERT INTO refresh_tokens
-            (
-                user_id,
-                token_hash,
-                expires_at
-            )
-            VALUES
-            (
-                ?,
-                ?,
-                DATE_ADD(NOW(), INTERVAL 7 DAY)
-            )
-            `,
-            [
-                user.id,
-                refreshTokenHash,
-            ]
-        );
-
-        // ===============================
         // SET AUTH COOKIES
         // ===============================
-        res.cookie('accessToken', accessToken, {
+        res.cookie('accessToken', user.accessToken, {
             httpOnly: true,
             secure: process.env.NODE_ENV === 'production',
             sameSite: 'lax',
             maxAge: 15 * 60 * 1000,
         });
 
-        res.cookie('refreshToken', refreshToken, {
+        res.cookie('refreshToken', user.refreshToken, {
             httpOnly: true,
             secure: process.env.NODE_ENV === 'production',
             sameSite: 'lax',
@@ -142,9 +95,14 @@ export const Authcontroller = async (req, res) => {
                 normalizedRole === 'DRIVER'
                     ? 'Driver application submitted successfully'
                     : 'User registered successfully',
-            user,
-            accessToken,
-            refreshToken,
+            user: {
+                id: user.id,
+                name: user.name,
+                phone: user.phone,
+                email: user.email,
+                role: user.role,
+                driver: user.driver
+            },
         });
 
     } catch (error) {
@@ -163,7 +121,7 @@ export const Authcontroller = async (req, res) => {
 // ===============================
 export const login = async (req, res) => {
     try {
-        console.log("LOGIN BODY:", req.body);
+
         const {
             identifier,
             password,
@@ -203,12 +161,10 @@ export const login = async (req, res) => {
             success: true,
             message: 'Login successful',
             user: result.user,
-            accessToken: result.accessToken,
-            refreshToken: result.refreshToken,
         });
 
     } catch (error) {
-        console.error('LOGIN ERROR:', error);
+        // Do not log the full error -- may contain credentials.
 
         return res.status(401).json({
             success: false,
@@ -252,12 +208,11 @@ export const refreshToken = async (req, res) => {
         return res.status(200).json({
             success: true,
             message: 'Token refreshed successfully',
-            accessToken: result.accessToken,
-            refreshToken: result.refreshToken,
+            user: result.user,
         });
 
     } catch (error) {
-        console.error('REFRESH TOKEN ERROR:', error);
+        // Do not log full error -- may contain token data.
 
         return res.status(401).json({
             success: false,
@@ -272,7 +227,10 @@ export const refreshToken = async (req, res) => {
 // ===============================
 export const logout = async (req, res) => {
     try {
-        const refreshToken = req.cookies.refreshToken;
+        // Mobile clients (SecureStore) send the token in the body;
+        // web clients send it as an httpOnly cookie.
+        const refreshToken =
+            req.cookies?.refreshToken || req.body?.refreshToken;
 
         if (refreshToken) {
             await logoutUser(refreshToken);
@@ -296,7 +254,7 @@ export const logout = async (req, res) => {
         });
 
     } catch (error) {
-        console.error('LOGOUT ERROR:', error);
+        // Suppress logout error log.
 
         return res.status(500).json({
             success: false,
@@ -310,6 +268,13 @@ export const logout = async (req, res) => {
 // FORGOT PASSWORD
 // ===============================
 export const forgotPassword = async (req, res) => {
+    // SECURITY: always return the same generic 200 regardless of whether
+    // the account exists, to prevent account enumeration.
+    const GENERIC_OK = {
+        success: true,
+        message: 'If an account exists with these details, a reset link has been sent.',
+    };
+
     try {
         const { email, phone } = req.body;
 
@@ -325,22 +290,17 @@ export const forgotPassword = async (req, res) => {
             phone: phone ? String(phone).trim() : null,
         });
 
-        // Dev convenience: include resetToken in response when not in production.
-        // In production, this must be emailed/SMS'd to the user instead.
+        // In production: deliver resetToken via email/SMS, never expose in response.
+        // In development: expose it in the response for easier testing.
         const isProd = process.env.NODE_ENV === 'production';
-        return res.status(200).json({
-            success: true,
-            message:
-                'If an account exists with these details, a reset link has been sent.',
-            ...(isProd ? {} : { resetToken: result.resetToken }),
-        });
-    } catch (error) {
-        console.error('FORGOT PASSWORD ERROR:', error);
+        if (!isProd && result.sent) {
+            return res.status(200).json({ ...GENERIC_OK, resetToken: result.resetToken });
+        }
 
-        return res.status(400).json({
-            success: false,
-            message: error.message || 'Password reset request failed',
-        });
+        return res.status(200).json(GENERIC_OK);
+    } catch (error) {
+        // Do NOT surface the error message — it might reveal account existence.
+        return res.status(200).json(GENERIC_OK);
     }
 };
 
@@ -371,7 +331,7 @@ export const resetPassword = async (req, res) => {
             message: 'Password reset successfully',
         });
     } catch (error) {
-        console.error('RESET PASSWORD ERROR:', error);
+        // Do not log full error -- may contain token data.
 
         return res.status(400).json({
             success: false,
@@ -468,7 +428,7 @@ export const changeAdminPassword = async (req, res) => {
         });
 
     } catch (error) {
-        console.error('CHANGE ADMIN PASSWORD ERROR:', error);
+        // Do not log full error.
 
         return res.status(500).json({
             success: false,

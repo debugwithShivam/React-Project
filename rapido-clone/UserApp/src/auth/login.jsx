@@ -18,8 +18,11 @@ import { saveTokens } from '@/storage/authStorage';
 export default function LoginScreen() {
   const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
+  const [loading, setLoading] = useState(false);
 
   const handleLogin = async () => {
+    if (loading) return; // prevent duplicate submissions
+
     if (!identifier.trim() || !password.trim()) {
       Alert.alert(
         'Login Required',
@@ -28,6 +31,7 @@ export default function LoginScreen() {
       return;
     }
 
+    setLoading(true);
     try {
       const response = await api.post('/auth/login', {
         identifier: identifier.trim(),
@@ -40,29 +44,24 @@ export default function LoginScreen() {
         response.data.refreshToken
       );
 
-      console.log('LOGIN SUCCESS');
-      console.log('LOGIN SUCCESS:', response.data);
-
       Alert.alert(
-  'Login Successful',
-  `Welcome ${response.data?.user?.name || 'to Sawaari'}`,
-  [
-    {
-      text: 'OK',
-      onPress: () => router.replace('/main/home'),
-    },
-  ]
-);
-    } catch (error) {
-      console.error(
-        'LOGIN ERROR:',
-        error?.response?.data || error?.message
+        'Login Successful',
+        `Welcome ${response.data?.user?.name || 'to Sawaari'}`,
+        [
+          {
+            text: 'OK',
+            onPress: () => router.replace('/main/home'),
+          },
+        ]
       );
-
+    } catch (error) {
+      // Do not log the error object — it may contain credentials in the request config.
       Alert.alert(
         'Login Failed',
         error?.response?.data?.message || 'Unable to login. Please try again.'
       );
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -111,11 +110,12 @@ export default function LoginScreen() {
             />
 
             <TouchableOpacity
-              style={styles.loginButton}
+              style={[styles.loginButton, loading && styles.loginButtonDisabled]}
               onPress={handleLogin}
+              disabled={loading}
             >
               <Text style={styles.loginButtonText}>
-                Login
+                {loading ? 'Logging in…' : 'Login'}
               </Text>
             </TouchableOpacity>
 
@@ -217,6 +217,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     marginTop: 4,
+  },
+
+  loginButtonDisabled: {
+    opacity: 0.5,
   },
 
   loginButtonText: {

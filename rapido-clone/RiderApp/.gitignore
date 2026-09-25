@@ -4,3 +4,8 @@
 
 expo-env.d.ts
 # @end expo-cli
+
+# Local env — contains device-specific LAN IPs and should not be committed
+.env
+.env.local
+.env*.local

@@ -1,9 +1,7 @@
 import React, { useEffect, useState } from 'react';
-import { Ban, Check, FileText, Eye, X } from 'lucide-react';
+import { Ban, Check, FileText, Eye, X, AlertCircle } from 'lucide-react';
 import { Initials, Screen, Tone } from '../adminUi';
 import api from '../../../api/axios';
-
-const API_BASE = (import.meta.env.VITE_API_URL || '').replace(/\/$/, '');
 
 export default function DriverDocuments() {
   const [drivers, setDrivers] = useState([]);
@@ -13,6 +11,7 @@ export default function DriverDocuments() {
   const [statusFilter, setStatusFilter] = useState('PENDING');
   const [previewDoc, setPreviewDoc] = useState(null);
   const [rejectionReason, setRejectionReason] = useState('');
+  const [errorMessage, setErrorMessage] = useState('');
 
   const loadDrivers = async () => {
     setLoading(true);
@@ -24,6 +23,7 @@ export default function DriverDocuments() {
       else setSelected(null);
     } catch (error) {
       console.error('DRIVER QUEUE ERROR', error);
+      setErrorMessage('Failed to load drivers');
     } finally { setLoading(false); }
   };
 
@@ -33,22 +33,23 @@ export default function DriverDocuments() {
     try {
       const response = await api.get(`/admin/drivers/${driver.id}`);
       setSelected(response.data.driver);
-    } catch (error) { console.error('DRIVER DETAILS ERROR', error); }
+    } catch (error) { console.error('DRIVER DETAILS ERROR', error); setErrorMessage('Failed to load driver details'); }
   };
 
   const review = async (status) => {
     if (!selected) return;
     if (status === 'REJECTED' && !rejectionReason.trim()) {
-      alert('Please enter a rejection reason');
+      setErrorMessage('Please enter a rejection reason');
       return;
     }
     setSaving(true);
+    setErrorMessage('');
     try {
       const response = await api.patch(`/admin/drivers/${selected.id}/review`, { status, rejectionReason });
       setSelected(response.data.driver);
       setDrivers((items) => items.map((item) => item.id === selected.id ? { ...item, status } : item));
       setRejectionReason('');
-    } catch (error) { console.error('DRIVER REVIEW ERROR', error); }
+    } catch (error) { console.error('DRIVER REVIEW ERROR', error); setErrorMessage('Failed to update driver status'); }
     finally { setSaving(false); }
   };
 
@@ -58,8 +59,15 @@ export default function DriverDocuments() {
       const url = URL.createObjectURL(res.data);
       setPreviewDoc({ ...doc, url });
     } catch (e) {
-      alert('Failed to load document');
+      setErrorMessage('Failed to load document');
     }
+  };
+
+  const closePreview = () => {
+    if (previewDoc?.url) {
+      URL.revokeObjectURL(previewDoc.url);
+    }
+    setPreviewDoc(null);
   };
 
   return (
@@ -69,6 +77,14 @@ export default function DriverDocuments() {
         <h1 className="text-3xl font-black text-zinc-900">Driver documents</h1>
         <p className="mt-1 text-sm text-zinc-500">Approve captains only after license, RC and identity checks.</p>
       </div>
+
+      {errorMessage && (
+        <div className="mb-4 p-3 bg-rose-50 border border-rose-200 rounded-xl text-sm text-rose-700 flex items-center gap-2" role="alert">
+          <AlertCircle className="w-4 h-4 shrink-0" />
+          <span>{errorMessage}</span>
+          <button onClick={() => setErrorMessage('')} className="ml-auto text-rose-500 hover:text-rose-700">✕</button>
+        </div>
+      )}
 
       <div className="mb-4 flex gap-2">
         {['', 'PENDING', 'APPROVED', 'REJECTED'].map((s) => (
@@ -179,14 +195,14 @@ export default function DriverDocuments() {
       </div>
 
       {previewDoc && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4" onClick={() => { URL.revokeObjectURL(previewDoc.url); setPreviewDoc(null); }}>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4" onClick={closePreview}>
           <div className="relative max-h-[90vh] max-w-4xl overflow-auto rounded-2xl bg-white p-4" onClick={(e) => e.stopPropagation()}>
-            <button className="absolute right-2 top-2 rounded-full bg-zinc-100 p-2 hover:bg-zinc-200" onClick={() => { URL.revokeObjectURL(previewDoc.url); setPreviewDoc(null); }}>
+            <button className="absolute right-2 top-2 rounded-full bg-zinc-100 p-2 hover:bg-zinc-200" onClick={closePreview}>
               <X className="h-4 w-4" />
             </button>
             <p className="mb-3 font-black">{previewDoc.document_type} · {previewDoc.document_side || ''}</p>
             {previewDoc.file_name?.toLowerCase().endsWith('.pdf') ? (
-              <iframe src={previewDoc.url} title="doc" className="h-[70vh] w-full" />
+              <iframe src={previewDoc.url} title="doc" className="h-[70vh] w-full" sandbox="allow-scripts allow-same-origin" />
             ) : (
               <img src={previewDoc.url} alt={previewDoc.file_name} className="max-h-[80vh] object-contain" />
             )}

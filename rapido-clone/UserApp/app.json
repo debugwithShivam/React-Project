@@ -41,6 +41,7 @@
       "reactCompiler": true
     },
     "extra": {
+      "apiUrl": "https://api.sawaari.example.com/api",
       "router": {},
       "eas": {
         "projectId": "56f6d6f1-9710-4ac9-8308-6d40b4486883"

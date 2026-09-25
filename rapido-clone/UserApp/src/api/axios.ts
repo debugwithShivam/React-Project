@@ -7,11 +7,22 @@ import {
 } from '@/storage/authStorage';
 
 // Use the computer's LAN address when testing on a physical device.
-// Android emulators can use http://10.0.2.2:<backend-port>/api instead.
-const API_URL = process.env.EXPO_PUBLIC_API_URL ?? 'http://10.153.121.121:4000/api';
+// Set EXPO_PUBLIC_API_URL in your .env file — e.g.:
+//   EXPO_PUBLIC_API_URL=http://192.168.x.x:4000/api   (physical device)
+//   EXPO_PUBLIC_API_URL=http://10.0.2.2:4000/api      (Android emulator)
+//   EXPO_PUBLIC_API_URL=http://localhost:4000/api      (iOS simulator)
+//
+// DO NOT commit .env — it contains device-specific IPs.
+const API_URL = process.env.EXPO_PUBLIC_API_URL;
+
+if (!API_URL) {
+  console.warn(
+    '[axios] EXPO_PUBLIC_API_URL is not set. Set it in UserApp/.env to connect to the backend.'
+  );
+}
 
 const api = axios.create({
-  baseURL: API_URL,
+  baseURL: API_URL ?? '',
   timeout: 15000,
 });
 
@@ -41,7 +52,7 @@ const doRefresh = async (): Promise<string | null> => {
 
   // Use a bare axios call (not `api`) to avoid re-entering the interceptors.
   const res = await axios.post(
-    `${API_URL}/auth/refreshToken`,
+    `${API_URL ?? ''}/auth/refreshToken`,
     { refreshToken },
     { timeout: 15000 }
   );
