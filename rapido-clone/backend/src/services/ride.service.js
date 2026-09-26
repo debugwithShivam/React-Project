@@ -36,7 +36,8 @@ export const createRide = async ({
     scheduledAt = null,
 }) => {
     const est = await calculateFare({ vehicleType, pickupLat, pickupLng, dropoffLat, dropoffLng });
-    const finalEstimated = Number(estimatedFare || est.totalFare);
+    // Backend is the fare authority — never trust a client-supplied estimatedFare.
+    const finalEstimated = Number(est.totalFare);
 
     let couponId = null;
     let discount = 0;
@@ -239,11 +240,14 @@ export const cancelRide = async (rideId, userId, { reason = null } = {}) => {
         }
     }
 
-    await pool.execute(
+    const [cancelResult] = await pool.execute(
         `UPDATE rides SET status = 'CANCELLED', cancelled_at = NOW(), cancelled_by = 'USER',
-                cancellation_reason = ?, cancellation_charges = ? WHERE id = ?`,
+                cancellation_reason = ?, cancellation_charges = ?
+         WHERE id = ? AND status IN ('SEARCHING', 'ACCEPTED', 'ARRIVING')`,
         [reason, charges, rideId]
     );
+    if (cancelResult.affectedRows === 0)
+        throw new ApiError(409, 'Ride state changed and can no longer be cancelled');
     await pool.execute(
         `INSERT INTO ride_events (ride_id, driver_id, event_type, payload_json) VALUES (?, ?, 'CANCELLED_BY_USER', ?)`,
         [rideId, ride.driver_id, JSON.stringify({ reason, charges })]
@@ -279,6 +283,7 @@ export const cancelRide = async (rideId, userId, { reason = null } = {}) => {
 
     const payload = { rideId, status: 'CANCELLED', by: 'USER', charges };
     emitToRide(rideId, 'ride:status', payload);
+    emitToRide(rideId, 'ride:cancelled', payload);
     emitToAdmins('admin:ride-updated', payload);
     return payload;
 };

@@ -1,2 +1,6 @@
 node_modules
 .env
+.env.local
+officework/storage/sessions/
+officework/database/local-dev.sqlite*
+officework/storage/rate-limit/

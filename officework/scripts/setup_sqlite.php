@@ -3,19 +3,25 @@
 declare(strict_types=1);
 
 $root = dirname(__DIR__);
-$env = $root . '/.env';
+$env = $root . '/.env.local';
 if (!is_file($env)) {
-    fwrite(STDERR, "Create .env with explicit ADMIN_EMAIL and strong ADMIN_PASSWORD before setup.\n");
+    fwrite(STDERR, "Create .env.local from .env.local.example before local setup. This script never uses production .env credentials.\n");
     exit(1);
 }
 require_once $root . '/app/Support/Env.php';
+$appEnv = strtolower(trim((string) \App\Support\Env::get('APP_ENV', '')));
+$dbConnection = strtolower(trim((string) \App\Support\Env::get('DB_CONNECTION', '')));
+if ($appEnv !== 'local' || $dbConnection !== 'sqlite' || \App\Support\Env::get('DB_DATABASE') !== 'database/local-dev.sqlite') {
+    fwrite(STDERR, "Local setup requires APP_ENV=local, DB_CONNECTION=sqlite, and DB_DATABASE=database/local-dev.sqlite in .env.local.\n");
+    exit(1);
+}
 $appKey = trim((string) \App\Support\Env::get('APP_KEY', ''));
 if (strlen($appKey) < 32 || in_array(strtolower($appKey), ['change-this-random-string', 'changeme', 'change-me'], true)) {
     fwrite(STDERR, "Set an explicit random APP_KEY of at least 32 characters.\n");
     exit(1);
 }
 
-$database = $root . '/database/local.sqlite';
+$database = $root . '/database/local-dev.sqlite';
 if (!is_file($database)) {
     touch($database);
 }
@@ -25,6 +31,12 @@ $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 $pdo->exec(file_get_contents($root . '/database/schema_sqlite.sql'));
 require_once $root . '/app/Support/MigrationRunner.php';
 (new \App\Support\MigrationRunner($pdo, $root . '/database/migrations'))->run();
+
+$browserMapsKey = trim((string) \App\Support\Env::get('MEDICAL_GOOGLE_MAPS_BROWSER_API_KEY', ''));
+if ($browserMapsKey !== '') {
+    $stmt = $pdo->prepare('insert into settings (key_name, value, updated_at) values (?, ?, CURRENT_TIMESTAMP) on conflict(key_name) do update set value = excluded.value, updated_at = CURRENT_TIMESTAMP');
+    $stmt->execute(['medical_google_maps_browser_api_key', $browserMapsKey]);
+}
 
 $adminCount = (int) $pdo->query('select count(*) from admins')->fetchColumn();
 if ($adminCount === 0) {

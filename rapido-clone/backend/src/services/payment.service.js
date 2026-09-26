@@ -67,7 +67,25 @@ const sanitizePayment = (row) => {
  */
 export const createOrder = async ({ userId, amount, purpose = 'RIDE', rideId = null, notes = {} }) => {
     const rzp = getRzp();
-    const amountPaise = Math.round(Number(amount) * 100);
+
+    let orderAmount = Number(amount);
+    // For ride payments the backend is the price authority — recompute the owed
+    // amount from the ride and ignore whatever the client sent.
+    if (purpose === 'RIDE') {
+        if (!rideId) throw new ApiError(400, 'rideId is required for a ride payment');
+        const [rideRows] = await pool.execute(
+            `SELECT id, user_id, final_fare, estimated_fare, discount_amount, payment_status
+             FROM rides WHERE id = ? LIMIT 1`,
+            [rideId]
+        );
+        if (!rideRows.length) throw new ApiError(404, 'Ride not found');
+        const r = rideRows[0];
+        if (Number(r.user_id) !== Number(userId)) throw new ApiError(403, 'Not your ride');
+        if (r.payment_status === 'PAID') throw new ApiError(409, 'Ride already paid');
+        orderAmount = Number(r.final_fare || r.estimated_fare) - Number(r.discount_amount || 0);
+    }
+
+    const amountPaise = Math.round(orderAmount * 100);
     if (!amountPaise || amountPaise < 100) throw new ApiError(400, 'Amount must be at least ₹1');
 
     const order = await rzp.orders.create({
@@ -84,7 +102,7 @@ export const createOrder = async ({ userId, amount, purpose = 'RIDE', rideId = n
         const [r] = await conn.execute(
             `INSERT INTO payments (ride_id, user_id, amount, method, status, gateway_order_id)
              VALUES (?, ?, ?, 'RAZORPAY', 'INITIATED', ?)`,
-            [rideId, userId, amount, order.id]
+            [rideId, userId, orderAmount, order.id]
         );
         paymentId = r.insertId;
         await conn.commit();
@@ -98,7 +116,7 @@ export const createOrder = async ({ userId, amount, purpose = 'RIDE', rideId = n
     return {
         paymentId,
         orderId: order.id,
-        amount,
+        amount: orderAmount,
         amountPaise,
         currency: 'INR',
         keyId: envConfig.RAZORPAY_KEY_ID,

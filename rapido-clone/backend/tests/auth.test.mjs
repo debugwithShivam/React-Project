@@ -7,6 +7,12 @@ process.env.ACCESS_TOKEN_SECRET = 'test-access-secret-min-32-chars-long!!';
 process.env.REFRESH_TOKEN_SECRET = 'test-refresh-secret-min-32-chars-long!!';
 process.env.PASSWORD_RESET_TOKEN_SECRET = 'test-reset-token-secret-min-32-chars-long!!';
 
+// Module-level aliases so tests can sign/verify with the same secrets the
+// production token.js reads from envConfig (which loads these env vars).
+const ACCESS_TOKEN_SECRET = process.env.ACCESS_TOKEN_SECRET;
+const REFRESH_TOKEN_SECRET = process.env.REFRESH_TOKEN_SECRET;
+const PASSWORD_RESET_TOKEN_SECRET = process.env.PASSWORD_RESET_TOKEN_SECRET;
+
 const mockConnection = {
     query: mock.fn(async () => [[]]),
     beginTransaction: mock.fn(async () => {}),

@@ -135,6 +135,15 @@ Security::sendHeaders($path);
 if (Security::isHttps()) {
     ini_set('session.cookie_secure', '1');
 }
+if (strtolower((string) Env::get('APP_ENV', 'production')) === 'local') {
+    $localSessionPath = dirname(__DIR__) . '/storage/sessions';
+    if (!is_dir($localSessionPath)) {
+        mkdir($localSessionPath, 0700, true);
+    }
+    if (is_dir($localSessionPath) && is_writable($localSessionPath)) {
+        session_save_path($localSessionPath);
+    }
+}
 session_start();
 
 try {

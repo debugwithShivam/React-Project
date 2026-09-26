@@ -219,7 +219,9 @@ export const acceptRide = async ({ driverUserId, rideId }) => {
             pickup: { lat: ride.pickup_lat, lng: ride.pickup_lng, address: ride.pickup_address },
         };
         emitToUser(ride.user_id, 'ride:accepted', payload);
-        emitToRide(rideId, 'ride:status', payload);
+        // The ride room includes the driver — never broadcast the start OTP there.
+        const { startOtp, ...roomPayload } = payload;
+        emitToRide(rideId, 'ride:status', roomPayload);
         emitToAdmins('admin:ride-updated', { rideId, status: 'ACCEPTED', driverId: driver.id });
 
         // Notify all other drivers who got this request that it's no longer available
@@ -233,7 +235,9 @@ export const acceptRide = async ({ driverUserId, rideId }) => {
             data: { rideId, driverId: driver.id, otp },
         });
 
-        return { rideId, otp, driver };
+        // OTP is returned only for the customer's own notification path above;
+        // the driver-facing response must not include it.
+        return { rideId, driver };
     } catch (e) {
         await conn.rollback();
         throw e;
@@ -269,14 +273,16 @@ export const rejectRide = async ({ driverUserId, rideId, reason = null }) => {
 export const markArrived = async ({ driverUserId, rideId, lat = null, lng = null }) => {
     const driver = await getDriverByUserId(driverUserId);
     if (!driver) throw new ApiError(404, 'Driver not found');
-    const [rows] = await pool.execute(
-        `SELECT * FROM rides WHERE id = ? AND driver_id = ? AND status = 'ACCEPTED' FOR UPDATE`,
+    // Atomic guarded transition — no separate read/write race.
+    const [upd] = await pool.execute(
+        `UPDATE rides SET status = 'ARRIVING', arrived_at = NOW()
+         WHERE id = ? AND driver_id = ? AND status = 'ACCEPTED'`,
         [rideId, driver.id]
     );
-    if (!rows.length) throw new ApiError(409, 'Ride not in ACCEPTED state');
+    if (upd.affectedRows === 0) throw new ApiError(409, 'Ride not in ACCEPTED state');
+    const [rows] = await pool.execute(`SELECT * FROM rides WHERE id = ? LIMIT 1`, [rideId]);
     const ride = rows[0];
 
-    await pool.execute(`UPDATE rides SET status = 'ARRIVING', arrived_at = NOW() WHERE id = ?`, [rideId]);
     await pool.execute(
         `INSERT INTO ride_events (ride_id, driver_id, event_type, lat, lng) VALUES (?, ?, 'ARRIVED', ?, ?)`,
         [rideId, driver.id, lat, lng]
@@ -295,18 +301,44 @@ export const markArrived = async ({ driverUserId, rideId, lat = null, lng = null
     return payload;
 };
 
+// In-process throttle for OTP guessing. Bounded per ride; cleared on success.
+const otpAttemptCounts = new Map();
+const MAX_OTP_ATTEMPTS = 5;
+
 export const startRide = async ({ driverUserId, rideId, otp }) => {
     const driver = await getDriverByUserId(driverUserId);
     if (!driver) throw new ApiError(404, 'Driver not found');
     const [rows] = await pool.execute(
-        `SELECT * FROM rides WHERE id = ? AND driver_id = ? AND status IN ('ACCEPTED','ARRIVING') FOR UPDATE`,
+        `SELECT * FROM rides WHERE id = ? AND driver_id = ? AND status IN ('ACCEPTED','ARRIVING') LIMIT 1`,
         [rideId, driver.id]
     );
     if (!rows.length) throw new ApiError(409, 'Ride not in startable state');
     const ride = rows[0];
-    if (!otp || String(otp) !== String(ride.start_otp)) throw new ApiError(400, 'Invalid OTP');
 
-    await pool.execute(`UPDATE rides SET status = 'STARTED', started_at = NOW() WHERE id = ?`, [rideId]);
+    // OTP expiry — valid only for a window after acceptance.
+    const otpValidMin = Number(await getSetting('ride_otp_valid_minutes', 15));
+    const acceptedAt = ride.accepted_at ? new Date(ride.accepted_at) : null;
+    if (acceptedAt && (Date.now() - acceptedAt.getTime()) / 60000 > otpValidMin)
+        throw new ApiError(410, 'OTP expired — ask the rider for a new one');
+
+    // Brute-force throttle.
+    const attempts = otpAttemptCounts.get(rideId) || 0;
+    if (attempts >= MAX_OTP_ATTEMPTS)
+        throw new ApiError(429, 'Too many incorrect OTP attempts');
+
+    if (!otp || String(otp) !== String(ride.start_otp)) {
+        otpAttemptCounts.set(rideId, attempts + 1);
+        throw new ApiError(400, 'Invalid OTP');
+    }
+    otpAttemptCounts.delete(rideId);
+
+    // Atomic transition + single-use: clear the OTP as part of the guard.
+    const [upd] = await pool.execute(
+        `UPDATE rides SET status = 'STARTED', started_at = NOW(), start_otp = NULL
+         WHERE id = ? AND driver_id = ? AND status IN ('ACCEPTED','ARRIVING') AND start_otp = ?`,
+        [rideId, driver.id, String(otp)]
+    );
+    if (upd.affectedRows === 0) throw new ApiError(409, 'Ride could not be started');
     await pool.execute(
         `INSERT INTO ride_events (ride_id, driver_id, event_type) VALUES (?, ?, 'STARTED')`,
         [rideId, driver.id]
@@ -318,7 +350,7 @@ export const startRide = async ({ driverUserId, rideId, otp }) => {
     return payload;
 };
 
-export const completeRide = async ({ driverUserId, rideId, finalFare = null, distanceKm = null, durationMin = null }) => {
+export const completeRide = async ({ driverUserId, rideId }) => {
     const driver = await getDriverByUserId(driverUserId);
     if (!driver) throw new ApiError(404, 'Driver not found');
 
@@ -335,22 +367,18 @@ export const completeRide = async ({ driverUserId, rideId, finalFare = null, dis
         }
         const ride = rows[0];
 
-        // If final fare not supplied, recompute from stored coordinates.
-        let computedFinal = finalFare;
-        let computedDistance = distanceKm;
-        let computedDuration = durationMin;
-        if (computedFinal == null) {
-            const est = await calculateFare({
-                vehicleType: ride.vehicle_type,
-                pickupLat: ride.pickup_lat,
-                pickupLng: ride.pickup_lng,
-                dropoffLat: ride.dropoff_lat,
-                dropoffLng: ride.dropoff_lng,
-            });
-            computedFinal = est.totalFare;
-            computedDistance = est.distanceKm;
-            computedDuration = est.durationMin;
-        }
+        // Backend is the fare authority — always recompute from stored
+        // coordinates. Client-supplied finalFare/distance/duration are ignored.
+        const est = await calculateFare({
+            vehicleType: ride.vehicle_type,
+            pickupLat: ride.pickup_lat,
+            pickupLng: ride.pickup_lng,
+            dropoffLat: ride.dropoff_lat,
+            dropoffLng: ride.dropoff_lng,
+        });
+        const computedFinal = est.totalFare;
+        const computedDistance = est.distanceKm;
+        const computedDuration = est.durationMin;
 
         // Commission based on vehicle type (or default setting).
         const [vtRows] = await conn.execute(
@@ -439,11 +467,13 @@ export const cancelRideByDriver = async ({ driverUserId, rideId, reason = null }
     if (!rows.length) throw new ApiError(409, 'Ride not cancellable');
     const ride = rows[0];
 
-    await pool.execute(
+    const [upd] = await pool.execute(
         `UPDATE rides SET status = 'SEARCHING', cancelled_at = NULL, cancelled_by = NULL,
-                cancellation_reason = NULL, driver_id = NULL WHERE id = ?`,
-        [rideId]
+                cancellation_reason = NULL, driver_id = NULL
+         WHERE id = ? AND driver_id = ? AND status IN ('ACCEPTED','ARRIVING','STARTED')`,
+        [rideId, driver.id]
     );
+    if (upd.affectedRows === 0) throw new ApiError(409, 'Ride not cancellable');
     await pool.execute(
         `INSERT INTO ride_events (ride_id, driver_id, event_type, payload_json) VALUES (?, ?, 'CANCELLED_BY_DRIVER', ?)`,
         [rideId, driver.id, JSON.stringify({ reason })]
@@ -451,6 +481,7 @@ export const cancelRideByDriver = async ({ driverUserId, rideId, reason = null }
 
     const payload = { rideId, status: 'SEARCHING', by: 'DRIVER', reason };
     emitToUser(ride.user_id, 'ride:status', payload);
+    emitToUser(ride.user_id, 'ride:cancelled', { rideId, status: 'CANCELLED', by: 'DRIVER', reason });
     emitToRide(rideId, 'ride:status', payload);
     await createNotification({
         userId: ride.user_id,

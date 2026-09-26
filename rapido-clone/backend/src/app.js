@@ -17,6 +17,7 @@ import vehicleRouter from './routers/vehicle.routes.js';
 import miscRouter from './routers/misc.routes.js';
 import { razorpayWebhookController } from './controllers/payment.controller.js';
 import { notFoundHandler, globalErrorHandler } from './middleware/error.middleware.js';
+import { generalRateLimiter } from './middleware/rateLimit.middleware.js';
 
 const app = express();
 
@@ -69,6 +70,10 @@ app.get('/api/db-test', async (req, res) => {
         res.status(500).json({ success: false, message: 'Database connection failed' });
     }
 });
+
+// Broad safety-net rate limiter for all JSON API routes (webhooks above are
+// exempt). Auth/password-reset endpoints carry their own tighter limiters.
+app.use('/api', generalRateLimiter);
 
 // Public
 app.use('/api', vehicleRouter);      // /api/vehicles, /api/cities

@@ -1,4 +1,4 @@
-<?php $browserMapsKey = trim((string) ($publicSettings['medical_google_maps_browser_api_key'] ?? '')); ?>
+<?php $browserMapsKey = trim((string) ($publicSettings['google_maps_browser_api_key'] ?? '')); ?>
 <main class="web-app" id="medical-web-app" data-maps-enabled="<?= $browserMapsKey !== '' ? '1' : '0' ?>">
   <section class="web-app-header">
     <div><span class="pill">AIMEDIX healthcare store</span><h1>Care, tests and medicines <br>in one place.</h1><p>Choose your service area, then shop or book from verified healthcare partners.</p></div>

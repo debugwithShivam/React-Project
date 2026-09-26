@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { authenticateUser } from '../middleware/auth.middleware.js';
+import { authenticateUser, requireRole } from '../middleware/auth.middleware.js';
 import * as c from '../controllers/misc.controller.js';
 
 const router = Router();
@@ -24,7 +24,7 @@ router.patch('/notifications/:id/read', c.markNotificationReadController);
 router.patch('/notifications/read-all', c.markAllNotificationsReadController);
 router.delete('/notifications/:id', c.deleteNotificationController);
 
-router.post('/payouts/request', c.requestPayoutController);
+router.post('/payouts/request', requireRole('DRIVER', 'ADMIN'), c.requestPayoutController);
 router.get('/payouts/mine', c.myPayoutsController);
 
 export default router;

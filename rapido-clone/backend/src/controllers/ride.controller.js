@@ -2,10 +2,17 @@ import { asyncHandler } from '../utils/apiError.js';
 import * as ride from '../services/ride.service.js';
 import { findNearbyDrivers } from '../services/matching.service.js';
 
+const isValidLat = (v) => Number.isFinite(Number(v)) && Number(v) >= -90 && Number(v) <= 90;
+const isValidLng = (v) => Number.isFinite(Number(v)) && Number(v) >= -180 && Number(v) <= 180;
+// Reject the null-island default (0,0) which indicates missing geocoding.
+const isRealCoord = (lat, lng) => !(Number(lat) === 0 && Number(lng) === 0);
+
 export const fareEstimateController = asyncHandler(async (req, res) => {
     const { pickupLat, pickupLng, dropoffLat, dropoffLng, vehicleType } = req.query;
     if (!pickupLat || !pickupLng || !dropoffLat || !dropoffLng)
         return res.status(400).json({ success: false, message: 'Coordinates required' });
+    if (![pickupLat, dropoffLat].every(isValidLat) || ![pickupLng, dropoffLng].every(isValidLng))
+        return res.status(400).json({ success: false, message: 'Coordinates out of range' });
 
     if (vehicleType) {
         const est = await ride.estimateFare({ pickupLat, pickupLng, dropoffLat, dropoffLng, vehicleType });
@@ -31,18 +38,22 @@ export const createRideController = asyncHandler(async (req, res) => {
     const {
         pickupAddress, pickupLat, pickupLng,
         dropoffAddress, dropoffLat, dropoffLng,
-        vehicleType, estimatedFare, paymentMethod, couponCode, scheduledAt,
+        vehicleType, paymentMethod, couponCode, scheduledAt,
     } = req.body;
 
     if (!pickupAddress || !dropoffAddress || !vehicleType)
         return res.status(400).json({ success: false, message: 'pickupAddress, dropoffAddress, vehicleType required' });
+
+    if (![pickupLat, dropoffLat].every(isValidLat) || ![pickupLng, dropoffLng].every(isValidLng))
+        return res.status(400).json({ success: false, message: 'Valid pickup/dropoff coordinates required' });
+    if (!isRealCoord(pickupLat, pickupLng) || !isRealCoord(dropoffLat, dropoffLng))
+        return res.status(400).json({ success: false, message: 'Pickup and dropoff coordinates must be real locations' });
 
     const created = await ride.createRide({
         userId: req.user.user,
         pickupAddress, pickupLat, pickupLng,
         dropoffAddress, dropoffLat, dropoffLng,
         vehicleType,
-        estimatedFare,
         paymentMethod: paymentMethod || 'CASH',
         couponCode,
         scheduledAt,
@@ -107,6 +118,14 @@ export const shareRideController = asyncHandler(async (req, res) => {
 });
 
 export const rideEventsController = asyncHandler(async (req, res) => {
+    const r = await ride.getRideById(req.params.id);
+    if (!r) return res.status(404).json({ success: false, message: 'Ride not found' });
+    if (req.user.role !== 'ADMIN' && Number(r.user_id) !== Number(req.user.user)) {
+        const { getDriverByUserId } = await import('../services/driver.service.js');
+        const driver = await getDriverByUserId(req.user.user);
+        if (!driver || Number(driver.id) !== Number(r.driver_id))
+            return res.status(403).json({ success: false, message: 'Forbidden' });
+    }
     const events = await ride.listRideEvents(req.params.id);
     res.json({ success: true, events });
 });

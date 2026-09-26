@@ -63,6 +63,11 @@ export const nearbyDriversController = asyncHandler(async (req, res) => {
 export const acceptRideController = asyncHandler(async (req, res) => {
     const result = await svc.acceptRide({ driverUserId: req.user.user, rideId: req.params.rideId });
     const ride = await getRideById(req.params.rideId);
+    // The start OTP belongs to the customer only — never expose it to the driver.
+    if (ride) {
+        delete ride.ride_otp;
+        delete ride.start_otp;
+    }
     res.json({ success: true, ...result, ride });
 });
 
@@ -98,9 +103,6 @@ export const completeRideController = asyncHandler(async (req, res) => {
     const result = await svc.completeRide({
         driverUserId: req.user.user,
         rideId: req.params.rideId,
-        finalFare: req.body?.finalFare,
-        distanceKm: req.body?.distanceKm,
-        durationMin: req.body?.durationMin,
     });
     const ride = await getRideById(req.params.rideId);
     res.json({ success: true, ...result, ride });

@@ -23,6 +23,10 @@ $pageTitle = $pageTitles[$publicPage] ?? 'AIMEDIX MEDS';
 $publicSettings = [];
 try {
     $publicSettings = \App\Support\Settings::all();
+    // Match the Medical Settings field's module-aware lookup, including legacy global values.
+    $browserMapsKey = \App\Support\Settings::moduleGet('medical', 'google_maps_browser_api_key');
+    $publicSettings['medical_google_maps_browser_api_key'] = $browserMapsKey;
+    $publicSettings['google_maps_browser_api_key'] = $browserMapsKey;
 } catch (\Throwable) {
     $publicSettings = [];
 }

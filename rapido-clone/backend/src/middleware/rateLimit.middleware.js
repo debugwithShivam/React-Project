@@ -42,6 +42,9 @@ export const generalRateLimiter = rateLimit({
     max: 200,
     standardHeaders: true,
     legacyHeaders: false,
+    // High-frequency driver telemetry is exempt so live location pings are
+    // never throttled; the socket layer is the primary transport anyway.
+    skip: (req) => req.path === '/driver/location',
     message: {
         success: false,
         message: 'Too many requests, please try again later.',

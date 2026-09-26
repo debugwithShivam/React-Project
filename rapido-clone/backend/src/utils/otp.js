@@ -1,4 +1,6 @@
-export const generateRideOtp = () => String(Math.floor(1000 + Math.random() * 9000));
+import { randomInt } from 'crypto';
+
+export const generateRideOtp = () => String(randomInt(1000, 10000));
 
 export const generateReferralCode = (name = '') => {
     const prefix = name.replace(/[^a-zA-Z]/g, '').slice(0, 4).toUpperCase() || 'SAW';
