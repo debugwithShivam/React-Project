@@ -50,6 +50,9 @@
     try {
       const [config, categories] = await Promise.all([api('/api/v1/medical/config'), api('/api/v1/medical/categories')]);
       state.config = config;
+      if (!(config.zones || []).length) {
+        status('Healthcare services are not available yet. An administrator needs to activate a service area and add approved pharmacies, labs, and doctors.', true);
+      }
       $('#web-category-filter').innerHTML = '<option value="">All categories</option>' + (categories.data || []).map(c => `<option value="${Number(c.id)}">${esc(c.name)}</option>`).join('');
       $('#web-payment-method').innerHTML = (config.payment_methods || []).map(m => `<option value="${esc(m.id)}">${esc(m.name || m.title || m.id)}</option>`).join('') || '<option value="cash_on_delivery">Cash on delivery</option>';
       $('#web-book-form').elements.payment_method.innerHTML = (config.payment_methods || []).map(m => `<option value="${esc(m.id)}">${esc(m.name || m.title || m.id)}</option>`).join('') || '<option value="cash_on_delivery">Cash / pay at service</option>';
