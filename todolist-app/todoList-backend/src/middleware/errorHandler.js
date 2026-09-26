@@ -3,7 +3,8 @@ export function notFoundHandler(_req, res) {
 }
 
 export function errorHandler(error, _req, res, _next) {
-  const status = error.statusCode || error.status || 500;
+  const isClientDataError = error.name === 'ValidationError' || error.name === 'CastError';
+  const status = error.statusCode || error.status || (isClientDataError ? 400 : 500);
   const message = status >= 500 && process.env.NODE_ENV === 'production'
     ? 'An unexpected server error occurred.'
     : error.message;

@@ -10,7 +10,7 @@ export default function Header() {
     
   return (
     <>
-    <div className='header' style={{width:closeBoxToggle?'30%':'5%'}} >
+    <div className='header' style={{width:closeBoxToggle?'20%':'5%'}} >
       <Logo/>
       <PausedCompletedMyDay/>
       <LikedTodoContainer/>
