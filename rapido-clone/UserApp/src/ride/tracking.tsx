@@ -97,7 +97,10 @@ export default function TrackingScreen() {
 
   
   useEffect(() => {
-    loadRide();
+    const timer = setTimeout(() => {
+      void loadRide();
+    }, 0);
+    return () => clearTimeout(timer);
   }, [loadRide]);
 
  

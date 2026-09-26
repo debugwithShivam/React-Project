@@ -36,7 +36,10 @@ export default function KycScreen() {
     }
   };
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => {
+    const timer = setTimeout(() => void load(), 0);
+    return () => clearTimeout(timer);
+  }, []);
 
   const pickAndUpload = async (docType: string, side: string) => {
     const key = `${docType}_${side}`;

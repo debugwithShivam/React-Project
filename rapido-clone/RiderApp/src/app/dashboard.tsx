@@ -61,8 +61,11 @@ export default function Dashboard() {
   }, []);
 
   useEffect(() => {
-    loadProfile();
-    loadActiveRide();
+    const timer = setTimeout(() => {
+      void loadProfile();
+      void loadActiveRide();
+    }, 0);
+    return () => clearTimeout(timer);
   }, [loadProfile, loadActiveRide]);
 
   useEffect(() => {

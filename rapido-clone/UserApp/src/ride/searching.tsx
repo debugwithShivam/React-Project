@@ -22,9 +22,9 @@ export default function SearchingScreen() {
   const rideId = params.rideId;
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
 
-  const pulse1 = useRef(new Animated.Value(0)).current;
-  const pulse2 = useRef(new Animated.Value(0)).current;
-  const pulse3 = useRef(new Animated.Value(0)).current;
+  const [pulse1] = useState(() => new Animated.Value(0));
+  const [pulse2] = useState(() => new Animated.Value(0));
+  const [pulse3] = useState(() => new Animated.Value(0));
 
   useEffect(() => {
     if (!rideId) return;

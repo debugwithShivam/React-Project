@@ -120,7 +120,7 @@ export default function LoginScreen() {
 
             <View style={styles.signupRow}>
               <Text style={styles.signupText}>
-                Don't have an account?
+                Don&apos;t have an account?
               </Text>
 
               <TouchableOpacity

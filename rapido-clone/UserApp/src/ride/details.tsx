@@ -28,7 +28,6 @@ export default function RideDetailsScreen() {
   React.useEffect(() => {
     if (!pickupLat || !pickupLng || !dropoffLat || !dropoffLng) return;
     let mounted = true;
-    setLoadingEstimates(true);
     api.post('/rides/estimate-all', { pickupLat, pickupLng, dropoffLat, dropoffLng })
       .then((r) => { if (mounted) setEstimates(r.data?.estimates || {}); })
       .catch((e) => console.log('ESTIMATE ERROR', e?.response?.data || e?.message))

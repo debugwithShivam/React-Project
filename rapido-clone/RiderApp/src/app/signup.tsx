@@ -250,7 +250,7 @@ export default function SignupScreen() {
                 {formData.agreeTerms && <Ionicons name="checkmark" size={14} color={COLORS.ink} />}
               </View>
               <Text style={styles.termsText}>
-                I agree to Sawaari's <Text style={styles.termsLink}>Terms of Service</Text> and <Text style={styles.termsLink}>Privacy Policy</Text>.
+                I agree to Sawaari&apos;s <Text style={styles.termsLink}>Terms of Service</Text> and <Text style={styles.termsLink}>Privacy Policy</Text>.
               </Text>
             </Pressable>
 

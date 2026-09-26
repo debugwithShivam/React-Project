@@ -27,7 +27,11 @@ export default function SupportScreen() {
     }
   };
 
-  useEffect(() => { if (tab === 'history') loadTickets(); }, [tab]);
+  useEffect(() => {
+    if (tab !== 'history') return;
+    const timer = setTimeout(() => void loadTickets(), 0);
+    return () => clearTimeout(timer);
+  }, [tab]);
 
   const submit = async () => {
     if (!subject.trim() || !message.trim()) { Alert.alert('Missing details', 'Subject and message are required.'); return; }

@@ -21,7 +21,10 @@ export default function NotificationsScreen() {
     }
   };
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => {
+    const timer = setTimeout(() => void load(), 0);
+    return () => clearTimeout(timer);
+  }, []);
 
   const markAllRead = async () => {
     try { await api.patch('/notifications/read-all'); await load(); } catch {}

@@ -30,7 +30,10 @@ export default function PayoutScreen() {
     }
   };
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => {
+    const timer = setTimeout(() => void load(), 0);
+    return () => clearTimeout(timer);
+  }, []);
 
   const submit = async () => {
     const amt = Number(amount);

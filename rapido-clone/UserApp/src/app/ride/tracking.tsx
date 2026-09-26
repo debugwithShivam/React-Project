@@ -9,7 +9,7 @@ import {
   ActivityIndicator,
   Linking,
 } from 'react-native';
-import MapView, { MapRef, Marker, Polyline, LatLng } from 'react-native-maps';
+import MapView, { Marker, Polyline, LatLng } from 'react-native-maps';
 import { router, useLocalSearchParams } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Ionicons from '@expo/vector-icons/Ionicons';
@@ -85,7 +85,7 @@ export default function TrackingScreen() {
   const [loading, setLoading] = useState(true);
   const [followingDriver, setFollowingDriver] = useState(true);
 
-  const mapRef = useRef<MapRef | null>(null);
+  const mapRef = useRef<MapView | null>(null);
   const hasFittedRef = useRef(false);
 
   const loadRide = useCallback(async () => {
@@ -106,7 +106,10 @@ export default function TrackingScreen() {
   }, [rideId]);
 
   useEffect(() => {
-    loadRide();
+    const timer = setTimeout(() => {
+      void loadRide();
+    }, 0);
+    return () => clearTimeout(timer);
   }, [loadRide]);
 
   useEffect(() => {
@@ -804,7 +807,11 @@ const styles = StyleSheet.create({
   },
 
   map: {
-    ...StyleSheet.absoluteFillObject,
+    position: 'absolute',
+    top: 0,
+    right: 0,
+    bottom: 0,
+    left: 0,
   },
 
   mapHeader: {
