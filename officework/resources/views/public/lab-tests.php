@@ -1,0 +1,4 @@
+<main class="service-page">
+  <section class="service-hero service-hero-lab"><div><span class="pill">AIMEDIX Diagnostics</span><h1>Lab tests booked around your schedule.</h1><p>Discover individual tests and health packages, choose home collection where available, and track samples through to report delivery.</p><div class="desi-actions"><a class="btn btn-orange" href="/store#labs">Book a lab test</a><a class="btn btn-outline" href="/contact">Talk to support</a></div></div><div class="service-symbol">⌁</div></section>
+  <section class="service-steps"><article><b>01</b><h2>Choose a test</h2><p>Compare preparation details, price and expected report time.</p></article><article><b>02</b><h2>Pick a slot</h2><p>Select a centre or request home sample collection.</p></article><article><b>03</b><h2>Receive results</h2><p>Follow booking status and access the report when the lab releases it.</p></article></section>
+</main>

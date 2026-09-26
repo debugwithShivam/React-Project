@@ -1,0 +1,222 @@
+(() => {
+  'use strict';
+  const root = document.getElementById('medical-web-app');
+  if (!root) return;
+  const storage = {
+    get token() { return localStorage.getItem('aimedix_customer_token') || ''; },
+    set token(v) { v ? localStorage.setItem('aimedix_customer_token', v) : localStorage.removeItem('aimedix_customer_token'); },
+    get guest() { return localStorage.getItem('aimedix_guest_credential') || ''; },
+    set guest(v) { if (v) localStorage.setItem('aimedix_guest_credential', v); },
+    get zone() { try { return JSON.parse(localStorage.getItem('aimedix_web_zone') || 'null'); } catch (_) { return null; } },
+    set zone(v) { v ? localStorage.setItem('aimedix_web_zone', JSON.stringify(v)) : localStorage.removeItem('aimedix_web_zone'); }
+  };
+  const state = { config: {}, profile: null, products: [], services: {}, cart: [], addresses: [], mapPoint: null };
+  const $ = (s, p = document) => p.querySelector(s);
+  const $$ = (s, p = document) => [...p.querySelectorAll(s)];
+  const esc = v => String(v ?? '').replace(/[&<>'"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]));
+  const money = v => Number(v || 0).toLocaleString('en-IN', {style:'currency', currency:'INR', maximumFractionDigits:2});
+  const friendly = e => !navigator.onLine ? 'You appear to be offline. Check your connection and try again.' : (e?.message || 'We could not complete this request. Please try again.');
+  const status = (message, error = false) => { $('#web-global-status').innerHTML = message ? `<div class="web-status${error ? ' error' : ''}">${esc(message)}</div>` : ''; };
+  async function api(path, options = {}) {
+    const headers = {'Accept':'application/json', ...(options.body ? {'Content-Type':'application/json'} : {}), ...(options.headers || {})};
+    if (storage.token) headers.Authorization = `Bearer ${storage.token}`;
+    if (!storage.token && storage.guest) headers['X-Guest-Credential'] = storage.guest;
+    const response = await fetch(path, {...options, headers});
+    const payload = await response.json().catch(() => ({}));
+    if (payload.guest_credential) storage.guest = payload.guest_credential;
+    if (!response.ok) {
+      if (response.status === 401 && storage.token) { storage.token = ''; state.profile = null; updateAccountUi(); }
+      throw new Error(payload.message || `Request failed (${response.status})`);
+    }
+    return payload;
+  }
+  function showTab(name) {
+    $$('.web-tab[data-tab]', root).forEach(b => b.classList.toggle('active', b.dataset.tab === name));
+    $$('.web-panel[data-panel]', root).forEach(p => p.classList.toggle('active', p.dataset.panel === name));
+    history.replaceState(null, '', `#${name}`);
+    if (name === 'orders') loadActivity();
+    if (name === 'prescriptions') loadPrescriptions();
+    if (name === 'account') renderAccount();
+    if (name === 'messages') loadMessages();
+    if (name === 'notifications') loadNotifications();
+  }
+  $$('.web-tab[data-tab]', root).forEach(button => button.addEventListener('click', () => showTab(button.dataset.tab)));
+  $$('[data-close]').forEach(button => button.addEventListener('click', () => button.closest('dialog').close()));
+  function requireLogin(action) {
+    if (state.profile && storage.token) return true;
+    status(`Sign in to ${action}.`, true); $('#web-auth-dialog').showModal(); return false;
+  }
+  async function init() {
+    try {
+      const [config, categories] = await Promise.all([api('/api/v1/medical/config'), api('/api/v1/medical/categories')]);
+      state.config = config;
+      $('#web-category-filter').innerHTML = '<option value="">All categories</option>' + (categories.data || []).map(c => `<option value="${Number(c.id)}">${esc(c.name)}</option>`).join('');
+      $('#web-payment-method').innerHTML = (config.payment_methods || []).map(m => `<option value="${esc(m.id)}">${esc(m.name || m.title || m.id)}</option>`).join('') || '<option value="cash_on_delivery">Cash on delivery</option>';
+      $('#web-book-form').elements.payment_method.innerHTML = (config.payment_methods || []).map(m => `<option value="${esc(m.id)}">${esc(m.name || m.title || m.id)}</option>`).join('') || '<option value="cash_on_delivery">Cash / pay at service</option>';
+      if (!storage.zone && (config.zones || []).length === 1) storage.zone = config.zones[0];
+      await restoreProfile();
+      await Promise.all([loadProducts(), loadServices(), loadCart()]);
+      const initial = location.hash.slice(1); if (['medicines','labs','doctors','prescriptions','orders','messages','notifications','account'].includes(initial)) showTab(initial);
+    } catch (e) { status(friendly(e), true); }
+  }
+  async function restoreProfile() {
+    if (!storage.token) return updateAccountUi();
+    try { state.profile = (await api('/api/v1/medical/customers/profile')).data; } catch (_) { state.profile = null; }
+    updateAccountUi();
+  }
+  function updateAccountUi() {
+    $('#web-account-button').textContent = state.profile ? (state.profile.name || 'My account') : 'Sign in';
+  }
+  $('#web-account-button').addEventListener('click', () => state.profile ? showTab('account') : $('#web-auth-dialog').showModal());
+  let authMode = 'login';
+  $$('[data-auth-mode]').forEach(button => button.addEventListener('click', () => {
+    authMode = button.dataset.authMode; $$('[data-auth-mode]').forEach(b => b.classList.toggle('active', b === button));
+    $$('[data-register-only]').forEach(el => el.hidden = authMode !== 'register');
+    $('#web-auth-form button[type=submit]').textContent = authMode === 'register' ? 'Create account' : 'Sign in';
+  }));
+  $('#web-auth-form').addEventListener('submit', async event => {
+    event.preventDefault(); const form = event.currentTarget; const button = $('button[type=submit]', form); button.disabled = true;
+    try {
+      const body = Object.fromEntries(new FormData(form));
+      const payload = await api(`/api/v1/medical/customers/${authMode}`, {method:'POST', body:JSON.stringify(body)});
+      storage.token = payload.token; state.profile = payload.data; form.reset(); $('#web-auth-dialog').close(); updateAccountUi(); status(payload.message || 'Signed in.'); await loadCart(); const activeTab = $('.web-panel.active', root)?.dataset.panel; if (activeTab) showTab(activeTab);
+    } catch (e) { $('#web-auth-status').innerHTML = `<div class="web-status error">${esc(friendly(e))}</div>`; } finally { button.disabled = false; }
+  });
+  async function loadProducts() {
+    const q = $('#web-product-search').value.trim(); const category = $('#web-category-filter').value; const zone = storage.zone?.id || '';
+    const params = new URLSearchParams({limit:'50'}); if (q) params.set('query', q); if (category) params.set('category_id', category); if (zone) params.set('zone_id', zone);
+    const endpoint = q ? '/api/v1/medical/products/search' : '/api/v1/medical/products';
+    try { state.products = (await api(`${endpoint}?${params}`)).data || []; renderProducts(); } catch (e) { $('#web-products').innerHTML = empty(friendly(e)); }
+  }
+  function renderProducts() {
+    $('#web-products').innerHTML = state.products.length ? state.products.map(p => `<article class="web-card">${p.thumbnail_full_url ? `<img src="${esc(p.thumbnail_full_url)}" alt="${esc(p.name)}">` : '<div class="service-symbol" style="font-size:42px">Rx</div>'}<p>${esc(p.category_name || 'Healthcare')}</p><h3>${esc(p.name)}</h3><p>${esc(p.unit || '')} · ${esc(p.vendor_name || 'Verified pharmacy')}</p><div class="web-row"><span class="web-price">${money(p.discount_price || p.price)}</span><button class="btn btn-dark" data-add-product="${Number(p.id)}" ${Number(p.stock) < 1 ? 'disabled' : ''}>${Number(p.stock) < 1 ? 'Out of stock' : 'Add'}</button></div>${p.medicine_type !== 'otc' ? '<small>Prescription may be required at checkout.</small>' : ''}</article>`).join('') : empty('No medicines match this service area and search.');
+    $$('[data-add-product]').forEach(b => b.addEventListener('click', () => addToCart(Number(b.dataset.addProduct))));
+  }
+  const empty = message => `<div class="web-empty">${esc(message)}</div>`;
+  $('#web-search-button').addEventListener('click', loadProducts); $('#web-product-search').addEventListener('keydown', e => { if (e.key === 'Enter') loadProducts(); }); $('#web-category-filter').addEventListener('change', loadProducts);
+  async function addToCart(id) { if(!requireLogin('add medicines to your cart'))return; try { await api('/api/v1/medical/cart/add', {method:'POST', body:JSON.stringify({product_id:id, quantity:1})}); status('Added to cart.'); await loadCart(); } catch(e) { status(friendly(e), true); } }
+  async function loadCart() {
+    try { const p = await api('/api/v1/medical/cart'); state.cart = p.data || []; const s = p.summary || {}; const itemCount = Number(s.items_count || 0); $('#web-cart-count').textContent = itemCount; $('#web-cart-item-label').textContent = itemCount === 1 ? 'item' : 'items'; $('#web-cart-total').textContent = Number(s.total || 0).toFixed(2); $('#web-cart-button').classList.toggle('visible', itemCount > 0); renderCart(s); } catch (_) {}
+  }
+  function renderCart(summary = {}) { $('#web-cart-items').innerHTML = state.cart.length ? state.cart.map(i => `<div class="web-row"><div><strong>${esc(i.name)}</strong><p>${esc(i.unit || '')}</p></div><div><span>${Number(i.quantity)} × ${money(i.price)}</span> <button class="icon-button" data-remove-cart="${Number(i.id)}">×</button></div></div>`).join('') + `<div class="web-row"><strong>Total</strong><strong>${money(summary.total)}</strong></div>` : empty('Your cart is empty.'); $$('[data-remove-cart]').forEach(b => b.addEventListener('click', async () => { try { await api(`/api/v1/medical/cart/remove?cart_id=${b.dataset.removeCart}`, {method:'DELETE'}); await loadCart(); } catch(e){ status(friendly(e), true); } })); }
+  $('#web-cart-button').addEventListener('click', async () => { if (!requireLogin('continue to checkout')) return; await loadAddresses(); $('#web-cart-dialog').showModal(); });
+  $('#web-payment-method').addEventListener('change',()=>{const method=(state.config.payment_methods||[]).find(x=>x.id===$('#web-payment-method').value);$('#web-payment-reference-wrap').hidden=!Boolean(method?.requires_reference);});
+  async function loadAddresses() { try { state.addresses = (await api('/api/v1/medical/customers/addresses')).data || []; $('#web-checkout-address').innerHTML = state.addresses.map(a => `<option value="${Number(a.id)}">${esc(a.label || 'Address')} — ${esc(a.address)}</option>`).join('') || '<option value="">Add a delivery address</option>'; } catch(e) { status(friendly(e), true); } }
+  $('#web-add-address').addEventListener('click', () => { $('#web-cart-dialog').close(); $('#web-location-dialog').showModal(); });
+  $('#web-place-order').addEventListener('click', async () => {
+    const addressId = Number($('#web-checkout-address').value || 0); if (!addressId) return $('#web-checkout-status').innerHTML = '<div class="web-status error">Add and select a delivery address.</div>';
+    if(!$('#web-age-confirmed').checked)return $('#web-checkout-status').innerHTML='<div class="web-status error">Confirm the patient and age information before checkout.</div>';
+    try { const file=$('#web-order-prescription').files[0];const prescription=file?await fileBase64(file):'';const p = await api('/api/v1/medical/orders/place', {method:'POST', body:JSON.stringify({address_id:addressId, zone_id:Number(storage.zone?.id || 0), payment_method:$('#web-payment-method').value, payment_reference:$('#web-payment-reference').value.trim(), prescription_file_base64:prescription, age_confirmed:true})}); $('#web-cart-dialog').close(); status(p.message || 'Order placed.'); await loadCart(); showTab('orders'); } catch(e) { $('#web-checkout-status').innerHTML = `<div class="web-status error">${esc(friendly(e))}</div>`; }
+  });
+  async function loadServices() {
+    try { const z = storage.zone?.id ? `?zone_id=${storage.zone.id}` : ''; state.services = await api(`/api/v1/medical/services${z}`); renderServices(); } catch(e) { $('#web-labs').innerHTML = $('#web-doctors').innerHTML = empty(friendly(e)); }
+  }
+  function renderServices() {
+    const labs = state.services.lab_tests || [], doctors = state.services.doctors || [];
+    $('#web-labs').innerHTML = labs.length ? labs.map(x => `<article class="web-card"><span class="pill">${esc(x.provider_name || 'Diagnostic lab')}</span><h3>${esc(x.name)}</h3><p>${esc(x.description || x.preparation || 'Diagnostic test')}</p><div class="web-row"><strong class="web-price">${money(x.price)}</strong><button class="btn btn-dark" data-book-lab="${Number(x.id)}">Book</button></div></article>`).join('') : empty('No lab tests are available in this service area.');
+    $('#web-doctors').innerHTML = doctors.length ? doctors.map(x => `<article class="web-card"><span class="pill">${esc(x.speciality || 'Doctor')}</span><h3>Dr. ${esc(x.name)}</h3><p>${esc(x.qualification || '')} ${x.experience_years ? `· ${Number(x.experience_years)} years` : ''}</p><p>${esc(x.business_name || '')}</p><div class="web-row"><strong class="web-price">${money(x.consultation_fee)}</strong><button class="btn btn-dark" data-book-doctor="${Number(x.id)}">Consult</button></div></article>`).join('') : empty('No doctors are available in this service area.');
+    $$('[data-book-lab]').forEach(b => b.addEventListener('click', () => openBooking('lab', Number(b.dataset.bookLab)))); $$('[data-book-doctor]').forEach(b => b.addEventListener('click', () => openBooking('doctor', Number(b.dataset.bookDoctor))));
+  }
+  function openBooking(kind, id) { if (!requireLogin('book this service')) return; const form = $('#web-book-form'); form.reset(); form.elements.kind.value = kind; form.elements.entity_id.value = id; $('#web-book-title').textContent = kind === 'lab' ? 'Book lab test' : 'Book consultation'; form.elements.mode.innerHTML = kind === 'lab' ? '<option value="home">Home collection</option><option value="centre">Visit centre</option>' : '<option value="online">Online consultation</option><option value="clinic">Visit clinic</option>'; $('#web-book-dialog').showModal(); }
+  $('#web-book-form').addEventListener('submit', async e => { e.preventDefault(); const f=e.currentTarget, kind=f.elements.kind.value, profile=state.profile; try { const body={zone_id:Number(storage.zone?.id||0),customer_name:profile.name,customer_phone:profile.phone,scheduled_at:f.elements.scheduled_at.value,payment_method:f.elements.payment_method.value}; if(kind==='lab'){body.test_id=Number(f.elements.entity_id.value);body.collection_mode=f.elements.mode.value;body.address=state.addresses.find(a=>Number(a.is_default)===1)?.address||'';}else{body.doctor_id=Number(f.elements.entity_id.value);body.consultation_mode=f.elements.mode.value;body.reason=f.elements.reason.value;} const p=await api(kind==='lab'?'/api/v1/medical/lab-bookings':'/api/v1/medical/consultations',{method:'POST',body:JSON.stringify(body)}); $('#web-book-dialog').close();status(p.message||'Booking created.');showTab('orders');}catch(err){status(friendly(err),true);} });
+  $('#web-refresh-activity').addEventListener('click',loadActivity);
+  async function loadActivity() { if(!requireLogin('view your orders and appointments')) return; try { const [o,l,c]=await Promise.all([api('/api/v1/medical/orders'),api('/api/v1/medical/lab-bookings'),api('/api/v1/medical/consultations')]); const orders=o.data||[];$('#web-orders').innerHTML=orders.length?orders.map(x=>`<article class="web-card web-row"><div><strong>${esc(x.order_number||`Order #${x.id}`)}</strong><p>${esc(String(x.order_status||'').replaceAll('_',' '))} · ${esc(x.created_at||'')}</p><strong>${money(x.order_amount)}</strong></div><button class="btn btn-dark" data-order-detail="${Number(x.id)}">View & track</button></article>`).join(''):empty('No medicine orders yet.');$('#web-lab-bookings').innerHTML=serviceRows(l.data,'test_name','lab_booking');$('#web-consultations').innerHTML=serviceRows(c.data,'doctor_name','consultation');$$('[data-order-detail]').forEach(b=>b.addEventListener('click',()=>openOrder(Number(b.dataset.orderDetail))));$$('[data-start-chat]').forEach(b=>b.addEventListener('click',()=>startChat(b.dataset.kind,Number(b.dataset.startChat))));$$('[data-lab-report]').forEach(b=>b.addEventListener('click',()=>openCustomerDocument(`/api/v1/medical/documents/lab-report/${b.dataset.labReport}`)));$$('[data-cancel-booking]').forEach(b=>b.addEventListener('click',()=>cancelMedicalBooking(b.dataset.kind,Number(b.dataset.cancelBooking)))); } catch(e){status(friendly(e),true);} }
+  function serviceRows(items=[],title,kind){return items.length?items.map(x=>{const canCancel=kind==='lab_booking'?['requested','accepted'].includes(x.status):['requested','confirmed'].includes(x.status);return `<article class="web-card web-row"><div><strong>${esc(x[title]||`#${x.id}`)}</strong><p>${esc(String(x.status||'').replaceAll('_',' '))} · ${esc(x.scheduled_at||x.created_at||'')}</p></div><div class="web-actions"><strong>${money(x.amount)}</strong>${(kind==='consultation'||x.provider_id)?`<button class="btn btn-outline" data-start-chat="${Number(x.id)}" data-kind="${kind}">Message</button>`:''}${kind==='lab_booking'&&x.report_url?`<button class="btn btn-dark" data-lab-report="${Number(x.id)}">View report</button>`:''}${kind==='consultation'&&x.meeting_url?`<a class="btn btn-dark" href="${esc(x.meeting_url)}" target="_blank" rel="noopener">Join online</a>`:''}${canCancel?`<button class="btn btn-outline" data-cancel-booking="${Number(x.id)}" data-kind="${kind}">Cancel</button>`:''}</div></article>`}).join(''):empty('Nothing here yet.');}
+  async function cancelMedicalBooking(kind,id){if(!confirm('Cancel this booking?'))return;const resource=kind==='lab_booking'?'lab-bookings':'consultations';try{const p=await api(`/api/v1/medical/${resource}/${id}/cancel`,{method:'POST',body:'{}'});status(p.message||'Booking cancelled.');await loadActivity();}catch(e){status(friendly(e),true);}}
+  function rows(items=[],title,statusKey,amountKey){return items.length?items.map(x=>`<article class="web-card web-row"><div><strong>${esc(x[title]||`#${x.id}`)}</strong><p>${esc(String(x[statusKey]||'').replaceAll('_',' '))} · ${esc(x.scheduled_at||x.created_at||'')}</p></div><strong>${money(x[amountKey])}</strong></article>`).join(''):empty('Nothing here yet.');}
+  async function fileBase64(file){return await new Promise((resolve,reject)=>{const r=new FileReader();r.onload=()=>resolve(String(r.result));r.onerror=reject;r.readAsDataURL(file);});}
+  $('#web-prescription-form').addEventListener('submit', async e => {
+  e.preventDefault();
+
+  if (!requireLogin('upload a prescription')) return;
+
+  // A service zone is mandatory for prescription requests.
+  if (!storage.zone?.id) {
+    status('Please select your service location before sending the prescription.', true);
+
+    const dialog = $('#web-location-dialog');
+
+    if (dialog) {
+      dialog.showModal();
+
+      setTimeout(() => {
+        if (window.google && map) {
+          google.maps.event.trigger(map, 'resize');
+
+          if (marker) {
+            map.setCenter(marker.getPosition());
+          }
+        } else if (window.google) {
+          window.initCustomerWebMap();
+        }
+      }, 80);
+    }
+
+    return;
+  }
+
+  const f = e.currentTarget;
+  const file = f.elements.prescription.files[0];
+
+  if (!file) return;
+
+  try {
+    const p = await api('/api/v1/medical/prescription-requests', {
+      method: 'POST',
+      body: JSON.stringify({
+        customer_name: state.profile.name,
+        customer_phone: state.profile.phone,
+
+        // This is now guaranteed to be a real active zone.
+        zone_id: Number(storage.zone.id),
+
+        prescription_base64: await fileBase64(file),
+        file_name: file.name,
+        note: f.elements.note.value,
+        substitution_preference: f.elements.substitution_preference.value
+      })
+    });
+
+    f.reset();
+
+    status(p.message || 'Prescription submitted.');
+    loadPrescriptions();
+
+  } catch (err) {
+    status(friendly(err), true);
+  }
+});
+  async function loadPrescriptions(){if(!state.profile)return $('#web-prescriptions').innerHTML=empty('Sign in to view prescription requests.');try{const p=await api('/api/v1/medical/prescription-requests');const items=p.data||[];$('#web-prescriptions').innerHTML=items.length?items.map(r=>{const quote=r.quote||null;const offered=quote&&quote.status==='offered'?quote:null;return `<article class="web-card web-row"><div><strong>Request #${Number(r.id)}</strong><p>${esc(String(r.status||'').replaceAll('_',' '))}</p>${quote?`<p>Quote total: <b>${money(quote.total)}</b></p>`:''}${r.order?`<p>Order ${esc(r.order.order_number)} · ${esc(String(r.order.order_status||'').replaceAll('_',' '))}</p>`:''}</div><div class="web-actions">${offered?`<button class="btn btn-dark" data-accept-quote="${Number(r.id)}" data-quote="${Number(offered.id)}">Accept quote</button>`:''}${r.status==='payment_pending'?`<button class="btn btn-orange" data-rx-checkout="${Number(r.id)}">Checkout</button>`:''}</div></article>`}).join(''):empty('No prescription requests yet.');$$('[data-accept-quote]').forEach(b=>b.addEventListener('click',async()=>{try{await api(`/api/v1/medical/prescription-requests/${b.dataset.acceptQuote}/accept-quote`,{method:'POST',body:JSON.stringify({quote_id:Number(b.dataset.quote)})});loadPrescriptions();}catch(e){status(friendly(e),true);}}));$$('[data-rx-checkout]').forEach(b=>b.addEventListener('click',()=>prescriptionCheckout(Number(b.dataset.rxCheckout))));}catch(e){$('#web-prescriptions').innerHTML=empty(friendly(e));}}
+  async function prescriptionCheckout(id){try{await loadAddresses();if(!state.addresses.length){status('Add a saved delivery address before prescription checkout.',true);showTab('account');return;}const selected=state.addresses.find(a=>Number(a.is_default)===1)||state.addresses[0];const p=await api(`/api/v1/medical/prescription-requests/${id}/checkout`,{method:'POST',body:JSON.stringify({address_id:Number(selected.id),payment_method:'cash_on_delivery'})});status(p.message||'Prescription order placed.');showTab('orders');}catch(e){status(friendly(e),true);}}
+  let activeOrder=null,trackingTimer=null,orderMap=null,driverMarker=null,customerMarker=null,routeLine=null;
+  async function openOrder(id){
+    try{const p=await api(`/api/v1/medical/orders/${id}`);activeOrder={...(p.data||{}),items:p.items||[],history:p.history||[]};$('#web-order-title').textContent=activeOrder.order_number||`Order #${id}`;$('#web-order-details').innerHTML=`<p><strong>Status:</strong> ${esc(String(activeOrder.order_status||'').replaceAll('_',' '))}</p><p><strong>Delivery:</strong> ${esc(activeOrder.address||'')}</p><p><strong>Payment:</strong> ${esc(activeOrder.payment_method||'')} / ${esc(activeOrder.payment_status||'')}</p>${activeOrder.items.map(i=>`<div class="web-row"><span>${esc(i.product_name)} × ${Number(i.quantity)}</span><strong>${money(i.total)}</strong></div>`).join('')}<div class="web-row"><strong>Total</strong><strong>${money(activeOrder.order_amount)}</strong></div>`;$('#web-order-refund').hidden=!['delivered','cancelled'].includes(activeOrder.order_status);$('#web-order-dialog').showModal();setTimeout(()=>refreshTracking(id),80);clearInterval(trackingTimer);if(activeOrder.order_status==='out_for_delivery')trackingTimer=setInterval(()=>{if($('#web-order-dialog').open)refreshTracking(id);else clearInterval(trackingTimer);},15000);}catch(e){status(friendly(e),true);}
+  }
+  async function refreshTracking(id){
+    if(!window.google)return $('#web-order-eta').textContent='Map is unavailable. Order details are still available below.';
+    try{const p=await api(`/api/v1/medical/orders/${id}/delivery-location`),t=p.data||{};const points=[t.driver,t.customer].filter(Boolean);if(!points.length)return $('#web-order-eta').textContent=t.message||'Live tracking begins when your delivery is accepted.';if(!orderMap)orderMap=new google.maps.Map($('#web-order-map'),{zoom:14,gestureHandling:'greedy',streetViewControl:false,mapTypeControl:false});const bounds=new google.maps.LatLngBounds();if(t.customer){const pos={lat:Number(t.customer.latitude),lng:Number(t.customer.longitude)};customerMarker?.setMap(null);customerMarker=new google.maps.Marker({map:orderMap,position:pos,label:'You',title:'Delivery location'});bounds.extend(pos);}if(t.driver){const pos={lat:Number(t.driver.latitude),lng:Number(t.driver.longitude)};driverMarker?.setMap(null);const car='<svg xmlns="http://www.w3.org/2000/svg" width="54" height="54"><circle cx="27" cy="27" r="25" fill="%2306357a"/><path fill="white" d="M14 29l3-10h20l3 10v10h-5v-4H19v4h-5zm6-7l-2 7h18l-2-7zm0 9a2 2 0 100 4 2 2 0 000-4zm14 0a2 2 0 100 4 2 2 0 000-4z"/></svg>';driverMarker=new google.maps.Marker({map:orderMap,position:pos,title:'Delivery vehicle',icon:{url:'data:image/svg+xml;charset=UTF-8,'+car,scaledSize:new google.maps.Size(54,54)}});bounds.extend(pos);}routeLine?.setMap(null);if(t.route?.encoded_polyline&&google.maps.geometry?.encoding){routeLine=new google.maps.Polyline({map:orderMap,path:google.maps.geometry.encoding.decodePath(t.route.encoded_polyline),strokeColor:'#0e84df',strokeWeight:6,strokeOpacity:.9});}else if(points.length===2){routeLine=new google.maps.Polyline({map:orderMap,path:points.map(x=>({lat:Number(x.latitude),lng:Number(x.longitude)})),strokeColor:'#0e84df',strokeWeight:5});}orderMap.fitBounds(bounds,70);const minutes=Math.max(1,Math.ceil(Number(t.route?.duration_seconds||0)/60)),km=(Number(t.route?.distance_meters||0)/1000).toFixed(1);$('#web-order-eta').innerHTML=t.active&&t.driver?`<strong>${minutes} min · ${km} km away</strong><br>Delivery vehicle is moving toward your address.`:(t.message||'Live tracking will appear when the order is out for delivery.');}catch(e){$('#web-order-eta').textContent=friendly(e);}
+  }
+  $('#web-order-invoice').addEventListener('click',async()=>{if(!activeOrder)return;const preview=window.open('about:blank','_blank');try{const response=await fetch(`/api/v1/medical/orders/${activeOrder.id}/invoice`,{headers:{Authorization:`Bearer ${storage.token}`}});if(!response.ok)throw new Error('Invoice could not be opened.');const url=URL.createObjectURL(await response.blob());if(preview)preview.location.href=url;setTimeout(()=>URL.revokeObjectURL(url),60000);}catch(e){preview?.close();status(friendly(e),true);}});
+  $('#web-order-chat').addEventListener('click',()=>activeOrder&&startChat('pharmacy_order',Number(activeOrder.id)));
+  $('#web-order-refund').addEventListener('click',async()=>{if(!activeOrder)return;const reason=prompt('Why are you requesting a refund?');if(!reason)return;try{const p=await api(`/api/v1/medical/orders/${activeOrder.id}/refunds`,{method:'POST',body:JSON.stringify({reason})});$('#web-order-dialog').close();status(p.message||'Refund request submitted.');loadNotifications();}catch(e){status(friendly(e),true);}});
+  async function openCustomerDocument(path){const preview=window.open('about:blank','_blank');try{const response=await fetch(path,{headers:{Authorization:`Bearer ${storage.token}`}});if(!response.ok){const p=await response.json().catch(()=>({}));throw new Error(p.message||'Document could not be opened.');}const url=URL.createObjectURL(await response.blob());if(preview)preview.location.href=url;setTimeout(()=>URL.revokeObjectURL(url),60000);}catch(e){preview?.close();status(friendly(e),true);}}
+  async function startChat(kind,id){try{const p=await api('/api/v1/medical/chat',{method:'POST',body:JSON.stringify({entity_type:kind,entity_id:id})});openChat(Number(p.data?.id||0),p);}catch(e){status(friendly(e),true);}}
+  async function loadMessages(){if(!requireLogin('view your healthcare messages'))return;try{const p=await api('/api/v1/medical/chat'),items=p.data||[];$('#web-messages').innerHTML=items.length?items.map(x=>`<article class="web-card web-row"><div><strong>${esc(String(x.entity_type||'Healthcare').replaceAll('_',' '))} #${Number(x.entity_id)}</strong><p>${esc(x.last_message||'Conversation started')}</p></div><button class="btn btn-dark" data-open-customer-chat="${Number(x.id)}">Open</button></article>`).join(''):empty('No healthcare conversations yet. Start one from an order or appointment.');$$('[data-open-customer-chat]').forEach(b=>b.addEventListener('click',()=>openChat(Number(b.dataset.openCustomerChat))));}catch(e){$('#web-messages').innerHTML=empty(friendly(e));}}
+  async function openChat(id,payload=null){if(!id)return;try{const p=payload||await api(`/api/v1/medical/chat/${id}/show`);$('#web-chat-form').elements.conversation_id.value=id;renderChat(p.messages||[]);$('#web-chat-dialog').showModal();await api(`/api/v1/medical/chat/${id}/read`,{method:'POST',body:'{}'});}catch(e){status(friendly(e),true);}}
+  function renderChat(items){$('#web-chat-messages').innerHTML=items.length?items.map(m=>`<div class="web-status" style="margin-left:${m.sender_type==='customer'?'15%':'0'};margin-right:${m.sender_type==='customer'?'0':'15%'}"><strong>${m.sender_type==='customer'?'You':'Healthcare partner'}</strong><br>${esc(m.body)}<br><small>${esc(m.created_at||'')}</small></div>`).join(''):empty('No messages yet.');}
+  $('#web-chat-form').addEventListener('submit',async e=>{e.preventDefault();const id=Number(e.currentTarget.elements.conversation_id.value),text=e.currentTarget.elements.text.value.trim();if(!text)return;try{const p=await api(`/api/v1/medical/chat/${id}/send`,{method:'POST',body:JSON.stringify({text})});e.currentTarget.elements.text.value='';renderChat(p.messages||[]);}catch(err){status(friendly(err),true);}});
+  $('#web-refresh-messages').addEventListener('click',loadMessages);
+  async function loadNotifications(){if(!requireLogin('view notifications and refunds'))return;try{const [n,r]=await Promise.all([api('/api/v1/medical/notifications'),api('/api/v1/medical/refunds')]);$('#web-notifications').innerHTML=(n.data||[]).length?(n.data||[]).map(x=>`<article class="web-card"><strong>${esc(x.title||'Update')}</strong><p>${esc(x.message||x.body||'')}</p><small>${esc(x.created_at||'')}</small></article>`).join(''):empty('No notifications yet.');$('#web-refunds').innerHTML=(r.data||[]).length?(r.data||[]).map(x=>`<article class="web-card web-row"><div><strong>${esc(x.order_number||`Order #${x.order_id}`)}</strong><p>${esc(x.reason||'')} · ${esc(x.status||'')}</p></div><strong>${money(x.amount)}</strong></article>`).join(''):empty('No refund requests.');}catch(e){status(friendly(e),true);}}
+  $('#web-read-notifications').addEventListener('click',async()=>{try{await api('/api/v1/medical/notifications/read',{method:'POST',body:'{}'});status('Notifications marked as read.');loadNotifications();}catch(e){status(friendly(e),true);}});
+  async function renderAccount(){if(!requireLogin('manage your account'))return;await loadAddresses();$('#web-account').innerHTML=`<div class="web-grid"><form class="web-card" id="web-profile-form" style="display:grid;gap:12px"><h2>Profile</h2><label>Name<input name="name" value="${esc(state.profile.name)}" required></label><label>Email<input name="email" type="email" value="${esc(state.profile.email||'')}"></label><label>Phone<input value="${esc(state.profile.phone)}" disabled></label><button class="btn btn-dark">Save profile</button><button class="btn btn-outline" id="web-sign-out" type="button">Sign out</button></form><div class="web-card"><div class="web-row"><h2>Saved addresses</h2><button class="btn btn-outline" id="web-account-add-address">Add</button></div>${state.addresses.length?state.addresses.map(a=>`<div class="web-row"><div><strong>${esc(a.label||'Address')}</strong><p>${esc(a.address)}, ${esc(a.city||'')} ${esc(a.pincode||'')}</p><div class="web-actions">${Number(a.is_default)!==1?`<button class="btn btn-outline" type="button" data-default-address="${Number(a.id)}">Make default</button>`:''}<button class="btn btn-outline" type="button" data-delete-address="${Number(a.id)}">Delete</button></div></div>${Number(a.is_default)===1?'<span class="pill">Default</span>':''}</div>`).join(''):empty('No saved addresses.')}</div></div>`;$('#web-profile-form').addEventListener('submit',async e=>{e.preventDefault();try{const p=await api('/api/v1/medical/customers/profile',{method:'POST',body:JSON.stringify(Object.fromEntries(new FormData(e.currentTarget)))});state.profile=p.data;updateAccountUi();status(p.message);}catch(err){status(friendly(err),true);}});$('#web-sign-out').addEventListener('click',()=>{storage.token='';state.profile=null;updateAccountUi();showTab('medicines');status('Signed out.');});$('#web-account-add-address').addEventListener('click',()=>$('#web-location-dialog').showModal());$$('[data-default-address]').forEach(b=>b.addEventListener('click',async()=>{try{await api(`/api/v1/medical/customers/addresses/${Number(b.dataset.defaultAddress)}/default`,{method:'POST',body:'{}'});status('Default address updated.');await renderAccount();}catch(err){status(friendly(err),true);}}));$$('[data-delete-address]').forEach(b=>b.addEventListener('click',async()=>{if(!confirm('Delete this saved address?'))return;try{await api(`/api/v1/medical/customers/addresses/${Number(b.dataset.deleteAddress)}`,{method:'DELETE'});status('Address deleted.');await renderAccount();}catch(err){status(friendly(err),true);}}));}
+  $('#web-location-button').addEventListener('click',()=>{const dialog=$('#web-location-dialog');dialog.showModal();setTimeout(()=>{if(window.google&&map){google.maps.event.trigger(map,'resize');map.setCenter(marker.getPosition());}else if(window.google){window.initCustomerWebMap();}},80);});
+  let map,marker,geocoder,pendingLocation=null;
+  window.initCustomerWebMap=()=>{if(!window.google||!$('#customer-map'))return;const initial={lat:Number(storage.zone?.latitude||28.6139),lng:Number(storage.zone?.longitude||77.209)};map=new google.maps.Map($('#customer-map'),{center:initial,zoom:12,streetViewControl:false,mapTypeControl:false});marker=new google.maps.Marker({map,position:initial,draggable:true});geocoder=new google.maps.Geocoder();map.addListener('click',e=>selectLocation(e.latLng));marker.addListener('dragend',e=>selectLocation(e.latLng));};
+  async function selectLocation(pos){marker.setPosition(pos);map.panTo(pos);$('#customer-location-status').textContent='Checking service availability…';try{const geo=await new Promise(resolve=>geocoder.geocode({location:pos},(r,s)=>resolve(s==='OK'?r[0]:null)));const comps=geo?.address_components||[],part=t=>comps.find(x=>x.types.includes(t))?.long_name||'';const meta={latitude:pos.lat(),longitude:pos.lng(),address:geo?.formatted_address||'Selected location',city:part('locality')||part('administrative_area_level_3'),state:part('administrative_area_level_1'),pincode:part('postal_code')};const p=await api('/api/v1/zones/resolve',{method:'POST',body:JSON.stringify(meta)});if(!p.data?.zone)throw new Error('This location is outside our active service areas.');pendingLocation={...meta,zone:p.data.zone};$('#customer-location-status').textContent=`${meta.address} · ${p.data.zone.name}`;$('#customer-confirm-location').disabled=false;}catch(e){pendingLocation=null;$('#customer-confirm-location').disabled=true;$('#customer-location-status').textContent=friendly(e);}}
+  $('#customer-map-search-button')?.addEventListener('click',()=>{const q=$('#customer-map-search').value.trim();if(q.length<3)return;geocoder.geocode({address:q,region:'IN'},(r,s)=>{if(s==='OK'&&r[0])selectLocation(r[0].geometry.location);else $('#customer-location-status').textContent='No matching address found.';});});
+  $('#customer-current-location')?.addEventListener('click',()=>navigator.geolocation?.getCurrentPosition(p=>selectLocation(new google.maps.LatLng(p.coords.latitude,p.coords.longitude)),()=>$('#customer-location-status').textContent='Location permission was not granted.',{enableHighAccuracy:true,timeout:12000}));
+  $('#customer-confirm-location')?.addEventListener('click',()=>{if(!pendingLocation)return;storage.zone={...pendingLocation.zone,latitude:pendingLocation.latitude,longitude:pendingLocation.longitude};state.mapPoint=pendingLocation;$('#web-location-button').textContent=pendingLocation.zone.name||'Location selected';$('#web-location-dialog').close();if(state.profile)$('#web-address-dialog').showModal();else status('Service area selected. Sign in when you are ready to save the full address.');loadProducts();loadServices();});
+  $('#web-address-form').addEventListener('submit',async e=>{e.preventDefault();if(!requireLogin('save a delivery address'))return;if(!state.mapPoint)return status('Select the exact location on the map first.',true);const f=e.currentTarget,v=Object.fromEntries(new FormData(f)),p=state.mapPoint,address=[v.house,v.floor,v.area,v.landmark,p.address].filter(Boolean).join(', ');try{await api('/api/v1/medical/customers/addresses',{method:'POST',body:JSON.stringify({label:v.label,address,city:p.city,state:p.state,pincode:v.pincode||p.pincode,latitude:p.latitude,longitude:p.longitude,is_default:true})});$('#web-address-dialog').close();status('Delivery address saved.');await loadAddresses();if($('.web-panel[data-panel="account"]').classList.contains('active'))renderAccount();}catch(err){status(friendly(err),true);}});
+  if (window.google) window.initCustomerWebMap();
+  init();
+})();

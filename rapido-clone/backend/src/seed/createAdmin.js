@@ -44,7 +44,6 @@ const createAdmin = async () => {
 
       console.log('Admin account updated successfully.');
       console.log('Email:', email);
-      console.log('Password:', password);
       process.exit(0);
     }
 
@@ -71,7 +70,6 @@ const createAdmin = async () => {
 
     console.log('First ADMIN created successfully.');
     console.log('Email:', email);
-    console.log('Password:', password);
 
     process.exit(0);
 

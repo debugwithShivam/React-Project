@@ -1,0 +1,4 @@
+<main class="service-page">
+  <section class="service-hero service-hero-consult"><div><span class="pill">AIMEDIX Consult</span><h1>Find a doctor and book with clarity.</h1><p>Browse verified profiles by speciality, see the consultation fee before confirming, and choose an available clinic or online slot.</p><div class="desi-actions"><a class="btn btn-orange" href="/store#doctors">Find a doctor</a><a class="btn btn-outline" href="/contact">Need help?</a></div></div><div class="service-symbol">+</div></section>
+  <section class="service-steps"><article><b>01</b><h2>Choose speciality</h2><p>Find the relevant doctor without sorting through medicine products.</p></article><article><b>02</b><h2>Select a slot</h2><p>Review fee, mode and availability before booking.</p></article><article><b>03</b><h2>Manage follow-up</h2><p>Keep status, clinical notes and issued prescriptions connected to the booking.</p></article></section>
+</main>

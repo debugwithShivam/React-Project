@@ -56,6 +56,7 @@ export const createRide = async ({
     const initialStatus = isScheduled ? 'SCHEDULED' : 'SEARCHING';
 
     const conn = await pool.getConnection();
+    let rideId;
     try {
         await conn.beginTransaction();
         const [r] = await conn.execute(
@@ -85,7 +86,7 @@ export const createRide = async ({
             ]
         );
 
-        const rideId = r.insertId;
+        rideId = r.insertId;
 
         await conn.execute(
             `INSERT INTO ride_events (ride_id, event_type, payload_json) VALUES (?, 'CREATED', ?)`,
@@ -93,27 +94,30 @@ export const createRide = async ({
         );
 
         await conn.commit();
+    } catch (error) {
+        await conn.rollback();
+        throw error;
+    } finally {
+        conn.release();
+    }
 
-        // Coupon redemption is independent — keep outside the ride txn so a
-        // coupon failure does not void the created ride.
-        let redeemed = false;
-        if (couponId) {
-            try {
-                await redeemCoupon({ couponId, userId, rideId, discount });
-                redeemed = true;
-            } catch (e) {
-                console.error('[createRide] coupon redemption failed', e.message);
-            }
+    // Coupon redemption is independent — keep outside the ride txn so a
+    // coupon failure does not void the created ride.
+    if (couponId) {
+        try {
+            await redeemCoupon({ couponId, userId, rideId, discount });
+        } catch (e) {
+            console.error('[createRide] coupon redemption failed', e.message);
         }
+    }
 
-        emitToAdmins('admin:ride-created', { rideId, status: initialStatus });
+    emitToAdmins('admin:ride-created', { rideId, status: initialStatus });
 
-        if (!isScheduled) {
-            dispatchRideRequests(rideId).catch((e) => console.error('[dispatch]', e.message));
-        }
+    if (!isScheduled) {
+        dispatchRideRequests(rideId).catch((e) => console.error('[dispatch]', e.message));
+    }
 
-        const [rows] = await pool.execute(`SELECT * FROM rides WHERE id = ?`, [rideId]);
-        const ride = decor
+    return getRideById(rideId);
 };
 
 export const getRideById = async (rideId) => {
