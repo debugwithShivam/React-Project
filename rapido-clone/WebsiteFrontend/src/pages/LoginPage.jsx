@@ -8,7 +8,7 @@ import {
   Lock,
   Phone,
 } from "lucide-react";
-import logo from "../image/titlelogo.jpeg";
+import logo from "../image/titleLogo.jpeg";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import api, { setStoredToken } from "../api/axios";
 
@@ -135,7 +135,7 @@ export default function LoginPage() {
               className={`py-2 text-[11px] sm:text-xs font-bold rounded-xl transition-all ${role === "rider"
                 ? "bg-white text-brand-dark shadow-sm"
                 : "text-gray-500 hover:text-black"
-              }`}
+                }`}
             >
               Rider / Commuter
             </button>
@@ -145,7 +145,7 @@ export default function LoginPage() {
               className={`py-2 text-[11px] sm:text-xs font-bold rounded-xl transition-all ${role === "admin"
                 ? "bg-white text-brand-dark shadow-sm"
                 : "text-gray-500 hover:text-black"
-              }`}
+                }`}
             >
               Admin
             </button>
@@ -156,7 +156,7 @@ export default function LoginPage() {
               className={`py-2 text-[11px] sm:text-xs font-bold rounded-xl transition-all ${role === "captain"
                 ? "bg-white text-brand-dark shadow-sm"
                 : "text-gray-500 hover:text-black"
-              }`}
+                }`}
             >
               Captain (Driver)
             </button>
@@ -207,7 +207,7 @@ export default function LoginPage() {
                 className={`py-2 w-full border-2 rounded-lg text-[10px] sm:text-xs font-bold flex items-center justify-center gap-1 transition-all ${method === "email"
                   ? "bg-white text-brand-dark shadow-sm"
                   : "text-gray-500"
-                }`}
+                  }`}
               >
                 <Mail className="w-3 h-3" />
                 Email
@@ -220,7 +220,7 @@ export default function LoginPage() {
                 className={`py-2 w-full border-2 rounded-lg text-[10px] sm:text-xs font-bold flex items-center justify-center gap-1 transition-all ${method === "phone"
                   ? "bg-white text-brand-dark shadow-sm"
                   : "text-gray-500"
-                }`}
+                  }`}
               >
                 <Phone className="w-3 h-3" />
                 Phone
@@ -260,11 +260,8 @@ export default function LoginPage() {
             {/* Phone Input */}
             {method === "phone" && (<div> <label className="block text-[11px] sm:text-xs font-bold text-gray-700 mb-1">
               Phone Number </label>
-
-
               <div className="relative">
                 <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-
                 <input
                   type="tel"
                   name="Phone"
@@ -276,21 +273,13 @@ export default function LoginPage() {
                 />
               </div>
             </div>
-
-
             )}
-
-            {/* Password - COMMON FOR BOTH EMAIL & PHONE */}
-
             <div>
               <label className="block text-[11px] sm:text-xs font-bold text-gray-700 mb-1">
                 Password
               </label>
-
-
               <div className="relative">
                 <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-
                 <input
                   type={showPassword ? "text" : "password"}
                   name="password"
@@ -322,23 +311,14 @@ export default function LoginPage() {
                   Forgot Password?
                 </button>
               </div>
-
-
             </div>
-
             {/* LOGIN BUTTON */}
             <button
               type="submit"
               disabled={loginMutation.isPending}
               className="w-full py-3 sm:py-3.5 bg-brand-yellow hover:bg-brand-yellow-hover text-brand-dark font-black rounded-xl text-xs shadow-md transition-all flex items-center justify-center gap-2 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-
-
               <span>
-
-
-
-
                 Login as{" "}
                 Login as{" "}
                 {role === "rider"
@@ -371,7 +351,7 @@ export default function LoginPage() {
                 className={`w-1/2 py-2 font-bold text-[10px] sm:text-[11px] rounded-lg border transition-colors active:scale-95 ${role === "rider"
                   ? "bg-yellow-50 hover:bg-yellow-100 text-brand-dark border-yellow-200"
                   : "bg-gray-50 text-gray-600 border-gray-200"
-                }`}
+                  }`}
               >
                 Login as Rider
               </button>
@@ -382,7 +362,7 @@ export default function LoginPage() {
                 className={`w-1/2 py-2 font-bold text-[10px] sm:text-[11px] rounded-lg border transition-colors active:scale-95 ${role === "captain"
                   ? "bg-yellow-50 hover:bg-yellow-100 text-brand-dark border-yellow-200"
                   : "bg-gray-100 hover:bg-gray-200 text-gray-800 border-gray-200"
-                }`}
+                  }`}
               >
                 Login as Captain
               </button>

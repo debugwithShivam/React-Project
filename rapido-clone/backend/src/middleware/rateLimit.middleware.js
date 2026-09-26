@@ -44,7 +44,10 @@ export const generalRateLimiter = rateLimit({
     legacyHeaders: false,
     // High-frequency driver telemetry is exempt so live location pings are
     // never throttled; the socket layer is the primary transport anyway.
-    skip: (req) => req.path === '/driver/location',
+    // Auth endpoints have their own stricter limiter in auth.routes.js. Keep
+    // background auth checks (such as /users/me on page load) from consuming
+    // the broad API budget needed by an explicit login request.
+    skip: (req) => req.path === '/driver/location' || req.path.startsWith('/auth/'),
     message: {
         success: false,
         message: 'Too many requests, please try again later.',

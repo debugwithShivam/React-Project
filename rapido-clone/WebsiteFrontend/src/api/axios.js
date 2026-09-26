@@ -26,7 +26,18 @@ api.interceptors.response.use(
   (error) => {
     if (error.response?.status === 401) {
       clearAuth();
-      window.location.href = '/login';
+
+      // This app uses HashRouter, so a pathname redirect reloads the page and
+      // does not reliably reach the login route. Protected route components
+      // handle /users/me failures themselves; only redirect other routes.
+      const currentRoute = window.location.hash.replace(/^#/, '').split('?')[0];
+      const requestUrl = error.config?.url || '';
+      const isAuthRequest = /\/auth\/(login|logout)(?:\?|$)/.test(requestUrl);
+      const isGuestRoute = currentRoute === '/login' || currentRoute === '/signup';
+
+      if (!isAuthRequest && !isGuestRoute && currentRoute !== '/login') {
+        window.location.hash = '#/login';
+      }
     }
     return Promise.reject(error);
   }
