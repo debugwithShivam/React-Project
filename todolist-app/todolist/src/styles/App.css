@@ -998,14 +998,12 @@ h3 {
 
 /* Main card */
 .create-page-card {
-  width: 950px;
   color: white;
   padding: .5rem;
   height: 550px;
   background: #100f0f;
   border-radius: 25px;
   display: flex;
-
   overflow: hidden;
   box-shadow: 0 25px 60px rgba(0, 0, 0, 0.3);
 }

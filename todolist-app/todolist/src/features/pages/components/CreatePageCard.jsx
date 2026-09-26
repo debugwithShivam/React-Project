@@ -45,9 +45,13 @@ export default function CreatePageCard() {
     });
   };
 
+  if (!isPageFormOpen) {
+    return null;
+  }
+
   return (
     <div className="create-page-wrapper">
-      <div className="create-page-card-container" style={{ display: isPageFormOpen ? 'block' : 'none' }}>
+      <div className="create-page-card-container">
         <div className="create-page-card">
           <div className="card-left">
             <img src={img} alt="" />
@@ -82,6 +86,9 @@ export default function CreatePageCard() {
                 )}
                 <button type="submit" disabled={mutation.isPending}>
                   {mutation.isPending ? 'Creating…' : 'Create Page'}
+                </button>
+                <button type="submit" onClick={()=>dispatch(createPage())}>
+                  Close
                 </button>
               </form>
             </div>

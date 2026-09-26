@@ -107,7 +107,6 @@ body {
   width: 100%;
   min-height: 100vh;
   min-height: 100dvh;
-  height: auto;
   overflow-x: hidden;
 }
 
@@ -421,6 +420,31 @@ body {
   .pause-todo-page-title h1 {
     font-size: 1.5rem;
   }
+}
+
+.create-page-wrapper {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-height: 100vh;
+  min-height: 100dvh;
+  padding: 16px;
+  overflow-y: auto;
+  box-sizing: border-box;
+  background: #0009;
+}
+
+.create-page-card-container {
+  width: min(750px, 100%);
+  margin: auto;
+}
+
+.create-page-card-container .create-page-card {
+  width: 100%;
 }
 
 /* Keep the navigation and task workspace usable at tablet widths too. */

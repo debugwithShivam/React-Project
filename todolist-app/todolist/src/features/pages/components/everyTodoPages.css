@@ -70,7 +70,7 @@
 .container-for-every-todos-page {
     /* margin: 10px; */
     padding: 10px;
-    height: 65vh;
+    height: 60vh;
     overflow-x: hidden;
     overflow-y: auto;
 }
