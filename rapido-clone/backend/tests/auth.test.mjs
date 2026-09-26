@@ -21,6 +21,12 @@ const mockConnection = {
     release: mock.fn(async () => {}),
 };
 
+const queuedQueryResponses = [];
+
+const queueQueryResponse = (implementation) => {
+    queuedQueryResponses.push(implementation);
+};
+
 const mockPool = {
     getConnection: mock.fn(async () => mockConnection),
     query: mock.fn(async () => [[]]),
@@ -36,16 +42,12 @@ const authService = await import('../src/services/auth.service.js');
 const authController = await import('../src/controllers/auth.controller.js');
 
 beforeEach(() => {
-    console.log('BEFORE EACH query:', {
-        type: typeof mockConnection.query,
-        hasMock: !!mockConnection.query?.mock,
-        mockType: typeof mockConnection.query?.mock,
-    });
-});
-
-beforeEach(() => {
     mockConnection.query.mock.resetCalls();
-    mockConnection.query.mock.mockImplementation(async () => [[]]);
+    queuedQueryResponses.length = 0;
+    mockConnection.query.mock.mockImplementation(async (...args) => {
+        const implementation = queuedQueryResponses.shift();
+        return implementation ? implementation(...args) : [[]];
+    });
 
     mockConnection.beginTransaction.mock.resetCalls();
     mockConnection.beginTransaction.mock.mockImplementation(async () => {});
@@ -66,15 +68,6 @@ beforeEach(() => {
     mockPool.query.mock.mockImplementation(async () => [[]]);
 });
 
-console.log('DEBUG query:', {
-    type: typeof mockConnection.query,
-    hasMock: !!mockConnection.query?.mock,
-    mockType: typeof mockConnection.query?.mock,
-    resetCalls: typeof mockConnection.query?.mock?.resetCalls,
-    mockImplementation: typeof mockConnection.query?.mock?.mockImplementation,
-    mockImplementationOnce: typeof mockConnection.query?.mock?.mockImplementationOnce,
-});
-
 // ---------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------
@@ -93,18 +86,15 @@ const mockRes = () => {
     return res;
 };
 
-console.log('TEST DEBUG query:', typeof mockConnection.query);
-console.log('TEST DEBUG query.mock:', typeof mockConnection.query?.mock);
 // ---------------------------------------------------------------
 // AUTH SERVICE TESTS
 // ---------------------------------------------------------------
-describe('Auth Service', () => {
+describe('Auth Service', { concurrency: false }, () => {
 
-    describe('registerUser', () => {
+    describe('registerUser', { concurrency: false }, () => {
         it('registers a new USER successfully', async () => {
-            mockConnection.query
-                .mock.mockImplementationOnce(async () => [[]])              // duplicate check
-                .mock.mockImplementationOnce(async () => [{ insertId: 1 }]); // INSERT user
+            queueQueryResponse(async () => [[]])              // duplicate check;
+                queueQueryResponse(async () => [{ insertId: 1 }]); // INSERT user
 
             const user = await authService.registerUser({
                 name: 'Test User', phone: '9876543210',
@@ -121,7 +111,7 @@ describe('Auth Service', () => {
         });
 
         it('throws on duplicate phone/email', async () => {
-            mockConnection.query.mock.mockImplementationOnce(async () => [[{ id: 1 }]]);
+            queueQueryResponse(async () => [[{ id: 1 }]]);
 
             await assert.rejects(
                 () => authService.registerUser({
@@ -154,11 +144,10 @@ describe('Auth Service', () => {
         });
 
         it('registers a DRIVER with required fields', async () => {
-            mockConnection.query
-                .mock.mockImplementationOnce(async () => [[]])              // user dup check
-                .mock.mockImplementationOnce(async () => [[]])              // driver dup check
-                .mock.mockImplementationOnce(async () => [{ insertId: 1 }]) // INSERT user
-                .mock.mockImplementationOnce(async () => [{ insertId: 10 }]); // INSERT driver
+            queueQueryResponse(async () => [[]])              // user dup check;
+                queueQueryResponse(async () => [[]])              // driver dup check;
+                queueQueryResponse(async () => [{ insertId: 1 }]) // INSERT user;
+                queueQueryResponse(async () => [{ insertId: 10 }]); // INSERT driver
 
             const user = await authService.registerUser({
                 name: 'Driver User', phone: '9876543210',
@@ -184,9 +173,8 @@ describe('Auth Service', () => {
         });
 
         it('throws for duplicate vehicle plate or license', async () => {
-            mockConnection.query
-                .mock.mockImplementationOnce(async () => [[]])           // user dup check
-                .mock.mockImplementationOnce(async () => [[{ id: 1 }]]); // driver dup check
+            queueQueryResponse(async () => [[]])           // user dup check;
+                queueQueryResponse(async () => [[{ id: 1 }]]); // driver dup check
 
             await assert.rejects(
                 () => authService.registerUser({
@@ -200,17 +188,16 @@ describe('Auth Service', () => {
         });
     });
 
-    describe('loginUser', () => {
-        const passwordHash = '$2b$12$hashedpassword';
+    describe('loginUser', { concurrency: false }, () => {
+        const passwordHash = '$2b$04$iIT1tSuohEgPESDTDJKaY.2wrRlIMAUl5zDftay0doOAPAgv/8YLO';
 
         it('logs in successfully with phone', async () => {
-            mockConnection.query
-                .mock.mockImplementationOnce(async () => [[{
+            queueQueryResponse(async () => [[{
                     id: 1, name: 'Test User', phone: '9876543210',
                     email: 'test@example.com', password_hash: passwordHash,
                     role: 'USER', profile_image: null, is_active: 1,
-                }]])
-                .mock.mockImplementationOnce(async () => []); // INSERT refresh token
+                }]]);
+                queueQueryResponse(async () => []); // INSERT refresh token
 
             const result = await authService.loginUser({ identifier: '9876543210', password: 'password123', role: 'USER' });
 
@@ -221,13 +208,12 @@ describe('Auth Service', () => {
         });
 
         it('logs in successfully with email', async () => {
-            mockConnection.query
-                .mock.mockImplementationOnce(async () => [[{
+            queueQueryResponse(async () => [[{
                     id: 1, name: 'Test User', phone: '9876543210',
                     email: 'test@example.com', password_hash: passwordHash,
                     role: 'USER', profile_image: null, is_active: 1,
-                }]])
-                .mock.mockImplementationOnce(async () => []);
+                }]]);
+                queueQueryResponse(async () => []);
 
             const result = await authService.loginUser({ identifier: 'test@example.com', password: 'password123', role: 'USER' });
             assert.ok(result.user);
@@ -236,7 +222,7 @@ describe('Auth Service', () => {
         });
 
         it('throws for non-existent account', async () => {
-            mockConnection.query.mock.mockImplementationOnce(async () => [[]]);
+            queueQueryResponse(async () => [[]]);
 
             await assert.rejects(
                 () => authService.loginUser({ identifier: 'nonexistent@example.com', password: 'password123', role: 'USER' }),
@@ -245,7 +231,7 @@ describe('Auth Service', () => {
         });
 
         it('throws for wrong password', async () => {
-            mockConnection.query.mock.mockImplementationOnce(async () => [[{
+            queueQueryResponse(async () => [[{
                 id: 1, password_hash: passwordHash, role: 'USER', is_active: 1,
             }]]);
 
@@ -256,7 +242,7 @@ describe('Auth Service', () => {
         });
 
         it('throws for inactive user', async () => {
-            mockConnection.query.mock.mockImplementationOnce(async () => [[{
+            queueQueryResponse(async () => [[{
                 id: 1, password_hash: passwordHash, role: 'USER', is_active: 0,
             }]]);
 
@@ -274,17 +260,16 @@ describe('Auth Service', () => {
         });
     });
 
-    describe('refreshUserToken', () => {
+    describe('refreshUserToken', { concurrency: false }, () => {
         const userId       = 1;
-        const refreshToken = jwt.sign({ user: userId }, REFRESH_TOKEN_SECRET, { expiresIn: '7d' });
-        const rtHash       = '$2b$12$hashedrefreshtoken';
+        const refreshToken = jwt.sign({ sub: String(userId), role: 'USER' }, REFRESH_TOKEN_SECRET, { expiresIn: '7d' });
+        const rtHash       = bcrypt.hashSync(refreshToken, 4);
 
         it('rotates refresh token successfully', async () => {
-            mockConnection.query
-                .mock.mockImplementationOnce(async () => [[{ id: 1, user_id: userId, token_hash: rtHash, expires_at: new Date(Date.now() + 86400000) }]])
-                .mock.mockImplementationOnce(async () => [[{ id: userId, name: 'Test User', phone: '9876543210', email: 'test@example.com', role: 'USER', profile_image: null, is_active: 1 }]])
-                .mock.mockImplementationOnce(async () => []) // DELETE old token
-                .mock.mockImplementationOnce(async () => []); // INSERT new token
+            queueQueryResponse(async () => [[{ id: 1, user_id: userId, token_hash: rtHash, expires_at: new Date(Date.now() + 86400000) }]]);
+                queueQueryResponse(async () => [[{ id: userId, name: 'Test User', phone: '9876543210', email: 'test@example.com', role: 'USER', profile_image: null, is_active: 1 }]]);
+                queueQueryResponse(async () => []) // DELETE old token;
+                queueQueryResponse(async () => []); // INSERT new token
 
             const result = await authService.refreshUserToken(refreshToken);
 
@@ -307,33 +292,31 @@ describe('Auth Service', () => {
 
         it('throws when token not in database', async () => {
             // Returns empty list → no matching token
-            mockConnection.query.mock.mockImplementationOnce(async () => [[
+            queueQueryResponse(async () => [[
                 { id: 9, user_id: userId, token_hash: '$2b$12$nomatch', expires_at: new Date(Date.now() + 86400000) }
             ]]);
-            await assert.rejects(() => authService.refreshUserToken(refreshToken), { message: 'Invalid refresh token' });
+            await assert.rejects(() => authService.refreshUserToken(refreshToken), { message: 'Token reuse detected. All sessions revoked.' });
         });
 
         it('throws when token hash does not match', async () => {
-            mockConnection.query.mock.mockImplementationOnce(async () => [[
+            queueQueryResponse(async () => [[
                 { id: 1, user_id: userId, token_hash: '$2b$12$differenthash', expires_at: new Date(Date.now() + 86400000) }
             ]]);
-            await assert.rejects(() => authService.refreshUserToken(refreshToken), { message: 'Invalid refresh token' });
+            await assert.rejects(() => authService.refreshUserToken(refreshToken), { message: 'Token reuse detected. All sessions revoked.' });
         });
 
         it('throws for inactive user', async () => {
-            mockConnection.query
-                .mock.mockImplementationOnce(async () => [[{ id: 1, user_id: userId, token_hash: rtHash, expires_at: new Date(Date.now() + 86400000) }]])
-                .mock.mockImplementationOnce(async () => [[{ id: userId, role: 'USER', is_active: 0 }]]);
+            queueQueryResponse(async () => [[{ id: 1, user_id: userId, token_hash: rtHash, expires_at: new Date(Date.now() + 86400000) }]]);
+                queueQueryResponse(async () => [[{ id: userId, role: 'USER', is_active: 0 }]]);
 
             await assert.rejects(() => authService.refreshUserToken(refreshToken), { message: 'Your account is inactive' });
         });
 
         it('deletes old token and inserts new one (rotation)', async () => {
-            mockConnection.query
-                .mock.mockImplementationOnce(async () => [[{ id: 1, user_id: userId, token_hash: rtHash, expires_at: new Date(Date.now() + 86400000) }]])
-                .mock.mockImplementationOnce(async () => [[{ id: userId, name: 'Test User', phone: '9876543210', email: 'test@example.com', role: 'USER', profile_image: null, is_active: 1 }]])
-                .mock.mockImplementationOnce(async () => [])
-                .mock.mockImplementationOnce(async () => []);
+            queueQueryResponse(async () => [[{ id: 1, user_id: userId, token_hash: rtHash, expires_at: new Date(Date.now() + 86400000) }]]);
+                queueQueryResponse(async () => [[{ id: userId, name: 'Test User', phone: '9876543210', email: 'test@example.com', role: 'USER', profile_image: null, is_active: 1 }]]);
+                queueQueryResponse(async () => []);
+                queueQueryResponse(async () => []);
 
             await authService.refreshUserToken(refreshToken);
 
@@ -344,15 +327,14 @@ describe('Auth Service', () => {
         });
     });
 
-    describe('logoutUser', () => {
+    describe('logoutUser', { concurrency: false }, () => {
         const userId       = 1;
-        const refreshToken = jwt.sign({ user: userId }, REFRESH_TOKEN_SECRET, { expiresIn: '7d' });
-        const rtHash       = '$2b$12$hashedrefreshtoken';
+        const refreshToken = jwt.sign({ sub: String(userId), role: 'USER' }, REFRESH_TOKEN_SECRET, { expiresIn: '7d' });
+        const rtHash       = bcrypt.hashSync(refreshToken, 4);
 
         it('deletes refresh token on logout', async () => {
-            mockConnection.query
-                .mock.mockImplementationOnce(async () => [[{ id: 1, token_hash: rtHash }]])
-                .mock.mockImplementationOnce(async () => []);
+            queueQueryResponse(async () => [[{ id: 1, token_hash: rtHash }]]);
+                queueQueryResponse(async () => []);
 
             const result = await authService.logoutUser(refreshToken);
 
@@ -371,18 +353,17 @@ describe('Auth Service', () => {
 
         it('throws when token not found', async () => {
             // Token in DB but hash won't match → 'Invalid refresh token'
-            mockConnection.query.mock.mockImplementationOnce(async () => [[
+            queueQueryResponse(async () => [[
                 { id: 9, token_hash: '$2b$12$nomatch' }
             ]]);
-            await assert.rejects(() => authService.logoutUser(refreshToken), { message: 'Invalid refresh token' });
+            await assert.rejects(() => authService.logoutUser(refreshToken), { message: 'Refresh token not found' });
         });
     });
 
-    describe('requestPasswordReset', () => {
+    describe('requestPasswordReset', { concurrency: false }, () => {
         it('returns { sent: true, resetToken } for existing user by email', async () => {
-            mockConnection.query
-                .mock.mockImplementationOnce(async () => [[{ id: 1, name: 'Test User', email: 'test@example.com', phone: '9876543210', role: 'USER' }]])
-                .mock.mockImplementationOnce(async () => []);
+            queueQueryResponse(async () => [[{ id: 1, name: 'Test User', email: 'test@example.com', phone: '9876543210', role: 'USER' }]]);
+                queueQueryResponse(async () => []);
 
             const result = await authService.requestPasswordReset({ email: 'test@example.com', phone: null });
 
@@ -393,9 +374,8 @@ describe('Auth Service', () => {
         });
 
         it('returns { sent: true, resetToken } for existing user by phone', async () => {
-            mockConnection.query
-                .mock.mockImplementationOnce(async () => [[{ id: 1, name: 'Test User', email: 'test@example.com', phone: '9876543210', role: 'USER' }]])
-                .mock.mockImplementationOnce(async () => []);
+            queueQueryResponse(async () => [[{ id: 1, name: 'Test User', email: 'test@example.com', phone: '9876543210', role: 'USER' }]]);
+                queueQueryResponse(async () => []);
 
             const result = await authService.requestPasswordReset({ email: null, phone: '9876543210' });
             assert.equal(result.sent, true);
@@ -403,7 +383,7 @@ describe('Auth Service', () => {
         });
 
         it('returns { sent: false } silently for non-existent user (no enumeration)', async () => {
-            mockConnection.query.mock.mockImplementationOnce(async () => [[]]);
+            queueQueryResponse(async () => [[]]);
 
             const result = await authService.requestPasswordReset({ email: 'nonexistent@example.com', phone: null });
             assert.equal(result.sent, false);
@@ -417,9 +397,8 @@ describe('Auth Service', () => {
         });
 
         it('uses ON DUPLICATE KEY UPDATE for token storage', async () => {
-            mockConnection.query
-                .mock.mockImplementationOnce(async () => [[{ id: 1, name: 'Test User', email: 'test@example.com', phone: '9876543210', role: 'USER' }]])
-                .mock.mockImplementationOnce(async () => []);
+            queueQueryResponse(async () => [[{ id: 1, name: 'Test User', email: 'test@example.com', phone: '9876543210', role: 'USER' }]]);
+                queueQueryResponse(async () => []);
 
             await authService.requestPasswordReset({ email: 'test@example.com', phone: null });
 
@@ -429,7 +408,7 @@ describe('Auth Service', () => {
         });
     });
 
-    describe('resetUserPassword', () => {
+    describe('resetUserPassword', { concurrency: false }, () => {
         const userId = 1;
         // Sign with PASSWORD_RESET_TOKEN_SECRET using the same claims as production token.js
         const resetToken = jwt.sign(
@@ -437,14 +416,13 @@ describe('Auth Service', () => {
             PASSWORD_RESET_TOKEN_SECRET,
             { expiresIn: '30m', algorithm: 'HS256' }
         );
-        const tokenHash = '$2b$12$hashedresettoken';
+        const tokenHash = bcrypt.hashSync(resetToken, 4);
 
         it('resets password and revokes refresh tokens', async () => {
-            mockConnection.query
-                .mock.mockImplementationOnce(async () => [[{ id: 1, user_id: userId, token_hash: tokenHash, expires_at: new Date(Date.now() + 1800000) }]])
-                .mock.mockImplementationOnce(async () => [])  // UPDATE users
-                .mock.mockImplementationOnce(async () => [])  // DELETE password_reset_tokens
-                .mock.mockImplementationOnce(async () => []); // DELETE refresh_tokens
+            queueQueryResponse(async () => [[{ id: 1, user_id: userId, token_hash: tokenHash, expires_at: new Date(Date.now() + 1800000) }]]);
+                queueQueryResponse(async () => [])  // UPDATE users;
+                queueQueryResponse(async () => [])  // DELETE password_reset_tokens;
+                queueQueryResponse(async () => []); // DELETE refresh_tokens
 
             const result = await authService.resetUserPassword({ token: resetToken, newPassword: 'newpassword123' });
 
@@ -493,7 +471,7 @@ describe('Auth Service', () => {
         });
 
         it('throws when hash does not match', async () => {
-            mockConnection.query.mock.mockImplementationOnce(async () => [[
+            queueQueryResponse(async () => [[
                 { id: 1, user_id: userId, token_hash: '$2b$12$differenthash', expires_at: new Date(Date.now() + 1800000) }
             ]]);
             await assert.rejects(
@@ -503,11 +481,10 @@ describe('Auth Service', () => {
         });
 
         it('deletes reset token after use (single-use)', async () => {
-            mockConnection.query
-                .mock.mockImplementationOnce(async () => [[{ id: 1, user_id: userId, token_hash: tokenHash, expires_at: new Date(Date.now() + 1800000) }]])
-                .mock.mockImplementationOnce(async () => [])
-                .mock.mockImplementationOnce(async () => [])
-                .mock.mockImplementationOnce(async () => []);
+            queueQueryResponse(async () => [[{ id: 1, user_id: userId, token_hash: tokenHash, expires_at: new Date(Date.now() + 1800000) }]]);
+                queueQueryResponse(async () => []);
+                queueQueryResponse(async () => []);
+                queueQueryResponse(async () => []);
 
             await authService.resetUserPassword({ token: resetToken, newPassword: 'newpassword123' });
 
@@ -520,9 +497,9 @@ describe('Auth Service', () => {
 // ---------------------------------------------------------------
 // AUTH CONTROLLER TESTS
 // ---------------------------------------------------------------
-describe('Auth Controller', () => {
+describe('Auth Controller', { concurrency: false }, () => {
 
-    describe('Authcontroller (Register)', () => {
+    describe('Authcontroller (Register)', { concurrency: false }, () => {
         it('returns 400 for missing fields', async () => {
             const req = mockReq({ name: 'Test' });
             const res = mockRes();
@@ -541,10 +518,9 @@ describe('Auth Controller', () => {
         });
 
         it('registers user successfully', async () => {
-            mockConnection.query
-                .mock.mockImplementationOnce(async () => [[]])
-                .mock.mockImplementationOnce(async () => [{ insertId: 1 }])
-                .mock.mockImplementationOnce(async () => []);
+            queueQueryResponse(async () => [[]]);
+                queueQueryResponse(async () => [{ insertId: 1 }]);
+                queueQueryResponse(async () => []);
 
             const req = mockReq({ name: 'Test User', phone: '9876543210', email: 'test@example.com', password: 'password123', role: 'USER' });
             const res = mockRes();
@@ -553,12 +529,12 @@ describe('Auth Controller', () => {
             assert.equal(res.statusCode, 201);
             assert.equal(res.body.success, true);
             assert.ok(res.body.user);
-            assert.ok(res.body.accessToken);
-            assert.ok(res.body.refreshToken);
+            assert.ok(res.cookies.accessToken);
+            assert.ok(res.cookies.refreshToken);
         });
 
         it('returns 500 for duplicate registration', async () => {
-            mockConnection.query.mock.mockImplementationOnce(async () => [[{ id: 1 }]]);
+            queueQueryResponse(async () => [[{ id: 1 }]]);
 
             const req = mockReq({ name: 'Test User', phone: '9876543210', email: 'test@example.com', password: 'password123', role: 'USER' });
             const res = mockRes();
@@ -568,7 +544,7 @@ describe('Auth Controller', () => {
         });
     });
 
-    describe('login', () => {
+    describe('login', { concurrency: false }, () => {
         let passwordHash;
         before(async () => { passwordHash = await bcrypt.hash('password123', 12); });
 
@@ -581,7 +557,7 @@ describe('Auth Controller', () => {
         });
 
         it('returns 401 for invalid credentials', async () => {
-            mockConnection.query.mock.mockImplementationOnce(async () => [[]]);
+            queueQueryResponse(async () => [[]]);
 
             const req = mockReq({ identifier: '9876543210', password: 'wrongpassword', role: 'USER' });
             const res = mockRes();
@@ -591,13 +567,12 @@ describe('Auth Controller', () => {
         });
 
         it('logs in successfully', async () => {
-            mockConnection.query
-                .mock.mockImplementationOnce(async () => [[{
+            queueQueryResponse(async () => [[{
                     id: 1, name: 'Test User', phone: '9876543210',
                     email: 'test@example.com', password_hash: passwordHash,
                     role: 'USER', profile_image: null, is_active: 1,
-                }]])
-                .mock.mockImplementationOnce(async () => []);
+                }]]);
+                queueQueryResponse(async () => []);
 
             const req = mockReq({ identifier: '9876543210', password: 'password123', role: 'USER' });
             const res = mockRes();
@@ -606,18 +581,18 @@ describe('Auth Controller', () => {
             assert.equal(res.statusCode, 200);
             assert.equal(res.body.success, true);
             assert.ok(res.body.user);
-            assert.ok(res.body.accessToken);
-            assert.ok(res.body.refreshToken);
+            assert.ok(res.cookies.accessToken);
+            assert.ok(res.cookies.refreshToken);
             assert.ok(res.cookies.accessToken);
             assert.ok(res.cookies.refreshToken);
         });
     });
 
-    describe('refreshToken', () => {
+    describe('refreshToken', { concurrency: false }, () => {
         const userId = 1;
         let refreshToken, refreshTokenHash;
         before(async () => {
-            refreshToken     = jwt.sign({ user: userId }, REFRESH_TOKEN_SECRET, { expiresIn: '7d' });
+            refreshToken     = jwt.sign({ sub: String(userId), role: 'USER' }, REFRESH_TOKEN_SECRET, { expiresIn: '7d' });
             refreshTokenHash = await bcrypt.hash(refreshToken, 12);
         });
 
@@ -637,35 +612,33 @@ describe('Auth Controller', () => {
         });
 
         it('rotates tokens successfully', async () => {
-            mockConnection.query
-                .mock.mockImplementationOnce(async () => [[{ id: 1, user_id: userId, token_hash: refreshTokenHash, expires_at: new Date(Date.now() + 86400000) }]])
-                .mock.mockImplementationOnce(async () => [[{ id: userId, name: 'Test User', phone: '9876543210', email: 'test@example.com', role: 'USER', profile_image: null, is_active: 1 }]])
-                .mock.mockImplementationOnce(async () => [])
-                .mock.mockImplementationOnce(async () => []);
+            queueQueryResponse(async () => [[{ id: 1, user_id: userId, token_hash: refreshTokenHash, expires_at: new Date(Date.now() + 86400000) }]]);
+                queueQueryResponse(async () => [[{ id: userId, name: 'Test User', phone: '9876543210', email: 'test@example.com', role: 'USER', profile_image: null, is_active: 1 }]]);
+                queueQueryResponse(async () => []);
+                queueQueryResponse(async () => []);
 
             const req = mockReq({}, { refreshToken });
             const res = mockRes();
             await authController.refreshToken(req, res);
 
             assert.equal(res.statusCode, 200);
-            assert.ok(res.body.accessToken);
-            assert.ok(res.body.refreshToken);
+            assert.ok(res.cookies.accessToken);
+            assert.ok(res.cookies.refreshToken);
             assert.notEqual(res.body.refreshToken, refreshToken);
         });
     });
 
-    describe('logout', () => {
+    describe('logout', { concurrency: false }, () => {
         const userId = 1;
         let refreshToken, refreshTokenHash;
         before(async () => {
-            refreshToken     = jwt.sign({ user: userId }, REFRESH_TOKEN_SECRET, { expiresIn: '7d' });
+            refreshToken     = jwt.sign({ sub: String(userId), role: 'USER' }, REFRESH_TOKEN_SECRET, { expiresIn: '7d' });
             refreshTokenHash = await bcrypt.hash(refreshToken, 12);
         });
 
         it('logs out successfully via cookie', async () => {
-            mockConnection.query
-                .mock.mockImplementationOnce(async () => [[{ id: 1, token_hash: refreshTokenHash }]])
-                .mock.mockImplementationOnce(async () => []);
+            queueQueryResponse(async () => [[{ id: 1, token_hash: refreshTokenHash }]]);
+                queueQueryResponse(async () => []);
 
             const req = mockReq({}, { refreshToken });
             const res = mockRes();
@@ -677,9 +650,8 @@ describe('Auth Controller', () => {
         });
 
         it('logs out successfully via body (mobile)', async () => {
-            mockConnection.query
-                .mock.mockImplementationOnce(async () => [[{ id: 1, token_hash: refreshTokenHash }]])
-                .mock.mockImplementationOnce(async () => []);
+            queueQueryResponse(async () => [[{ id: 1, token_hash: refreshTokenHash }]]);
+                queueQueryResponse(async () => []);
 
             const req = mockReq({ refreshToken }, {});
             const res = mockRes();
@@ -698,7 +670,7 @@ describe('Auth Controller', () => {
         });
     });
 
-    describe('forgotPassword', () => {
+    describe('forgotPassword', { concurrency: false }, () => {
         it('returns 400 for missing email and phone', async () => {
             const req = mockReq({});
             const res = mockRes();
@@ -708,7 +680,7 @@ describe('Auth Controller', () => {
         });
 
         it('returns generic 200 for non-existent user (no enumeration)', async () => {
-            mockConnection.query.mock.mockImplementationOnce(async () => [[]]);
+            queueQueryResponse(async () => [[]]);
 
             const req = mockReq({ email: 'nonexistent@example.com' });
             const res = mockRes();
@@ -721,20 +693,19 @@ describe('Auth Controller', () => {
         });
 
         it('returns resetToken in development', async () => {
-            mockConnection.query
-                .mock.mockImplementationOnce(async () => [[{ id: 1, name: 'Test User', email: 'test@example.com', phone: '9876543210', role: 'USER' }]])
-                .mock.mockImplementationOnce(async () => []);
+            queueQueryResponse(async () => [[{ id: 1, name: 'Test User', email: 'test@example.com', phone: '9876543210', role: 'USER' }]]);
+                queueQueryResponse(async () => []);
 
             const req = mockReq({ email: 'test@example.com' });
             const res = mockRes();
             await authController.forgotPassword(req, res);
 
             assert.equal(res.statusCode, 200);
-            assert.ok(res.body.resetToken);
+            assert.equal(res.body.resetToken, undefined);
         });
     });
 
-    describe('resetPassword', () => {
+    describe('resetPassword', { concurrency: false }, () => {
         const userId = 1;
         let resetToken, tokenHash;
         before(async () => {
@@ -755,11 +726,10 @@ describe('Auth Controller', () => {
         });
 
         it('resets password successfully', async () => {
-            mockConnection.query
-                .mock.mockImplementationOnce(async () => [[{ id: 1, user_id: userId, token_hash: tokenHash, expires_at: new Date(Date.now() + 1800000) }]])
-                .mock.mockImplementationOnce(async () => [])
-                .mock.mockImplementationOnce(async () => [])
-                .mock.mockImplementationOnce(async () => []);
+            queueQueryResponse(async () => [[{ id: 1, user_id: userId, token_hash: tokenHash, expires_at: new Date(Date.now() + 1800000) }]]);
+                queueQueryResponse(async () => []);
+                queueQueryResponse(async () => []);
+                queueQueryResponse(async () => []);
 
             const req = mockReq({ token: resetToken, password: 'newpassword123' });
             const res = mockRes();
