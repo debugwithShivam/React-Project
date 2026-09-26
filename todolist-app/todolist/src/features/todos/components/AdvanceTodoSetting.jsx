@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from 'react'
 import api from '../../../services/api'
 import { useQueryClient } from '@tanstack/react-query'
 import ClickAudioFun from '../../../shared/utils/clickAudio'
-import { setVoice } from '../../../store/Slice'
+import { setVoice } from '../../../store/todoSlice'
 import { useDispatch } from 'react-redux'
 export default function AdvanceTodoSetting() {
 

@@ -6,7 +6,7 @@ import TodoContainerPages from './TodoContainerPages'
 import AddTodo from './AddTodo'
 import './everyTodoPages.css'
 import { useDispatch } from 'react-redux'
-import { shiftTodoFun } from '../../../store/Slice'
+import { shiftTodoFun } from '../../../store/todoSlice'
 export default function CreateTodoPages() {
   let getPageData = useSelector((state) => state.states.getPageData)
   let data = JSON.parse(localStorage.getItem('pageData'))
@@ -26,7 +26,7 @@ export default function CreateTodoPages() {
   return (
     <div className='create-todo-pages'>
       <div className="page-details">
-        <div className="back-home" onClick={()=>navigate('/CustomTodopage')}>
+        <div className="back-home" onClick={()=>navigate('/CustomTodoPage')}>
           <span onClick={()=>{
             closeShoftPanal()
           }}>

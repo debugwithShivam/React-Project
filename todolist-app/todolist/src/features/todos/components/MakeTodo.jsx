@@ -1,7 +1,7 @@
 import React, { useContext, useRef, useState } from 'react'
-import { MyContext } from '../../../contexts/UIchange'
-import { FilterCheckedTodo } from '../../../contexts/FilterCheckedTodo'
-import { MyBackgroundImg } from '../../../contexts/ChangeBackgroungImg'
+import { MyContext } from '../../../contexts/UIContext'
+import { FilterTodoContext } from '../../../contexts/FilterTodoContext'
+import { MyBackgroundImg } from '../../../contexts/BackgroundImageContext'
 import { useDispatch, useSelector } from 'react-redux'
 import ClickAudioFun from '../../../shared/utils/clickAudio'
 import img1 from '../../../assets/images/img1.png'
@@ -17,9 +17,9 @@ import img10 from '../../../assets/images/img10.jpg'
 import img11 from '../../../assets/images/img11.jpg'
 import img12 from '../../../assets/images/img12.jpg'
 import img13 from '../../../assets/images/img13.jpg'
-import searchText from '../../../contexts/searchBarText'
-import textColorContext from '../../../contexts/TextColorContetx'
-import { timerComponentToggleFun } from '../../../store/Slice'
+import searchText from '../../../contexts/SearchTextContext'
+import textColorContext from '../../../contexts/TextColorContext'
+import { timerComponentToggleFun } from '../../../store/todoSlice'
 
 
 const images = [
@@ -86,7 +86,7 @@ function Box({ name }) {
 
 export default function MakeTodo() {
   const { state, setState } = useContext(MyContext)
-  const { checked, setChecked } = useContext(FilterCheckedTodo)
+  const { checked, setChecked } = useContext(FilterTodoContext)
 
   const [none, setNone] = useState(false)
   const { setSearchBarText } = useContext(searchText)

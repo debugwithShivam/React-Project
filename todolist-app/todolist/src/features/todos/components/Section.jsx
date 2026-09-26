@@ -4,8 +4,8 @@ import TodoContainer from './TodoContainer'
 import SearchBar from './SearchBar'
 import img1 from '../../../assets/images/img1.png'
 import img2 from '../../../assets/images/img2.jpg'
-import { MyBackgroundImg } from '../../../contexts/ChangeBackgroungImg'
-import { CenterTodoDataProvider } from '../../../contexts/CenterTodoata'
+import { MyBackgroundImg } from '../../../contexts/BackgroundImageContext'
+import { CenterTodoDataProvider } from '../../../contexts/CenterTodoContext'
 import TodoTimer from './TodoTimer'
 export default function Section() {
   const { backimg, setBackImg } = useContext(MyBackgroundImg)

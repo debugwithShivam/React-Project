@@ -320,7 +320,7 @@ body {
 }
 
 
-.Pasued_comple_myDay {
+.PausedCompletedMyDay {
   margin: 0px 10px 0px 10px;
   border-radius: .4rem;
   color: whitesmoke;
@@ -331,7 +331,7 @@ body {
   font-family: sans-serif;
 }
 
-.Pasued_comple_myDay .My-todo {
+.PausedCompletedMyDay .My-todo {
   padding: .5rem;
   margin-top: 10px;
   background-color: #333336bd;
@@ -1288,7 +1288,7 @@ h3 {
     background: linear-gradient(90deg, rgba(42, 123, 155, 1) 0%, rgba(87, 199, 133, 1) 50%, rgba(237, 221, 83, 1) 100%);
   }
 
-  .Pasued_comple_myDay {
+  .PausedCompletedMyDay {
     margin: 0px 10px 0px 10px;
     border-radius: .4rem;
     color: whitesmoke;
@@ -1299,7 +1299,7 @@ h3 {
     font-family: sans-serif;
   }
 
-  .Pasued_comple_myDay .My-todo {
+  .PausedCompletedMyDay .My-todo {
     padding: .5rem;
     margin-top: 10px;
     background: none;

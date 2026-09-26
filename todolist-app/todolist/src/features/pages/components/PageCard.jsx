@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import { getPageDataFun } from '../../../store/Slice'
+import { getPageDataFun } from '../../../store/todoSlice'
 import { useDispatch } from 'react-redux'
 import { useNavigate } from 'react-router-dom'
 import { useSelector } from 'react-redux'

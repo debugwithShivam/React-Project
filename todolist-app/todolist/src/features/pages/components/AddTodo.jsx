@@ -2,7 +2,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query'
 import api from '../../../services/api'
 import React, { useState } from 'react'
 import { useSelector, useDispatch } from 'react-redux'
-import { shiftTodoFun } from '../../../store/Slice'
+import { shiftTodoFun } from '../../../store/todoSlice'
 import ShiftTodo from './ShiftTodo'
 import AllpauseComplet from './AllpauseComplet'
 export default function AddTodo() {

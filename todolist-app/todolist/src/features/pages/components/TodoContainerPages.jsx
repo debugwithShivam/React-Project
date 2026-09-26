@@ -3,7 +3,7 @@ import api from '../../../services/api'
 import React, { useEffect, useMemo, useState } from 'react'
 import EveryTodo from './EveryTodo';
 import { useSelector } from 'react-redux';
-import { getShiftTodoData } from '../../../store/Slice';
+import { getShiftTodoData } from '../../../store/todoSlice';
 import { useDispatch } from 'react-redux';
 export default function TodoContainerPages() {
     let getTodosData = async () => {

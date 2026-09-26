@@ -1,6 +1,6 @@
 import React from 'react'
 import { useEffect, useState, useContext } from 'react'
-import centerTodoData from '../../../contexts/CenterTodoata'
+import centerTodoData from '../../../contexts/CenterTodoContext'
 
 export default function TodoTimerBox({ endTimer, id, onClick }) {
 

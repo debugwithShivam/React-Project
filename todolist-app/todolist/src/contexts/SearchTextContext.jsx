@@ -3,12 +3,12 @@ import { createContext, useEffect, useState } from "react";
 const searchText = createContext()
 
 export function MySearchContext({children}){
-    const [searchBarText,setSearchBarText] = useState('')
+    const [SearchTextContext,setSearchBarText] = useState('')
 
    
 
     return (
-        <searchText.Provider value={{searchBarText,setSearchBarText}}>
+        <searchText.Provider value={{SearchTextContext,setSearchBarText}}>
             {children}
         </searchText.Provider>
     )

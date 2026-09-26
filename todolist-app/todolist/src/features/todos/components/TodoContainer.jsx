@@ -3,13 +3,13 @@ import Todo from './Todo'
 import { useState } from 'react'
 import api from '../../../services/api'
 import { useEffect } from 'react'
-import { MyContext } from '../../../contexts/UIchange'
+import { MyContext } from '../../../contexts/UIContext'
 import { useQuery } from '@tanstack/react-query'
 import { useDispatch, useSelector } from 'react-redux'
-import { CheckStar } from '../../../store/Slice'
-import { FilterCheckedTodo } from '../../../contexts/FilterCheckedTodo'
-import centerTodoData from '../../../contexts/CenterTodoata'
-import searchText from '../../../contexts/searchBarText'
+import { CheckStar } from '../../../store/todoSlice'
+import { FilterTodoContext } from '../../../contexts/FilterTodoContext'
+import centerTodoData from '../../../contexts/CenterTodoContext'
+import searchText from '../../../contexts/SearchTextContext'
 import TodoTimer from './TodoTimer'
 
 export default function TodoContainer({ itemId }) {
@@ -43,16 +43,16 @@ export default function TodoContainer({ itemId }) {
 
   
 
-  const { checked, setChecked } = useContext(FilterCheckedTodo)
+  const { checked, setChecked } = useContext(FilterTodoContext)
   let { state, setState } = useContext(MyContext)
-  let { searchBarText, setSearchBarText } = useContext(searchText)
+  let { SearchTextContext, setSearchBarText } = useContext(searchText)
 
   let todoFilter = useMemo(() => {
     let list = [...todoData]
 
 
-    if (searchBarText) {
-      return list.filter((item) => item.searchInput.includes(searchBarText))
+    if (SearchTextContext) {
+      return list.filter((item) => item.searchInput.includes(SearchTextContext))
     }
 
     if (checked) {
@@ -67,7 +67,7 @@ export default function TodoContainer({ itemId }) {
         (a, b) => b.currantDate - a.currantDate)
     }
 
-  }, [todoData, checked, state, searchBarText])
+  }, [todoData, checked, state, SearchTextContext])
 
 
 

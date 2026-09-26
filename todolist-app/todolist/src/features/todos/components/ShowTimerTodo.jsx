@@ -1,6 +1,6 @@
 import React from 'react'
 import { useContext } from 'react'
-import { MyBackgroundImg } from '../../../contexts/ChangeBackgroungImg'
+import { MyBackgroundImg } from '../../../contexts/BackgroundImageContext'
 import { useQuery } from '@tanstack/react-query'
 import api from '../../../services/api'
 export default function ShowTimerTodo() {

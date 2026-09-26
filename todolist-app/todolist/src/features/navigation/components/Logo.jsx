@@ -1,7 +1,7 @@
 import React from 'react'
 import logo from '../../../assets/images/logo.png'
 import { useDispatch } from 'react-redux'
-import { closeBox } from '../../../store/Slice'
+import { closeBox } from '../../../store/todoSlice'
 
 import { useSelector } from 'react-redux'
 export default function Logo() {

@@ -1,7 +1,7 @@
 import React, { useContext, useEffect, useRef, useState } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
-import { saveTimer, timerComponentToggleFun } from '../../../store/Slice';
-import centerTodoData from '../../../contexts/CenterTodoata';
+import { saveTimer, timerComponentToggleFun } from '../../../store/todoSlice';
+import centerTodoData from '../../../contexts/CenterTodoContext';
 import api from '../../../services/api';
 
 export default function TodoTimer() {

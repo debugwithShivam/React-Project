@@ -6,8 +6,8 @@ import { useQuery } from '@tanstack/react-query'
 import PageCard from './PageCard'
 import getPageData from './FetchData'
 import { useDispatch, useSelector } from 'react-redux'
-import { getShiftPageData } from '../../../store/Slice'
-export default function CustomTodopage() {
+import { getShiftPageData } from '../../../store/todoSlice'
+export default function CustomTodoPage() {
 
 
   let latest = useSelector((state) => state.states.latest)

@@ -4,7 +4,7 @@ import api from '../../../services/api'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import logo from '../../../assets/images/logo.png'
 import { useContext } from 'react'
-import textColorContext from '../../../contexts/TextColorContetx'
+import textColorContext from '../../../contexts/TextColorContext'
 import Notif from '../../../assets/audio/notification.wav'
 import AdvanceTodoSetting from './AdvanceTodoSetting'
 export default function SearchBar() {

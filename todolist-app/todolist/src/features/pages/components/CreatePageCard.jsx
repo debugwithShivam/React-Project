@@ -4,7 +4,7 @@ import { useSelector } from 'react-redux'
 import api from '../../../services/api'
 import { useState } from 'react'
 import { useDispatch } from 'react-redux'
-import { createPage } from '../../../store/Slice'
+import { createPage } from '../../../store/todoSlice'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 export default function CreatePageCard() {
 

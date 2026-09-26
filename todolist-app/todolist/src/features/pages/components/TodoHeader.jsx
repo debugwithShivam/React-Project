@@ -1,7 +1,7 @@
 import React from 'react'
-import { TodosLatest } from '../../../store/Slice'
-import { TodosPopular } from '../../../store/Slice'
-import { TodoSearch } from '../../../store/Slice'
+import { TodosLatest } from '../../../store/todoSlice'
+import { TodosPopular } from '../../../store/todoSlice'
+import { TodoSearch } from '../../../store/todoSlice'
 import { useDispatch } from 'react-redux'
 import { useSelector } from 'react-redux'
 export default function TodoHeader() {

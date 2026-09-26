@@ -1,10 +1,10 @@
 import React from 'react'
 import ClickAudioFun from '../../../shared/utils/clickAudio'
 import { useDispatch, useSelector } from 'react-redux'
-import { createPage } from '../../../store/Slice'
-import { PagesLatest } from '../../../store/Slice'
-import { searchPage } from '../../../store/Slice'
-import { PagesPopular } from '../../../store/Slice'
+import { createPage } from '../../../store/todoSlice'
+import { PagesLatest } from '../../../store/todoSlice'
+import { searchPage } from '../../../store/todoSlice'
+import { PagesPopular } from '../../../store/todoSlice'
 export default function CreateTodoHeader({displayvalue}) {
 
   let search = useSelector((state)=>state.states.searchText)
