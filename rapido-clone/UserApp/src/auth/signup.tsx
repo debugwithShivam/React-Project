@@ -11,8 +11,8 @@ export default function SignupScreen() {
 	const [saving, setSaving] = useState(false);
 
 	const submit = async () => {
-		if (!name.trim() || !/^\d{10}$/.test(phone) || password.length < 6) {
-			Alert.alert('Check details', 'Enter your name, a valid 10-digit phone and a 6+ character password.');
+		if (!name.trim() || !/^\d{10}$/.test(phone) || password.length < 8) {
+			Alert.alert('Check details', 'Enter your name, a valid 10-digit phone and a password with at least 8 characters.');
 			return;
 		}
 		try {

@@ -11,7 +11,7 @@ import MapView, { Marker, Region } from 'react-native-maps';
 import { router, useLocalSearchParams } from 'expo-router';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import * as Location from 'expo-location';
-import { emitLocationPicked } from './locationBus';
+import { emitLocationPicked } from '../../ride/locationBus';
 
 export default function MapPickerScreen() {
   const params = useLocalSearchParams();

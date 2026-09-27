@@ -30,19 +30,18 @@ export const Authcontroller = async (req, res) => {
 
         const normalizedName = name?.trim();
         const normalizedPhone = phone?.trim();
-        const normalizedEmail = email?.trim().toLowerCase();
+        const normalizedEmail = email?.trim().toLowerCase() || null;
         const normalizedRole = role?.trim().toUpperCase();
 
         if (
             !normalizedName ||
             !normalizedPhone ||
-            !normalizedEmail ||
             !password ||
             !normalizedRole
         ) {
             return res.status(400).json({
                 success: false,
-                message: 'Name, phone, email, password and role are required',
+                message: 'Name, phone, password and role are required',
             });
         }
 
@@ -100,6 +99,8 @@ export const Authcontroller = async (req, res) => {
                 role: user.role,
                 driver: user.driver
             },
+            accessToken: user.accessToken,
+            refreshToken: user.refreshToken,
         });
 
     } catch (error) {
@@ -158,6 +159,8 @@ export const login = async (req, res) => {
             success: true,
             message: 'Login successful',
             user: result.user,
+            accessToken: result.accessToken,
+            refreshToken: result.refreshToken,
         });
 
     } catch (error) {

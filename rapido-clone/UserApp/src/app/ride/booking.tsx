@@ -12,7 +12,7 @@ import {
 import { router } from 'expo-router';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import * as Location from 'expo-location';
-import { onLocationPicked } from './locationBus';
+import { onLocationPicked } from '../../ride/locationBus';
 
 export default function BookingScreen() {
   const [pickup, setPickup] = useState('');

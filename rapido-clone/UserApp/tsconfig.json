@@ -20,5 +20,5 @@
     ".expo/types/**/*.ts",
     "expo-env.d.ts",
     "src/auth/login.jsx"
-, "src/ride/searching.tsx"  ]
+, "src/ride/searching.tsx", "src/api/axios.ts"  ]
 }

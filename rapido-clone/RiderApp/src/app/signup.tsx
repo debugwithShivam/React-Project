@@ -87,8 +87,8 @@ export default function SignupScreen() {
       Alert.alert('Missing details', 'Please enter your name, mobile number, and email address.');
       return;
     }
-    if (!formData.password) {
-      Alert.alert('Missing password', 'Please create a password!');
+    if (formData.password.length < 8) {
+      Alert.alert('Password too short', 'Create a password with at least 8 characters.');
       return;
     }
     if (formData.password !== formData.confirmPassword) {
