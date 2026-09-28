@@ -12,6 +12,7 @@ export default function Support() {
   const { data: complaints = [], isLoading } = useQuery({
     queryKey: ['admin-complaints', status],
     queryFn: async () => (await api.get('/admin/complaints', { params: { status: status || undefined } })).data.complaints,
+    refetchInterval: 15000,
   });
   const update = useMutation({
     mutationFn: ({ id, payload }) => api.patch(`/admin/complaints/${id}`, payload),

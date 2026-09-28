@@ -10,12 +10,26 @@ export const getMyProfile = asyncHandler(async (req, res) => {
 
 export const updateMyProfile = asyncHandler(async (req, res) => {
     const { name, email, phone, city } = req.body;
+    if (name !== undefined && !String(name).trim()) throw new ApiError(400, 'Name cannot be empty');
+    if (email && !/^\S+@\S+\.\S+$/.test(String(email).trim())) throw new ApiError(400, 'A valid email address is required');
     let profile_image = req.body.profile_image;
     if (req.file?.buffer) {
         // Store as data URL — simple for MVP. For production, use S3/Cloudinary.
         profile_image = `data:${req.file.mimetype};base64,${req.file.buffer.toString('base64')}`;
     }
-    const user = await svc.updateUserProfile(req.user.user, { name, email, phone, city, profile_image });
+    let user;
+    try {
+        user = await svc.updateUserProfile(req.user.user, {
+            ...(name !== undefined ? { name: String(name).trim() } : {}),
+            ...(email !== undefined ? { email: email ? String(email).trim().toLowerCase() : null } : {}),
+            ...(phone !== undefined ? { phone } : {}),
+            ...(city !== undefined ? { city: city ? String(city).trim() : null } : {}),
+            ...(profile_image !== undefined ? { profile_image } : {}),
+        });
+    } catch (error) {
+        if (error.code === 'ER_DUP_ENTRY') throw new ApiError(409, 'That email or phone number is already in use');
+        throw error;
+    }
     res.json({ success: true, user });
 });
 

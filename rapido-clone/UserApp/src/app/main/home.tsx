@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -7,7 +7,7 @@ import {
   TouchableOpacity,
   ActivityIndicator,
 } from 'react-native';
-import { router } from 'expo-router';
+import { router, useFocusEffect } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
@@ -31,6 +31,8 @@ type VehicleOption = {
   icon: keyof typeof MaterialCommunityIcons.glyphMap;
   color: string;
 };
+
+type SavedPlace = { id: number; label: string; name: string; address: string; lat?: number | null; lng?: number | null };
 
 const VEHICLE_OPTIONS: VehicleOption[] = [
   {
@@ -80,18 +82,9 @@ const VEHICLE_OPTIONS: VehicleOption[] = [
   },
 ];
 
-const SAVED_PLACES: {
-  id: string;
-  label: string;
-  icon: keyof typeof Ionicons.glyphMap;
-}[] = [
-  { id: 'home', label: 'Home', icon: 'home-outline' },
-  { id: 'work', label: 'Work', icon: 'briefcase-outline' },
-  { id: 'add', label: 'Add Place', icon: 'add-outline' },
-];
-
 export default function HomeScreen() {
   const [rider, setRider] = useState<RiderProfile | null>(null);
+  const [savedPlaces, setSavedPlaces] = useState<SavedPlace[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -120,6 +113,14 @@ export default function HomeScreen() {
       mounted = false;
     };
   }, []);
+
+  useFocusEffect(useCallback(() => {
+    let mounted = true;
+    api.get('/users/me/places')
+      .then(({ data }) => { if (mounted) setSavedPlaces(data.places || []); })
+      .catch((error: any) => console.log('SAVED PLACES ERROR:', error?.response?.data || error?.message));
+    return () => { mounted = false; };
+  }, []));
 
   const firstName = rider?.name ? rider.name.split(' ')[0] : 'Rider';
   const initial = rider?.name ? rider.name.charAt(0).toUpperCase() : 'S';
@@ -158,21 +159,26 @@ export default function HomeScreen() {
 
         {/* Saved places */}
         <View style={styles.placesRow}>
-          {SAVED_PLACES.map((place) => (
+          {savedPlaces.filter((place) => place.label === 'HOME' || place.label === 'WORK').map((place) => (
             <TouchableOpacity
-              key={place.id}
+              key={String(place.id)}
               style={styles.placeChip}
               activeOpacity={0.75}
+              onPress={() => router.push({ pathname: '/ride/booking', params: { destination: place.address, destinationLat: String(place.lat ?? ''), destinationLng: String(place.lng ?? '') } })}
             >
               <Ionicons
-                name={place.icon}
+                name={place.label === 'HOME' ? 'home-outline' : 'briefcase-outline'}
                 size={15}
                 color="#111111"
                 style={styles.placeIcon}
               />
-              <Text style={styles.placeLabel}>{place.label}</Text>
+              <Text style={styles.placeLabel}>{place.name}</Text>
             </TouchableOpacity>
           ))}
+          <TouchableOpacity style={styles.placeChip} activeOpacity={0.75} onPress={() => router.push('/saved-places')}>
+            <Ionicons name="add-outline" size={15} color="#111111" style={styles.placeIcon} />
+            <Text style={styles.placeLabel}>Add Place</Text>
+          </TouchableOpacity>
         </View>
 
         {/* Promo banner */}

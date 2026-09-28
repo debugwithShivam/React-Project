@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useState } from 'react';
 import {
   View,
   Text,
@@ -8,7 +8,7 @@ import {
   ActivityIndicator,
   Alert,
 } from 'react-native';
-import { router } from 'expo-router';
+import { router, useFocusEffect } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Ionicons from '@expo/vector-icons/Ionicons';
 
@@ -43,12 +43,9 @@ export default function ProfileScreen() {
     }
   }, []);
 
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      void fetchProfile();
-    }, 0);
-    return () => clearTimeout(timer);
-  }, [fetchProfile]);
+  useFocusEffect(useCallback(() => {
+    void fetchProfile();
+  }, [fetchProfile]));
 
   const handleLogout = () => {
     Alert.alert(
@@ -93,6 +90,7 @@ export default function ProfileScreen() {
           <TouchableOpacity
             style={styles.settingsButton}
             activeOpacity={0.8}
+            onPress={() => router.push('/edit-profile')}
           >
             <Ionicons
               name="settings-outline"
@@ -151,6 +149,7 @@ export default function ProfileScreen() {
           <TouchableOpacity
             style={styles.editButton}
             activeOpacity={0.8}
+            onPress={() => router.push('/edit-profile')}
           >
             <Ionicons
               name="create-outline"
@@ -168,18 +167,21 @@ export default function ProfileScreen() {
             icon="person-outline"
             title="Edit Profile"
             subtitle="Update your personal information"
+            onPress={() => router.push('/edit-profile')}
           />
 
           <ProfileMenuItem
             icon="location-outline"
             title="Saved Places"
             subtitle="Manage Home, Work and other places"
+            onPress={() => router.push('/saved-places')}
           />
 
           <ProfileMenuItem
             icon="card-outline"
             title="Payment Methods"
             subtitle="Manage your payment options"
+            onPress={() => router.push('/payment-methods')}
           />
         </View>
 
@@ -191,18 +193,21 @@ export default function ProfileScreen() {
             icon="help-circle-outline"
             title="Help & Support"
             subtitle="Get help with your rides"
+            onPress={() => router.push('/support')}
           />
 
           <ProfileMenuItem
             icon="document-text-outline"
             title="Terms & Conditions"
             subtitle="Read Sawaari terms"
+            onPress={() => router.push('/legal/terms-conditions' as any)}
           />
 
           <ProfileMenuItem
             icon="shield-checkmark-outline"
             title="Privacy Policy"
             subtitle="Learn how we protect your data"
+            onPress={() => router.push('/legal/privacy-policy' as any)}
           />
         </View>
 
@@ -292,15 +297,18 @@ function ProfileMenuItem({
   icon,
   title,
   subtitle,
+  onPress,
 }: {
   icon: keyof typeof Ionicons.glyphMap;
   title: string;
   subtitle: string;
+  onPress: () => void;
 }) {
   return (
     <TouchableOpacity
       style={styles.menuItem}
       activeOpacity={0.7}
+      onPress={onPress}
     >
       <View style={styles.menuIcon}>
         <Ionicons

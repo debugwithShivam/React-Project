@@ -31,7 +31,7 @@ export default function DynamicPages() {
         <div>
           <p className="text-xs font-black uppercase tracking-[0.18em] text-purple-700">CMS</p>
           <h1 className="flex items-center gap-2 text-3xl font-black text-zinc-900"><FileText className="h-7 w-7 text-purple-600" />Dynamic pages</h1>
-          <p className="mt-1 text-sm text-zinc-500">Edit Privacy Policy, Terms, About, Contact, Safety, FAQ — these power the public website.</p>
+          <p className="mt-1 text-sm text-zinc-500">Published content is shown on the public website and in the customer app.</p>
         </div>
         <button onClick={() => setEditing({ ...empty })} className="inline-flex items-center gap-2 rounded-xl bg-purple-600 px-4 py-2 text-sm font-bold text-white shadow hover:bg-purple-700">
           <Plus className="h-4 w-4" /> New page

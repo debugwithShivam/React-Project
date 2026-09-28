@@ -49,17 +49,24 @@ export const addPlace = async ({ userId, label = 'OTHER', name, address, lat = n
         ? String(label).toUpperCase()
         : 'OTHER';
 
-    // Keep a single HOME / WORK entry per user (upsert by label).
-    if (cleanLabel !== 'OTHER') {
-        await pool.execute(`DELETE FROM saved_places WHERE user_id = ? AND label = ?`, [userId, cleanLabel]);
-    }
-
-    const [r] = await pool.execute(
-        `INSERT INTO saved_places (user_id, label, name, address, lat, lng) VALUES (?, ?, ?, ?, ?, ?)`,
-        [userId, cleanLabel, cleanName, cleanAddress, lat, lng]
-    );
-    const [rows] = await pool.execute(`SELECT * FROM saved_places WHERE id = ?`, [r.insertId]);
-    return rows[0];
+    const conn = await pool.getConnection();
+    try {
+        await conn.beginTransaction();
+        // Keep a single HOME / WORK entry per user (upsert by label).
+        if (cleanLabel !== 'OTHER') {
+            await conn.execute(`DELETE FROM saved_places WHERE user_id = ? AND label = ?`, [userId, cleanLabel]);
+        }
+        const [r] = await conn.execute(
+            `INSERT INTO saved_places (user_id, label, name, address, lat, lng) VALUES (?, ?, ?, ?, ?, ?)`,
+            [userId, cleanLabel, cleanName, cleanAddress, lat, lng]
+        );
+        const [rows] = await conn.execute(`SELECT * FROM saved_places WHERE id = ?`, [r.insertId]);
+        await conn.commit();
+        return rows[0];
+    } catch (error) {
+        await conn.rollback();
+        throw error;
+    } finally { conn.release(); }
 };
 
 export const deletePlace = async (placeId, userId) => {
@@ -67,4 +74,24 @@ export const deletePlace = async (placeId, userId) => {
     const [r] = await pool.execute(`DELETE FROM saved_places WHERE id = ? AND user_id = ?`, [placeId, userId]);
     if (!r.affectedRows) throw new ApiError(404, 'Place not found');
     return { success: true };
+};
+
+export const updatePlace = async (placeId, userId, patch) => {
+    await ensureTable();
+    const [existing] = await pool.execute('SELECT * FROM saved_places WHERE id = ? AND user_id = ?', [placeId, userId]);
+    if (!existing.length) throw new ApiError(404, 'Place not found');
+    const current = existing[0];
+    const label = patch.label == null ? current.label : (ALLOWED_LABELS.includes(String(patch.label).toUpperCase()) ? String(patch.label).toUpperCase() : 'OTHER');
+    const name = String(patch.name ?? current.name).trim();
+    const address = String(patch.address ?? current.address).trim();
+    if (!name || !address) throw new ApiError(400, 'name and address are required');
+    if (label !== 'OTHER') {
+        await pool.execute('DELETE FROM saved_places WHERE user_id = ? AND label = ? AND id <> ?', [userId, label, placeId]);
+    }
+    await pool.execute(
+        'UPDATE saved_places SET label = ?, name = ?, address = ?, lat = ?, lng = ? WHERE id = ? AND user_id = ?',
+        [label, name, address, patch.lat === undefined ? current.lat : patch.lat, patch.lng === undefined ? current.lng : patch.lng, placeId, userId]
+    );
+    const [rows] = await pool.execute('SELECT * FROM saved_places WHERE id = ?', [placeId]);
+    return rows[0];
 };

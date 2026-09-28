@@ -16,8 +16,8 @@ import { emitLocationPicked } from '../../ride/locationBus';
 export default function MapPickerScreen() {
   const params = useLocalSearchParams();
 
-  const type = params.type === 'destination'
-    ? 'destination'
+  const type = params.type === 'destination' || params.type === 'saved-place'
+    ? params.type
     : 'pickup';
 
   const [region, setRegion] = useState<Region>({
@@ -42,7 +42,7 @@ export default function MapPickerScreen() {
           address = [a.name, a.street, a.district, a.city, a.region].filter(Boolean).join(', ');
         }
       } catch {}
-      emitLocationPicked(type, {
+      emitLocationPicked(type === 'saved-place' ? 'saved-place' : type, {
         latitude: region.latitude,
         longitude: region.longitude,
         address,
@@ -73,9 +73,7 @@ export default function MapPickerScreen() {
         </TouchableOpacity>
 
         <Text style={styles.headerTitle}>
-          {type === 'pickup'
-            ? 'Choose Pickup Location'
-            : 'Choose Destination'}
+          {type === 'saved-place' ? 'Choose Saved Place' : type === 'pickup' ? 'Choose Pickup Location' : 'Choose Destination'}
         </Text>
 
         <View style={{ width: 40 }} />

@@ -23,3 +23,13 @@ export const deletePlaceController = asyncHandler(async (req, res) => {
     const result = await place.deletePlace(req.params.id, req.user.user);
     res.json({ success: true, ...result });
 });
+
+export const updatePlaceController = asyncHandler(async (req, res) => {
+    const { label, name, address, lat, lng } = req.body;
+    const saved = await place.updatePlace(req.params.id, req.user.user, {
+        label, name, address,
+        lat: lat != null && lat !== '' ? Number(lat) : null,
+        lng: lng != null && lng !== '' ? Number(lng) : null,
+    });
+    res.json({ success: true, place: saved });
+});

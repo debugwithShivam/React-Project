@@ -9,19 +9,20 @@ import {
   Alert,
   ActivityIndicator,
 } from 'react-native';
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import * as Location from 'expo-location';
 import { onLocationPicked } from '../../ride/locationBus';
 
 export default function BookingScreen() {
+  const params = useLocalSearchParams<{ destination?: string; destinationLat?: string; destinationLng?: string }>();
   const [pickup, setPickup] = useState('');
-  const [destination, setDestination] = useState('');
+  const [destination, setDestination] = useState(typeof params.destination === 'string' ? params.destination : '');
 
   const [pickupLat, setPickupLat] = useState<number | null>(null);
   const [pickupLng, setPickupLng] = useState<number | null>(null);
-  const [dropoffLat, setDropoffLat] = useState<number | null>(null);
-  const [dropoffLng, setDropoffLng] = useState<number | null>(null);
+  const [dropoffLat, setDropoffLat] = useState<number | null>(params.destinationLat ? Number(params.destinationLat) : null);
+  const [dropoffLng, setDropoffLng] = useState<number | null>(params.destinationLng ? Number(params.destinationLng) : null);
 
   const [gettingLocation, setGettingLocation] = useState(false);
 
@@ -168,7 +169,7 @@ export default function BookingScreen() {
               placeholder="Where to?"
               placeholderTextColor="#999999"
               value={destination}
-              onChangeText={setDestination}
+              onChangeText={(text) => { setDestination(text); setDropoffLat(null); setDropoffLng(null); }}
             />
           </View>
         </View>
