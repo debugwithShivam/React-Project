@@ -1,22 +1,21 @@
-import React, { useRef, useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import axios from 'axios'
 import { Play, Pause, Music2, Trash2 } from 'lucide-react'
 import { useMusic } from './musicData'
-import { useDispatch } from 'react-redux'
-import { setIndex, indexToggle } from '../../Redux/Slice'
+import { setQueue, stopIfPlaying, toggleSong, usePlayer } from './audioPlayer'
 import VITE_API_URL from '../../config/backend_API_URL'
 
 export default function MusicContainer({ search = '' }) {
   const { data, isLoading } = useMusic()
-  const dispatch = useDispatch()
+  const player = usePlayer()
 
-
-  const [playingId, setPlayingId] = useState(null)
   const [deleteError, setDeleteError] = useState("")
-  const audioRef = useRef(null)
-
   const songs = data ?? []
+
+  useEffect(() => {
+    setQueue(songs)
+  }, [songs])
 
   const filtered = search.trim()
     ? songs.filter(
@@ -26,34 +25,13 @@ export default function MusicContainer({ search = '' }) {
     )
     : songs
 
-  const togglePlay = (song) => {
-    if (playingId === song._id) {
-      audioRef.current?.pause()
-      setPlayingId(null)
-      return
-    }
-
-    if (audioRef.current) {
-      audioRef.current.pause()
-    }
-
-    const audio = new Audio(song.fileUrl)
-    audio.play().catch((err) => console.log('Playback failed:', err))
-    audio.onended = () => setPlayingId(null)
-    audioRef.current = audio
-    setPlayingId(song._id)
-  }
-
   const queryClient = useQueryClient()
   const deleteMusic = useMutation({
     mutationFn: async (id) => {
       await axios.delete(`${VITE_API_URL}/authRouter/deleteMusic/${id}`, { withCredentials: true })
     },
     onSuccess: (_result, deletedId) => {
-      if (playingId === deletedId) {
-        audioRef.current?.pause()
-        setPlayingId(null)
-      }
+      stopIfPlaying(deletedId)
       queryClient.invalidateQueries({
         queryKey: ['insertMusic']
       })
@@ -92,8 +70,8 @@ export default function MusicContainer({ search = '' }) {
       <div className='grid grid-cols-3   h-full drag-region
       no-drag hide-scrollbar p-2   overflow-y-auto justify-start gap-3'>
 
-        {filtered.map((song, i) => {
-          const isPlaying = playingId === song._id
+        {filtered.map((song) => {
+          const isPlaying = player.songId === song._id && player.playing
           return (
             <div
               key={song._id}
@@ -113,11 +91,7 @@ export default function MusicContainer({ search = '' }) {
                 )}
 
                 <button
-                  onClick={() => {
-                    togglePlay(song)
-                    dispatch(setIndex(i))
-                    dispatch(indexToggle())
-                  }}
+                  onClick={() => toggleSong(song)}
                   className="absolute bottom-2 right-2 flex h-10 w-10 items-center justify-center rounded-full bg-indigo-600 text-white opacity-0 shadow-lg transition-all duration-200 group-hover:opacity-100 hover:scale-110 active:scale-95"
                 >
                   {isPlaying ? (

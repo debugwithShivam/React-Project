@@ -44,7 +44,7 @@ const handleCoverChange = (file) => {
 };
   const handleSubmit = (e) => {
     e.preventDefault()
-    if (!title || !artist || !musicFile || !coverImage) return
+    if (!title || !musicFile || !coverImage) return
 
     const formData = new FormData()
     formData.append("title", title)
@@ -56,7 +56,7 @@ const handleCoverChange = (file) => {
 
   if (!note) return null
 
-  const isFormValid = title && artist && musicFile && coverImage
+  const isFormValid = title && musicFile && coverImage
 
   return (
     <div className="w-full flex justify-center px-4 absolute top-0 z-50" >
@@ -107,7 +107,7 @@ const handleCoverChange = (file) => {
 
           <div className="flex flex-col gap-1.5">
             <label className="text-slate-400 text-xs font-medium uppercase tracking-wider pl-0.5">
-              Artist
+              Artist <span className="normal-case tracking-normal text-slate-500">(optional)</span>
             </label>
             <input
               type="text"

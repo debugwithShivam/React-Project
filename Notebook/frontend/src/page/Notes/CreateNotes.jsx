@@ -19,22 +19,7 @@ import {
 import { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import axios from "axios";
-import {
-  Bold,
-  Italic,
-  Underline,
-  Strikethrough,
-  Play,
-  Send,
-  Code2,
-  FileCode2,
-  Braces,
-  FileJson2,
-  NotebookPen,
-  Maximize2,
-  Minimize2,
-  StickyNote,
-} from "lucide-react";
+import {Bold,Italic,Underline,Strikethrough,Play,Send,Code2,FileCode2,Braces,FileJson2,NotebookPen,Maximize2,Minimize2,StickyNote,} from "lucide-react";
 import VITE_API_URL from "../../config/backend_API_URL";
 
 export default function CreateNotes() {

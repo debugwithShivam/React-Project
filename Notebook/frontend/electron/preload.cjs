@@ -12,6 +12,8 @@ contextBridge.exposeInMainWorld("electron", {
   ViewNotes:(id)=>ipcRenderer.send('ViewNotes',id),
   ViewPost:(id)=>ipcRenderer.send('ViewPost',id),
   closeNoteWindow: () => ipcRenderer.send("closeNoteWindow"),
+  musicStarted: () => ipcRenderer.send("music-started"),
+  onMusicStop:(callback)=>ipcRenderer.on("music-stop",callback),
 });
 
 

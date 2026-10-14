@@ -1,6 +1,16 @@
-import React, { useState, useEffect, useRef } from 'react'
+import React, { useEffect, useState } from 'react'
 import { useMusic } from './musicData'
-import VITE_API_URL from '../../config/backend_API_URL'
+import {
+  getVolume,
+  pauseSong,
+  playSong,
+  seekTo,
+  setQueue,
+  setVolume,
+  skipTo,
+  usePlayer,
+  useProgress,
+} from './audioPlayer'
 
 function formatTime(t) {
   if (!t || isNaN(t)) return '0:00'
@@ -11,110 +21,48 @@ function formatTime(t) {
 
 export default function CustomMusicPlayer() {
   const { data, isLoading } = useMusic()
-  const [coverImage, setCoverImage] = useState(null)
-  const [fileUrl, setFileUrl] = useState(null)
-  const [title, setTitle] = useState(null)
-  const [artist, setArtist] = useState(null)
-  const [index, setIndex] = useState(0)
-  const [currentTime, setCurrentTime] = useState(0)
-  const [duration, setDuration] = useState(0)
-  const [isPlaying, setIsPlaying] = useState(false)
-  const [volume, setVolume] = useState(1)
-  const audioRef = useRef(null)
+  const player = usePlayer()
+  const { current, duration } = useProgress()
+  const [volume, setVolumeState] = useState(getVolume())
+  const songs = data ?? []
 
   useEffect(() => {
-    if (data && data[index]) {
-      const { fileUrl: audio, coverImage: image, title, artist } = data[index]
-      setFileUrl(`${audio}`)
-      setCoverImage(`${image}`)
-      setTitle(title)
-      setArtist(artist)
-    }
-  }, [data, index])
-
-  useEffect(() => {
-    if (!fileUrl || !audioRef.current) return
-    audioRef.current.src = fileUrl
-    if (isPlaying) {
-      audioRef.current.play()
-    }
-  }, [fileUrl])
-
-  useEffect(() => {
-    const audio = audioRef.current
-    if (!audio) return
-
-    const loaded = () => setDuration(audio.duration)
-    const update = () => setCurrentTime(audio.currentTime)
-    const ended = () => {
-      setIndex((count) => {
-        if (data && count < data.length - 1) {
-          return count + 1
-        }
-        return 0
-      })
-    }
-
-    audio.addEventListener('loadedmetadata', loaded)
-    audio.addEventListener('timeupdate', update)
-    audio.addEventListener('ended', ended)
-
-    return () => {
-      audio.removeEventListener('loadedmetadata', loaded)
-      audio.removeEventListener('timeupdate', update)
-      audio.removeEventListener('ended', ended)
-    }
-  }, [isLoading, data])
-
-  useEffect(() => {
-    if (audioRef.current) {
-      audioRef.current.volume = volume
-    }
-  }, [volume])
+    setQueue(songs)
+  }, [songs])
 
   if (isLoading) return <h1>Loading...</h1>
 
-  function incIndex() {
-    if (data && index < data.length - 1) {
-      setIndex((count) => count + 1)
-    }
-  }
-
-  function decIndex() {
-    if (index === 0) return
-    setIndex((count) => count - 1)
-  }
+  const song =
+    songs.find((item) => String(item._id) === String(player.songId)) ?? songs[0] ?? null
+  const isPlaying =
+    !!song && String(player.songId) === String(song._id) && player.playing
 
   function togglePlay() {
-    if (!audioRef.current) return
+    if (!song) return
     if (isPlaying) {
-      audioRef.current.pause()
+      pauseSong()
     } else {
-      audioRef.current.play()
+      playSong(song)
     }
-    setIsPlaying(!isPlaying)
   }
 
   const seek = (e) => {
-    if (!audioRef.current) return
-    const value = Number(e.target.value)
-    audioRef.current.currentTime = value
-    setCurrentTime(value)
+    seekTo(Number(e.target.value))
   }
 
   const changeVolume = (e) => {
-    setVolume(Number(e.target.value))
+    const value = Number(e.target.value)
+    setVolumeState(value)
+    setVolume(value)
   }
 
   return (
     <div className='w-screen h-screen flex flex-col justify-between bg-black/90 text-white  p-4 shadow-xl'>
-      <audio ref={audioRef} />
-
       {/* Cover image - takes most of the box */}
       <div className='w-full aspect-square rounded-xl overflow-hidden bg-white/5'>
-        {coverImage && (
+        {song?.coverImage && (
           <img
-            src={coverImage}
+            src={song.coverImage}
             className='w-full h-full object-contain'
             alt=""
           />
@@ -123,20 +71,20 @@ export default function CustomMusicPlayer() {
 
       {/* Title + artist */}
       <div className='flex flex-col items-center text-center mt-2 min-w-0'>
-        <span className='text-sm font-medium truncate w-full'>{title}</span>
-        <span className='text-xs text-white/60 truncate w-full'>{artist}</span>
+        <span className='text-sm font-medium truncate w-full'>{song?.title}</span>
+        <span className='text-xs text-white/60 truncate w-full'>{song?.artist}</span>
       </div>
 
       {/* Progress bar */}
       <div className='flex items-center gap-2 w-full mt-2'>
         <span className='text-[10px] text-white/50 w-8 text-right'>
-          {formatTime(currentTime)}
+          {formatTime(current)}
         </span>
         <input
           type="range"
           min="0"
           max={duration || 0}
-          value={currentTime}
+          value={current}
           onChange={seek}
           className='flex-1 h-1 accent-white cursor-pointer'
         />
@@ -148,7 +96,7 @@ export default function CustomMusicPlayer() {
       {/* Controls */}
       <div className='flex items-center justify-center gap-5 mt-2'>
         <button
-          onClick={decIndex}
+          onClick={() => skipTo(-1)}
           className='text-white/70 hover:text-white transition-colors text-lg'
         >
           ⏮
@@ -160,7 +108,7 @@ export default function CustomMusicPlayer() {
           {isPlaying ? '⏸' : '▶'}
         </button>
         <button
-          onClick={incIndex}
+          onClick={() => skipTo(1)}
           className='text-white/70 hover:text-white transition-colors text-lg'
         >
           ⏭

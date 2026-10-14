@@ -137,13 +137,16 @@ export default function ViewPost() {
           onClick={() => likePost.mutate()}
           disabled={likePost.isPending}
           aria-label={data.likedByMe ? "Unlike post" : "Like post"}
-          className={`no-drag flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs transition ${
-            data.likedByMe
-              ? 'bg-red-500 text-white'
-              : 'bg-yellow-100/70 text-gray-700 hover:bg-yellow-100'
-          } disabled:opacity-50`}
+          className="no-drag flex items-center gap-1.5 rounded-full bg-white px-3 py-1.5 text-xs font-bold text-black shadow transition-opacity hover:opacity-90 disabled:opacity-60"
         >
-          <Heart size={14} className={data.likedByMe ? "fill-current" : ""} />
+          <Heart
+            size={14}
+            className={
+              (data.likeCount ?? 0) > 0 || data.likedByMe
+                ? "fill-current text-red-500"
+                : "text-black/45"
+            }
+          />
           {data.likeCount ?? 0}
         </button>
 

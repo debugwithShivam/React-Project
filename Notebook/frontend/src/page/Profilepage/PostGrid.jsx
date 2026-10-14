@@ -78,20 +78,25 @@ function LikeButton({ post }) {
         },
     });
 
+    const likes = post.likeCount ?? 0;
+
     return (
         <button
             type="button"
             onClick={() => likePost.mutate()}
             disabled={likePost.isPending}
             aria-label={post.likedByMe ? "Unlike post" : "Like post"}
-            className={`flex shrink-0 items-center gap-1.5 rounded-full px-2.5 py-1 text-xs transition-colors ${
-                post.likedByMe
-                    ? 'bg-red-500/20 text-red-300'
-                    : 'bg-white/10 text-white/60 hover:bg-white/20'
-            } disabled:opacity-50`}
+            className="flex shrink-0 items-center gap-1.5 rounded-full bg-white px-2.5 py-1 text-xs font-bold text-black shadow transition-opacity hover:opacity-90 disabled:opacity-60"
         >
-            <Heart size={14} className={post.likedByMe ? "fill-current" : ""} />
-            {post.likeCount ?? 0}
+            <Heart
+                size={14}
+                className={
+                    likes > 0 || post.likedByMe
+                        ? "fill-current text-red-500"
+                        : "text-black/45"
+                }
+            />
+            {likes}
         </button>
     );
 }
@@ -190,7 +195,7 @@ function PostComments({ post }) {
     }
 
     return (
-        <div className="border-t border-white/10 px-4 py-2">
+        <div className="border-t border-white/10 bg-black/60 px-4 py-2">
             <button
                 type="button"
                 onClick={() => setOpen((value) => !value)}
@@ -361,7 +366,7 @@ export default function PostGrid({ posts, canDelete = false }) {
                 {visible.map((post, index) => (
                     <div
                         key={post._id}
-                        className="overflow-hidden rounded-2xl border border-white/10 bg-white/5"
+                        className="overflow-hidden rounded-2xl border border-white/10 bg-black/40"
                     >
                         {post.mediaUrl ? (
                             <PostImage post={post} />
@@ -416,10 +421,10 @@ export default function PostGrid({ posts, canDelete = false }) {
                             </div>
                         )}
 
-                        <div className="flex items-start justify-between gap-3 p-4">
+                        <div className="flex items-start justify-between gap-3 bg-black/60 p-4">
                             <div className="min-w-0">
                                 {post.caption && (
-                                    <p className="text-sm break-words">
+                                    <p className="text-sm break-words text-white">
                                         {post.caption}
                                     </p>
                                 )}

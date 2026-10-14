@@ -128,8 +128,15 @@ ipcMain.on("ViewPost", (event, id) => {
   loadPage(postWindow, `ViewPost/${id}`);
 });
 
-ipcMain.on("CustomMusicPlayer", (event, id) => {
-  const CustomMusicPlayer = new BrowserWindow({
+let musicPlayerWindow = null;
+
+ipcMain.on("CustomMusicPlayer", () => {
+  if (musicPlayerWindow && !musicPlayerWindow.isDestroyed()) {
+    musicPlayerWindow.focus();
+    return;
+  }
+
+  musicPlayerWindow = new BrowserWindow({
     width: 300,
     height: 300,
     icon: stickyNotes,
@@ -141,9 +148,18 @@ ipcMain.on("CustomMusicPlayer", (event, id) => {
       webSecurity: false,
     },
   });
-  CustomMusicPlayer.setAlwaysOnTop(true, "screen-saver");
-  // updateNote.webContents.openDevTools()
-  loadPage(CustomMusicPlayer, "CustomMusicPlayer");;
+  musicPlayerWindow.setAlwaysOnTop(true, "screen-saver");
+  loadPage(musicPlayerWindow, "CustomMusicPlayer");
+});
+
+// Only one track may sound at a time, so a window that starts playback
+// silences every other window.
+ipcMain.on("music-started", (event) => {
+  BrowserWindow.getAllWindows().forEach((win) => {
+    if (win.webContents !== event.sender) {
+      win.webContents.send("music-stop");
+    }
+  });
 });
 
 ipcMain.on("closeNoteWindow", (event) => {

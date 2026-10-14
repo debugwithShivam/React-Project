@@ -23,10 +23,10 @@ async function uploadMusic(req, res) {
     try {
         const { title, artist } = req.body;
 
-        if (!title || !artist) {
+        if (!title) {
             return res.status(400).json({
                 success: false,
-                message: "Title and artist are required"
+                message: "Title is required"
             });
         }
 
@@ -66,7 +66,7 @@ async function uploadMusic(req, res) {
         const music = await Music.create({
             userId: req.user.id,
             title,
-            artist,
+            artist: artist?.trim() || undefined,
             fileUrl: musicResult.secure_url,
             coverImage: coverResult.secure_url,
         });

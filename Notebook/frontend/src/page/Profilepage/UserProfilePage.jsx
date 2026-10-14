@@ -92,7 +92,7 @@ export default function UserProfilePage() {
                 Back
             </button>
 
-            <div className="bg-black/50 backdrop-blur-xl border border-white/10 shadow-2xl shadow-black/40 w-4/5 lg:w-3/5 rounded-3xl p-6">
+            <div className="bg-black/70 backdrop-blur-xl border border-white/10 shadow-2xl shadow-black/40 w-4/5 lg:w-3/5 rounded-3xl p-6">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                     <div className="flex items-center gap-4">
                         {user.profilePicture ? (
