@@ -116,7 +116,6 @@ ipcMain.on("ViewPost", (event, id) => {
     alwaysOnTop: true,
     frame: false,
     transparent: true,
-    hasShadow: false,
     webPreferences: {
       preload: preloadPath,
       contextIsolation: true,

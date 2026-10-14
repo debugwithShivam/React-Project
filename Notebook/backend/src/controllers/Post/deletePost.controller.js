@@ -1,4 +1,6 @@
 import Post from "../../module/post.schema.js";
+import PostLike from "../../module/postLike.schema.js";
+import PostComment from "../../module/postComment.schema.js";
 
 async function deletePost(req, res) {
     try {
@@ -13,6 +15,11 @@ async function deletePost(req, res) {
                 message: "Post not found",
             });
         }
+
+        await Promise.all([
+            PostLike.deleteMany({ post: deleted._id }),
+            PostComment.deleteMany({ post: deleted._id }),
+        ]);
 
         return res.status(200).json({
             success: true,

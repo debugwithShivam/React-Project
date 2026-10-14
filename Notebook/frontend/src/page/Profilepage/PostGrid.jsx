@@ -12,6 +12,8 @@ import {
     Pin,
     Image as ImageIcon,
     Notebook,
+    MessageCircle,
+    WifiOff,
 } from "lucide-react";
 import VITE_API_URL from "../../config/backend_API_URL";
 
@@ -26,12 +28,25 @@ const noteColors = [
 
 const rotations = ['-rotate-2', 'rotate-1', '-rotate-1', 'rotate-2', 'rotate-0']
 
+function hasContent(source) {
+    return Boolean(
+        source?.content?.trim() ||
+        source?.html?.trim() ||
+        source?.css?.trim() ||
+        source?.javascript?.trim()
+    );
+}
+
+function noteSource(post) {
+    return hasContent(post.noteSnapshot) ? post.noteSnapshot : post.note ?? null;
+}
+
 function noteTitle(post) {
-    return post.title || post.noteSnapshot?.title || post.note?.title || "Note";
+    return post.title || noteSource(post)?.title || "Note";
 }
 
 function noteBody(post) {
-    const source = post.noteSnapshot ?? post.note;
+    const source = noteSource(post);
 
     if (!source) return "This note is no longer available.";
 
@@ -76,6 +91,39 @@ function LikeButton({ post }) {
         >
             <Heart size={14} className={post.likedByMe ? "fill-current" : ""} />
             {post.likeCount ?? 0}
+        </button>
+    );
+}
+
+function PostImage({ post, onOpen }) {
+    const [failed, setFailed] = useState(false);
+
+    if (failed) {
+        return (
+            <div className="flex h-60 w-full flex-col items-center justify-center gap-2 bg-white/5 px-4 text-center">
+                <WifiOff size={18} className="text-white/50" />
+                <p className="text-xs text-white/60">
+                    This image needs an internet connection.
+                </p>
+                <button
+                    type="button"
+                    onClick={onOpen}
+                    className="rounded-full bg-white/10 px-3 py-1 text-xs text-white/70 hover:bg-white/20"
+                >
+                    Open post
+                </button>
+            </div>
+        );
+    }
+
+    return (
+        <button type="button" onClick={onOpen} className="block h-60 w-full overflow-hidden">
+            <img
+                src={post.mediaUrl}
+                alt=""
+                onError={() => setFailed(true)}
+                className="h-full w-full object-cover transition-transform duration-300 hover:scale-[1.02]"
+            />
         </button>
     );
 }
@@ -167,11 +215,7 @@ export default function PostGrid({ posts, canDelete = false }) {
                         className="overflow-hidden rounded-2xl border border-white/10 bg-white/5"
                     >
                         {post.mediaUrl ? (
-                            <img
-                                src={post.mediaUrl}
-                                alt=""
-                                className="h-60 w-full object-cover"
-                            />
+                            <PostImage post={post} onOpen={() => openPost(post)} />
                         ) : (
                             <div
                                 className={`relative min-h-[190px] rounded-lg p-4 pt-6 shadow-lg ${noteColors[index % noteColors.length].bg} ${rotations[index % rotations.length]} transition-all duration-300 ease-out hover:rotate-0`}
@@ -251,6 +295,16 @@ export default function PostGrid({ posts, canDelete = false }) {
                             </div>
 
                             <div className="flex shrink-0 items-center gap-2">
+                                <button
+                                    type="button"
+                                    onClick={() => openPost(post)}
+                                    aria-label="View comments"
+                                    className="flex shrink-0 items-center gap-1.5 rounded-full bg-white/10 px-2.5 py-1 text-xs text-white/60 transition-colors hover:bg-white/20"
+                                >
+                                    <MessageCircle size={14} />
+                                    {post.commentCount ?? 0}
+                                </button>
+
                                 <LikeButton post={post} />
 
                                 {canDelete && post.mediaUrl && (

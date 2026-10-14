@@ -33,6 +33,8 @@ import createPost from '../controllers/Post/createPost.controller.js';
 import deletePost from '../controllers/Post/deletePost.controller.js';
 import togglePostLike from '../controllers/Post/toggleLike.controller.js';
 import getPostById from '../controllers/Post/getPostById.controller.js';
+import addPostComment from '../controllers/Post/addComment.controller.js';
+import deletePostComment from '../controllers/Post/deleteComment.controller.js';
 
 // Follow
 import followUser from '../controllers/User/follow/followUser.controller.js';
@@ -92,6 +94,8 @@ authRouter.post("/conversation/:userId",tookenChecker,getOrCreateConversation);
 authRouter.post("/message",tookenChecker,sendMessage);
 authRouter.post('/createPost', tookenChecker, uploadPostMedia, createPost)
 authRouter.post('/likePost/:id', tookenChecker, togglePostLike)
+authRouter.post('/comment/:id', tookenChecker, addPostComment)
+authRouter.delete('/comment/:id', tookenChecker, deletePostComment)
 
 //patch request 
 authRouter.patch('/updateNotes', tookenChecker, updateNotes)

@@ -3,6 +3,7 @@ import userAuth from "../../module/User.js";
 import Follow from "../../module/Follow.schema.js";
 import Post from "../../module/post.schema.js";
 import PostLike from "../../module/postLike.schema.js";
+import PostComment from "../../module/postComment.schema.js";
 
 
 async function getProfile(req, res) {
@@ -49,14 +50,26 @@ async function getProfile(req, res) {
             })
                 .sort({ createdAt: -1 })
                 .limit(100)
-                .populate("note", "_id title content type createdAt"),
+                .populate("note", "_id title content html css javascript type createdAt"),
         ]);
 
         const postIds = posts.map((post) => post._id);
 
-        const likes = await PostLike.find({
-            post: { $in: postIds },
-        }).select("post user");
+        const [likes, commentTotals] = await Promise.all([
+            PostLike.find({
+                post: { $in: postIds },
+            }).select("post user"),
+            PostComment.aggregate([
+                { $match: { post: { $in: postIds } } },
+                { $group: { _id: "$post", count: { $sum: 1 } } },
+            ]),
+        ]);
+
+        const commentCountByPost = {};
+
+        commentTotals.forEach((row) => {
+            commentCountByPost[String(row._id)] = row.count;
+        });
 
         const likeCountByPost = {};
         const likedByMe = new Set();
@@ -74,6 +87,7 @@ async function getProfile(req, res) {
             ...post.toObject(),
             likeCount: likeCountByPost[String(post._id)] ?? 0,
             likedByMe: likedByMe.has(String(post._id)),
+            commentCount: commentCountByPost[String(post._id)] ?? 0,
         }));
 
         const followerUsers = followers.map((item) => item.follower).filter(Boolean);

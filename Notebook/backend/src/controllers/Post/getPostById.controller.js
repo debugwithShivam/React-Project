@@ -1,6 +1,7 @@
 import mongoose from "mongoose";
 import Post from "../../module/post.schema.js";
 import PostLike from "../../module/postLike.schema.js";
+import PostComment from "../../module/postComment.schema.js";
 
 async function getPostById(req, res) {
     try {
@@ -34,9 +35,13 @@ async function getPostById(req, res) {
             });
         }
 
-        const [likeCount, likedByMe] = await Promise.all([
+        const [likeCount, likedByMe, comments] = await Promise.all([
             PostLike.countDocuments({ post: postId }),
             PostLike.exists({ post: postId, user: currentUserId }),
+            PostComment.find({ post: postId })
+                .sort({ createdAt: 1 })
+                .limit(100)
+                .populate("user", "_id name username profilePicture"),
         ]);
 
         return res.status(200).json({
@@ -46,6 +51,12 @@ async function getPostById(req, res) {
                 isOwner,
                 likeCount,
                 likedByMe: !!likedByMe,
+                comments: comments.map((comment) => ({
+                    ...comment.toObject(),
+                    canDelete:
+                        String(comment.user?._id) === String(currentUserId) || isOwner,
+                })),
+                commentCount: comments.length,
             },
         });
 
