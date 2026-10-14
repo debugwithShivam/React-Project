@@ -1,10 +1,12 @@
-import React from 'react'
+import { useState } from 'react'
 import Header from './Header'
 import AddMusicForm from './AddMusicForm'
 import MusicContainer from './MusicContainer'
 import Footer from './Footer'
 
 export default function MusicPage() {
+  const [search, setSearch] = useState('')
+
   return (
  
       <div
@@ -17,10 +19,10 @@ export default function MusicPage() {
           color: '#2a1f26'
         }}
       >
-        <Header />
+        <Header search={search} onSearchChange={setSearch} />
         <div className='flex flex-col  relative  mt-[-4rem] h-100 '>
         <AddMusicForm />
-        <MusicContainer />
+        <MusicContainer search={search} />
         <Footer />
         </div>
       </div>

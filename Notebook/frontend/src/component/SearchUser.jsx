@@ -1,12 +1,6 @@
-import React, { useState } from "react";
-import { Search as SearchIcon, X, UserRound } from "lucide-react";
 import SearchAccount from "../page/Account/SearchAccount";
 
 export default function Search() {
-    const [search, setSearch] = useState("");
-
-    
-
     return (
         <div className="min-h-screen px-5 py-6">
 

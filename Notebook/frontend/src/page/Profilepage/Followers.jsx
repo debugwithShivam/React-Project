@@ -1,6 +1,6 @@
 import React from "react";
 import { User } from "lucide-react";
-import { getProfileData } from "./getProfiledata";
+import { useProfileData } from "./getProfiledata";
 import useFollowMutation from "./useFollowMutation";
 import useFollowStatus from "./useFollowStatus";
 import { useSocket } from "../../context/Socket";
@@ -56,24 +56,32 @@ function FollowerItem({ follower }) {
 
                 <div className="relative">
 
-                    <div
-                        className="
-                            w-12
-                            h-12
-                            shrink-0
-                            flex
-                            items-center
-                            justify-center
-                            rounded-full
-                            border-2
-                            border-white/30
-                            text-xl
-                            font-semibold
-                            bg-[linear-gradient(90deg,rgba(2,0,36,1)_0%,rgba(9,9,121,1)_35%,rgba(0,212,255,1)_100%)]
-                        "
-                    >
-                        {initial}
-                    </div>
+                    {follower?.profilePicture ? (
+                        <img
+                            src={follower.profilePicture}
+                            alt=""
+                            className="w-12 h-12 shrink-0 rounded-full object-cover border-2 border-white/30"
+                        />
+                    ) : (
+                        <div
+                            className="
+                                w-12
+                                h-12
+                                shrink-0
+                                flex
+                                items-center
+                                justify-center
+                                rounded-full
+                                border-2
+                                border-white/30
+                                text-xl
+                                font-semibold
+                                bg-[linear-gradient(90deg,rgba(2,0,36,1)_0%,rgba(9,9,121,1)_35%,rgba(0,212,255,1)_100%)]
+                            "
+                        >
+                            {initial}
+                        </div>
+                    )}
 
                     <span
                         className={`
@@ -146,7 +154,7 @@ export default function Followers() {
         data,
         isLoading,
         isError,
-    } = getProfileData();
+    } = useProfileData();
 
     if (isLoading) {
         return (

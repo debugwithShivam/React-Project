@@ -1,22 +1,40 @@
-import React from "react";
-import { Link, NavLink, Outlet } from "react-router-dom";
-import imageConfig from "../config/imageConfig";
-import { useState, useEffect } from "react";
+import { Link, NavLink, Outlet, useNavigate } from "react-router-dom";
 import axios from "axios";
+import imageConfig from "../config/imageConfig";
+import VITE_API_URL from "../config/backend_API_URL";
 import {
   BookOpen,
   ListMusic,
   Timer,
   CheckSquare,
-  Settings,
-  Search
+  Search,
+  LogOut
 } from "lucide-react";
-import { useSelector } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
+import { setIsAuthenticated, setSelecUser, setUser } from "../Redux/Slice";
+import { useQueryClient } from "@tanstack/react-query";
 
 export default function Layout() {
+  const dispatch = useDispatch();
+  const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const { isAuthenticated, user } = useSelector(
     (state) => state.state
   );
+
+  async function handleLogout() {
+    try {
+      await axios.post(`${VITE_API_URL}/authRouter/logout`, {}, { withCredentials: true });
+    } catch (error) {
+      console.log("Logout request failed:", error);
+    }
+
+    queryClient.clear();
+    dispatch(setUser(""));
+    dispatch(setSelecUser(null));
+    dispatch(setIsAuthenticated(false));
+    navigate("/login");
+  }
 
   return (
     <div className="relative">
@@ -54,7 +72,8 @@ export default function Layout() {
 
         {/* Auth area */}
         <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-          {isAuthenticated ? (
+          {isAuthenticated === null ? null : isAuthenticated ? (
+            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
             <Link to='/ProfilePage'>
             <button
               style={{
@@ -69,24 +88,37 @@ export default function Layout() {
                 cursor: "pointer",
               }}
               >
-              {/* Avatar placeholder — replace with <img src={user?.avatar}/> later */}
-              <div
-                style={{
-                  width: 32,
-                  height: 32,
-                  borderRadius: "50%",
-                  background: "linear-gradient(135deg,#3b6fd1,#5a3fae)",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  fontWeight: 700,
-                  fontSize: 14,
-                  color: "#fff",
-                  flexShrink: 0,
-                }}
+              {user?.profilePicture ? (
+                <img
+                  src={user.profilePicture}
+                  alt=""
+                  style={{
+                    width: 32,
+                    height: 32,
+                    borderRadius: "50%",
+                    objectFit: "cover",
+                    flexShrink: 0,
+                  }}
+                />
+              ) : (
+                <div
+                  style={{
+                    width: 32,
+                    height: 32,
+                    borderRadius: "50%",
+                    background: "linear-gradient(135deg,#3b6fd1,#5a3fae)",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    fontWeight: 700,
+                    fontSize: 14,
+                    color: "#fff",
+                    flexShrink: 0,
+                  }}
                 >
-                {(user?.name || user?.username || "A")[0].toUpperCase()}
-              </div>
+                  {(user?.name || user?.username || "A")[0].toUpperCase()}
+                </div>
+              )}
 
               {/* Name + Username */}
               <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", lineHeight: 1.2 }}>
@@ -100,9 +132,32 @@ export default function Layout() {
 
             </button>
                 </Link>
+
+              <button
+                onClick={handleLogout}
+                aria-label="Log out"
+                title="Log out"
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 6,
+                  background: "rgba(255,255,255,0.14)",
+                  border: "1px solid rgba(255,255,255,0.25)",
+                  color: "#fff",
+                  padding: "9px 14px",
+                  borderRadius: 999,
+                  fontWeight: 600,
+                  fontSize: 13,
+                  cursor: "pointer",
+                }}
+              >
+                <LogOut size={16} />
+                Logout
+              </button>
+            </div>
           ) : (
             <>
-              <Link to="/signup">
+              <Link to="/login">
                 <button
                   style={{
                     background: "rgba(255,255,255,0.14)",
@@ -119,7 +174,7 @@ export default function Layout() {
                 </button>
               </Link>
 
-              <Link to="/login">
+              <Link to="/signup">
                 <button
                   style={{
                     background: "linear-gradient(135deg,#3b6fd1,#5a3fae)",
@@ -133,7 +188,7 @@ export default function Layout() {
                     boxShadow: "0 4px 14px rgba(59,111,209,0.35)",
                   }}
                 >
-                  Login
+                  Sign Up
                 </button>
               </Link>
             </>

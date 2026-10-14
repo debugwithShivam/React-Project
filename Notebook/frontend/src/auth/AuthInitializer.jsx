@@ -1,7 +1,7 @@
 import { useEffect } from "react";
 import axios from "axios";
 import { useDispatch } from "react-redux";
-import { setIsAuthenticated } from "../Redux/Slice";
+import { setIsAuthenticated, setUser } from "../Redux/Slice";
 import VITE_API_URL from "../config/backend_API_URL";
 
 export default function AuthInitializer() {
@@ -22,6 +22,8 @@ export default function AuthInitializer() {
                         response.data.authenticated
                     )
                 );
+
+                dispatch(setUser(response.data.user));
 
             } catch (error) {
                 console.log("Auth check failed:", error);

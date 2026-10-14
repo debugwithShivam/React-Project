@@ -40,6 +40,7 @@ import VITE_API_URL from "../../config/backend_API_URL";
 export default function CreateNotes() {
   const [showMenu, setShowMenu] = useState(false);
   const [title, setTitle] = useState("");
+  const [saveError, setSaveError] = useState("");
   const [titleShow, setTitleShow] = useState(false);
 
   const runCode = () => {
@@ -104,7 +105,16 @@ export default function CreateNotes() {
       queryClient.invalidateQueries({
         queryKey: ["insertNotes"],
       });
-      window.electron.noteCreated();
+      window.electron?.noteCreated();
+      setSaveError("");
+      dispatch(setTextArea(""));
+      dispatch(setHtmlCode("<!-- Write HTML -->"));
+      dispatch(setCssCode("/* Write CSS */"));
+      dispatch(setJsCode('console.log("Hello")'));
+      setTitle("");
+    },
+    onError: (error) => {
+      setSaveError(error.response?.data?.message ?? "Could not save this note.");
     },
   });
 
@@ -224,20 +234,16 @@ export default function CreateNotes() {
                 };
 
                 insertProduct.mutate(data);
-
-                dispatch(setTextArea(""));
-                dispatch(setHtmlCode("<!-- Write HTML -->"));
-                dispatch(setCssCode("/* Write CSS */"));
-                dispatch(setJsCode('console.log("Hello")'));
-
-                setTitle("");
               }}
               className="flex w-full shrink-0 items-center justify-center gap-2 rounded-xl bg-gradient-to-br from-indigo-500 to-violet-600 px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-indigo-900/40 transition-transform duration-150 hover:scale-[1.03] active:scale-95 sm:w-auto"
             >
               <NotebookPen size={15} />
-              Add Note
+              {insertProduct.isPending ? "Saving..." : "Add Note"}
             </button>
           </form>
+          {saveError && (
+            <p className="mt-2 text-sm text-red-400">{saveError}</p>
+          )}
         </div>
       )}
 

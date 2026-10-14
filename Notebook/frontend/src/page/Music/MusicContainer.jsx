@@ -1,7 +1,7 @@
 import React, { useRef, useState } from 'react'
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { useMutation, useQueryClient } from '@tanstack/react-query'
 import axios from 'axios'
-import { Play, Pause, Heart, Music2, Trash2 } from 'lucide-react'
+import { Play, Pause, Music2, Trash2 } from 'lucide-react'
 import { useMusic } from './musicData'
 import { useDispatch } from 'react-redux'
 import { setIndex, indexToggle } from '../../Redux/Slice'
@@ -13,6 +13,7 @@ export default function MusicContainer({ search = '' }) {
 
 
   const [playingId, setPlayingId] = useState(null)
+  const [deleteError, setDeleteError] = useState("")
   const audioRef = useRef(null)
 
   const songs = data ?? []
@@ -26,9 +27,6 @@ export default function MusicContainer({ search = '' }) {
     : songs
 
   const togglePlay = (song) => {
-    const url = `${song.fileUrl}`
-    console.log(url)
-
     if (playingId === song._id) {
       audioRef.current?.pause()
       setPlayingId(null)
@@ -39,7 +37,7 @@ export default function MusicContainer({ search = '' }) {
       audioRef.current.pause()
     }
 
-    const audio = new Audio(url)
+    const audio = new Audio(song.fileUrl)
     audio.play().catch((err) => console.log('Playback failed:', err))
     audio.onended = () => setPlayingId(null)
     audioRef.current = audio
@@ -47,22 +45,22 @@ export default function MusicContainer({ search = '' }) {
   }
 
   const queryClient = useQueryClient()
-  let deleteMusic = useMutation({
-    mutationFn: async (data) => {
-      await axios.delete(`${VITE_API_URL}/authRouter/deleteMusic/${data}`)
+  const deleteMusic = useMutation({
+    mutationFn: async (id) => {
+      await axios.delete(`${VITE_API_URL}/authRouter/deleteMusic/${id}`, { withCredentials: true })
     },
-    onSuccess: () => {
+    onSuccess: (_result, deletedId) => {
+      if (playingId === deletedId) {
+        audioRef.current?.pause()
+        setPlayingId(null)
+      }
       queryClient.invalidateQueries({
         queryKey: ['insertMusic']
       })
     },
-    
     onError: (error) => {
-    console.log(
-      'Delete failed:',
-      error.response?.data || error.message
-    )
-  }
+      setDeleteError(error.response?.data?.message ?? 'Could not delete this track.')
+    }
   })
 
   if (isLoading) {
@@ -87,7 +85,10 @@ export default function MusicContainer({ search = '' }) {
   }
 
   return (
-    <div className="  p-5 pt-1 flex justify-center  h-full ">
+    <div className="flex h-full flex-col items-center gap-2 p-5 pt-1">
+      {deleteError && (
+        <p className="text-sm text-red-300">{deleteError}</p>
+      )}
       <div className='grid grid-cols-3   h-full drag-region
       no-drag hide-scrollbar p-2   overflow-y-auto justify-start gap-3'>
 
@@ -126,8 +127,14 @@ export default function MusicContainer({ search = '' }) {
                   )}
                 </button>
 
-                <button className="absolute right-2 top-2 flex h-8 w-8 items-center justify-center rounded-full bg-black/40 text-white/90 backdrop-blur transition hover:bg-black/60">
-                  <Trash2 size={15} className={song.fav ? 'fill-rose-500 text-rose-500' : ''} onClick={() => deleteMusic.mutate(song._id)} />
+                <button
+                  type="button"
+                  onClick={() => deleteMusic.mutate(song._id)}
+                  disabled={deleteMusic.isPending}
+                  aria-label={`Delete ${song.title}`}
+                  className="absolute right-2 top-2 flex h-8 w-8 items-center justify-center rounded-full bg-black/40 text-white/90 backdrop-blur transition hover:bg-black/60 disabled:opacity-50"
+                >
+                  <Trash2 size={15} />
                 </button>
               </div>
 

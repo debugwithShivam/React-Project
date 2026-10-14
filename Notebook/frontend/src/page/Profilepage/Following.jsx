@@ -1,5 +1,5 @@
 import React from "react";
-import { getProfileData } from "./getProfiledata";
+import { useProfileData } from "./getProfiledata";
 import { MessageCircle } from "lucide-react";
 import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import useFollowMutation from './useFollowMutation'
@@ -21,9 +21,14 @@ const avatarColors = [
 ];
 
 export default function Following() {
-  const { data: unreadCount, } = useUnreadMessages();
-  const { data, isLoading, isError } = getProfileData();
+  const { data: unreadData } = useUnreadMessages();
+  const { data, isLoading, isError } = useProfileData();
   const { unfollowMutation } = useFollowMutation();
+  const dispatch = useDispatch();
+
+  const unreadBySender = new Map(
+    (unreadData?.data ?? []).map((item) => [String(item._id.sender), item.count])
+  );
 
   if (isLoading) {
     return (
@@ -42,15 +47,6 @@ export default function Following() {
   }
 
   const following = data?.following ?? [];
-  const dispatch = useDispatch()
-
-
-
-
-  console.log(following)
-
-
-
 
   return (
     <div className="w-4/5 lg:w-3/5 m-4 h-80 md:h-45 lg:h-88 overflow-y-auto scrollbar-thin">
@@ -82,8 +78,15 @@ export default function Following() {
                             "
             >
               <div className="flex items-center gap-3 min-w-0">
-                <div
-                  className={`
+                {person?.profilePicture ? (
+                  <img
+                    src={person.profilePicture}
+                    alt=""
+                    className="w-12 h-12 shrink-0 rounded-full object-cover border-2 border-white/30"
+                  />
+                ) : (
+                  <div
+                    className={`
                                         w-12 h-12
                                         shrink-0
                                         flex items-center justify-center
@@ -93,9 +96,10 @@ export default function Following() {
                                         text-white
                                         ${avatarColors[index % avatarColors.length]}
                                     `}
-                >
-                  {initial}
-                </div>
+                  >
+                    {initial}
+                  </div>
+                )}
 
                 <div className="min-w-0">
                   <h2 className="font-semibold truncate">
@@ -133,11 +137,14 @@ export default function Following() {
                     : "Following"}</span>
                 </button>
                 <Link to='/ChatSeaction'>
-                  <div onClick={() => {
-                    dispatch(setSelecUser(person))
-                  }} className="flex justify-center items-center w-10 bg-white/24 rounded-full border-2 h-10 mr-2">
+                  <div
+                    onClick={() => {
+                      dispatch(setSelecUser(person));
+                    }}
+                    className="relative flex justify-center items-center w-10 bg-white/24 rounded-full border-2 h-10 mr-2"
+                  >
                     <MessageCircle size={18} />
-                    {unreadCount > 0 && (
+                    {unreadBySender.get(String(person?._id)) > 0 && (
                       <span
                         className="
                     absolute
@@ -156,9 +163,9 @@ export default function Following() {
                     justify-center
                 "
                       >
-                        {unreadCount > 99
+                        {unreadBySender.get(String(person?._id)) > 99
                           ? "99+"
-                          : unreadCount}
+                          : unreadBySender.get(String(person?._id))}
                       </span>
                     )}
                   </div>

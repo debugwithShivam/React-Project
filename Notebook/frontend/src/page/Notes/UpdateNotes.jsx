@@ -29,6 +29,7 @@ export default function UpdateNotes() {
   const [cssCode, setCssCode] = useState("");
   const [jsCode, setJsCode] = useState("");
   const [language, setLanguage] = useState("");
+  const [saveError, setSaveError] = useState("");
 
 
   const runCode = () => {
@@ -118,10 +119,14 @@ export default function UpdateNotes() {
         withCredentials: true
       }),
     onSuccess: () => {
+      setSaveError("")
       queryClient.invalidateQueries({
         queryKey: ['insertNotes']
       })
-      window.electron.noteCreated();
+      window.electron?.noteCreated();
+    },
+    onError: (error) => {
+      setSaveError(error.response?.data?.message ?? 'Could not update this note.')
     }
 
   })
@@ -291,7 +296,10 @@ export default function UpdateNotes() {
           };
 
           UpdateNote.mutate(data);
-        }} >Update</button>
+        }} disabled={UpdateNote.isPending} >{UpdateNote.isPending ? "Saving..." : "Update"}</button>
+        {saveError && (
+          <p className="text-sm text-red-400">{saveError}</p>
+        )}
       </div>
     </div>
   )

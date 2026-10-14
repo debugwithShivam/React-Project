@@ -40,38 +40,13 @@ async function authorization(req, res) {
 
 
         if (existingUser) {
-
-            if (existingUser.isVerified) {
-                return res.status(409).json({
-                    success: false,
-                    message:
-                        "Email or username already registered"
-                });
-            }
-
-
-            // const otp = generateOtp();
-            // const otpHash = hashOtp(otp);
-            // const otpExpire = new Date(
-            //     Date.now() + 10 * 60 * 1000
-            // );
-
-            // await sendOtpEmail({
-            //     to: normalizedEmail,
-            //     otp,
-            //     name: normalizedName
-            // });
-
-
-            // existingUser.otp = otpHash;
-            // existingUser.otpExpire = otpExpire;
-
-            await existingUser.save();
-            // return res.status(200).json({
-            //     success: true,
-            //     message:
-            //         "A new OTP has been sent to your email"
-            // });
+            return res.status(409).json({
+                success: false,
+                message:
+                    existingUser.email === normalizedEmail
+                        ? "Email already registered"
+                        : "Username already registered"
+            });
         }
 
         // const otp = generateOtp();
@@ -159,7 +134,13 @@ async function authorization(req, res) {
         return res.status(201).json({
             success: true,
             message:
-                "Account created. OTP sent to your email."
+                "Account created. OTP sent to your email.",
+            user: {
+                id: user._id,
+                name: user.name,
+                username: user.username,
+                email: user.email
+            }
         });
 
 

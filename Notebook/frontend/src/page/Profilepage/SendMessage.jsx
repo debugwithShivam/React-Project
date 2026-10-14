@@ -4,8 +4,8 @@ import {
     useMutation,
     useQueryClient,
 } from "@tanstack/react-query";
-import { Search } from "lucide-react";
 import VITE_API_URL from "../../config/backend_API_URL";
+
 export default function SendMessage({
     conversationId,
     receiverId,
@@ -13,6 +13,8 @@ export default function SendMessage({
     const [message, setMessage] = useState("");
 
     const queryClient = useQueryClient();
+
+    const isDisabled = !conversationId || !receiverId;
 
     const sendMessage = useMutation({
         mutationFn: async ({
@@ -58,6 +60,10 @@ export default function SendMessage({
                 }
             );
 
+            queryClient.invalidateQueries({
+                queryKey: ["conversations"],
+            });
+
             setMessage("");
         },
     });
@@ -66,8 +72,7 @@ export default function SendMessage({
         const trimmedMessage = message.trim();
 
         if (!trimmedMessage) return;
-        if (!conversationId) return;
-        if (!receiverId) return;
+        if (isDisabled) return;
 
         sendMessage.mutate({
             conversationId,
@@ -78,10 +83,7 @@ export default function SendMessage({
 
     return (
         <div className="
-            absolute
-            bottom-22
-            lg:bottom-18
-            left-0
+            shrink-0
             w-full
             h-16
             px-3
@@ -91,30 +93,15 @@ export default function SendMessage({
             bg-black/60
             backdrop-blur-sm
         ">
-            <label
-                htmlFor="message"
-                className="
-                    w-10
-                    h-10
-                    flex
-                    items-center
-                    justify-center
-                    rounded-full
-                    bg-white/10
-                    cursor-pointer
-                "
-            >
-                <Search size={20} />
-            </label>
-
             <input
                 value={message}
                 onChange={(e) => setMessage(e.target.value)}
                 onKeyDown={(e) => {
-                    if (e.key === "Enter") {
+                    if (e.key === "Enter" && !e.nativeEvent.isComposing) {
                         handleSendMessage();
                     }
                 }}
+                disabled={isDisabled}
                 type="text"
                 id="message"
                 className="
@@ -126,13 +113,14 @@ export default function SendMessage({
                     outline-none
                     text-white
                     placeholder:text-gray-400
+                    disabled:opacity-60
                 "
-                placeholder="Message..."
+                placeholder={isDisabled ? "Open a conversation to chat" : "Message..."}
             />
 
             <button
                 onClick={handleSendMessage}
-                disabled={sendMessage.isPending}
+                disabled={isDisabled || sendMessage.isPending}
                 className="
                     h-10
                     px-5

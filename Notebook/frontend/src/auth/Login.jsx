@@ -1,18 +1,18 @@
-import { Link, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import imgeConfig from "../config/imageConfig";
 import { useState } from "react";
 import { Eye, EyeOff } from "lucide-react";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation } from "@tanstack/react-query";
 import axios from "axios";
 import { useDispatch } from 'react-redux'
-import { setIsAuthenticated } from "../Redux/Slice";
+import { setIsAuthenticated, setUser } from "../Redux/Slice";
 import VITE_API_URL from "../config/backend_API_URL";
 export default function Login() {
   const dispatch = useDispatch()
   const navigate = useNavigate();
-  const queryClient = useQueryClient();
 
   const [showPass, setShowPass] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
   const [formData, setFromData] = useState({
     name: "",
     username: "",
@@ -31,16 +31,12 @@ export default function Login() {
       return response.data;
     },
     onSuccess: (data) => {
-      queryClient.invalidateQueries(["user"]);
-      localStorage.setItem("email", formData.email);
-      dispatch(setIsAuthenticated(true))
-      // navigate("/Email");
+      dispatch(setIsAuthenticated(true));
+      dispatch(setUser(data.user));
+      navigate("/");
     },
     onError: (error) => {
-      console.log("STATUS:", error.response?.status);
-      console.log("DATA:", error.response?.data);
-      console.log("MESSAGE:", error.message);
-      console.log("FULL ERROR:", error);
+      setErrorMessage(error.response?.data?.message ?? "Unable to create account, please try again.");
     },
   });
 
@@ -55,9 +51,10 @@ export default function Login() {
   function handleSubmit(e) {
     e.preventDefault();
     if (!formData.name || !formData.email || !formData.password || !formData.username) {
-      alert("Fill all Fields");
+      setErrorMessage("Fill all Fields");
       return;
     }
+    setErrorMessage("");
     createAccountMutation.mutate(formData);
   }
 
@@ -67,7 +64,7 @@ export default function Login() {
         <div className="w-full h-10 max-w-4xl min-h-[420px] flex flex-col md:flex-row overflow-hidden rounded-2xl shadow-2xl">
           <div className="w-full md:w-1/2 bg-black/80 text-white p-5 flex flex-col justify-between">
             <div>
-              <h1 className="text-2xl md:text-3xl font-bold">Login</h1>
+              <h1 className="text-2xl md:text-3xl font-bold">Create Account</h1>
               <p className="mt-2 text-xs md:text-sm text-gray-300 leading-6">
                 Come and join us! You can also handle your personal tasks like playing music.
               </p>
@@ -99,9 +96,14 @@ export default function Login() {
                 className="w-full h-10 rounded-lg bg-white/10 border border-white/20 px-3 outline-none focus:ring-2 focus:ring-blue-500"
               />
               <div className="flex justify-center items-center gap-4">
-                <label htmlFor="" onClick={() => setShowPass((prev) => !prev)}>
-                  {showPass ? <Eye /> : <EyeOff />}
-                </label>
+                <button
+                  type="button"
+                  onClick={() => setShowPass((prev) => !prev)}
+                  aria-label={showPass ? "Hide password" : "Show password"}
+                  className="shrink-0 text-gray-300 hover:text-white"
+                >
+                  {showPass ? <EyeOff /> : <Eye />}
+                </button>
                 <input
                   type={showPass ? "text" : "password"}
                   name="password"
@@ -111,11 +113,15 @@ export default function Login() {
                   className="w-full h-10 rounded-lg bg-white/10 border border-white/20 px-3 outline-none focus:ring-2 focus:ring-blue-500"
                 />
               </div>
+              {errorMessage && (
+                <p className="text-sm text-red-400">{errorMessage}</p>
+              )}
               <button
                 type="submit"
-                className="mt-4 w-full h-10 rounded-lg bg-white text-black font-semibold hover:bg-blue-600 hover:text-white transition"
+                disabled={createAccountMutation.isPending}
+                className="mt-4 w-full h-10 rounded-lg bg-white text-black font-semibold hover:bg-blue-600 hover:text-white transition disabled:opacity-60"
               >
-                Create Account
+                {createAccountMutation.isPending ? "Creating account..." : "Create Account"}
               </button>
             </form>
           </div>

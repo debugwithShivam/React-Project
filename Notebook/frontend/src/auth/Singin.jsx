@@ -1,32 +1,41 @@
-import { Link } from "react-router-dom";
 import imgeConfig from "../config/imageConfig";
 import { useMutation } from '@tanstack/react-query'
 import axios from 'axios'
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useDispatch } from "react-redux";
+import { setIsAuthenticated, setUser } from "../Redux/Slice";
 import VITE_API_URL from "../config/backend_API_URL";
 
 export default function Signin() {
 
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
+  const [errorMessage, setErrorMessage] = useState("")
   const navigate = useNavigate()
+  const dispatch = useDispatch()
 
   const singinUser = useMutation({
     mutationFn: (data) => axios.post(`${VITE_API_URL}/authRouter/singIn`, data, { withCredentials: true }),
-    onSuccess: (data) => {
-      console.log(data)
+    onSuccess: (response) => {
+      dispatch(setIsAuthenticated(true));
+      dispatch(setUser(response.data.user));
       navigate('/')
     },
     onError: (error) => {
-      console.log(error.response?.data);
+      setErrorMessage(
+        error.response?.data?.message ?? "Unable to sign in. Please try again."
+      );
     },
   })
 
   return (
     <div className="flex h-[450px] rounded-2xl m-8 overflow-hidden shadow-lg">
       <div className="w-1/2 bg-black/80 flex items-center justify-center p-8">
-        <form className="flex flex-col gap-4 w-full max-w-sm">
+        <form className="flex flex-col gap-4 w-full max-w-sm" onSubmit={(event) => {
+          event.preventDefault();
+          singinUser.mutate({ email, password });
+        }}>
           <input
             type="text"
             value={email}
@@ -43,19 +52,15 @@ export default function Signin() {
             placeholder="Enter Your Password"
             className="px-4 py-2 rounded-lg bg-gray-800 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-pink-400"
           />
+          {errorMessage && (
+            <p className="text-sm text-red-400">{errorMessage}</p>
+          )}
           <button
-            type="button"
-            onClick={(e) => {
-              e.preventDefault()
-              const data = {
-                email,
-                password
-              }
-              singinUser.mutate(data)
-            }}
-            className="mt-4 bg-pink-500 hover:bg-pink-600 text-white font-semibold py-2 rounded-lg transition duration-300"
+            type="submit"
+            disabled={singinUser.isPending}
+            className="mt-4 bg-pink-500 hover:bg-pink-600 text-white font-semibold py-2 rounded-lg transition duration-300 disabled:opacity-60"
           >
-            Sign In
+            {singinUser.isPending ? "Signing in..." : "Sign In"}
           </button>
         </form>
       </div>

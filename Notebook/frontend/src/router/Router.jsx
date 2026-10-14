@@ -5,8 +5,7 @@ import Timer from "../component/Timer.jsx";
 import Todo from "../component/Todo.jsx";
 import Login from "../auth/Login.jsx";
 import Signin from "../auth/Singin.jsx";
-import EmailVerifyOTP from "../auth/EmailVerifyOTP.jsx";
-import { createBrowserRouter,createHashRouter } from "react-router-dom";
+import { createHashRouter } from "react-router-dom";
 import Layout from "./Layout.jsx";
 import ProtectedRoutes from "../auth/ProtectedRoutes.jsx";
 import CreateNotes from "../page/Notes/CreateNotes.jsx";
@@ -77,8 +76,8 @@ const router = createHashRouter([
         ],
       },
 
-      { path: "login", element: <Login /> },
-      { path: "signup", element: <Signin /> },
+      { path: "login", element: <Signin /> },
+      { path: "signup", element: <Login /> },
       // { path: "Email", element: <EmailVerifyOTP /> },
       { path: "*", element: <NotFound /> },
     ],

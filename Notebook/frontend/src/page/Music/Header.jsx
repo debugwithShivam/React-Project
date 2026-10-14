@@ -1,11 +1,11 @@
-import React, { useState } from 'react'
-import { Search, Plus } from "lucide-react";
+import { Search, Plus, Play } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import { useDispatch } from 'react-redux';
 import { ToggleMusicAddForm } from '../../Redux/Slice'
 
-export default function Header() {
-  const [query, setQuery] = useState("");
+export default function Header({ search, onSearchChange }) {
   const dispatch = useDispatch()
+  const navigate = useNavigate()
 
   return (
     <div className="max-w-5xl mx-auto px-10 pt-7 pb-16 z-50">
@@ -49,8 +49,8 @@ export default function Header() {
           >
             <Search size={16} color="#3a2a33" />
             <input
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
+              value={search}
+              onChange={(e) => onSearchChange(e.target.value)}
               placeholder="Search title or artist..."
               style={{
                 background: "transparent",
@@ -87,7 +87,13 @@ export default function Header() {
             Add Music
           </button>
           <button
-          onClick={()=>window.electron.openCustomMusicPlayer()}
+          onClick={() => {
+            if (window.electron?.openCustomMusicPlayer) {
+              window.electron.openCustomMusicPlayer();
+              return;
+            }
+            navigate('/CustomMusicPlayer');
+          }}
             style={{
               display: "flex",
               alignItems: "center",
@@ -103,7 +109,7 @@ export default function Header() {
               boxShadow: "0 4px 14px rgba(59,111,209,0.35)",
             }}
           >
-            <Plus size={16} />
+            <Play size={16} />
             Play
           </button>
         </div>

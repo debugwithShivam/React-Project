@@ -7,7 +7,7 @@ export default function useFollowMutation() {
     const followMutation = useMutation({
         mutationFn: async (userId) => {
             const response = await axios.post(
-                `${VITE_API_URL}/$authRouter/follow/${userId}`,
+                `${VITE_API_URL}/authRouter/follow/${userId}`,
                 {},
                 {
                     withCredentials: true,
@@ -38,7 +38,7 @@ export default function useFollowMutation() {
     const unfollowMutation = useMutation({
         mutationFn: async (userId) => {
             const response = await axios.delete(
-                `${VITE_API_URL}/$authRouter/unfollow/${userId}`,
+                `${VITE_API_URL}/authRouter/unfollow/${userId}`,
                 {
                     withCredentials: true,
                 }

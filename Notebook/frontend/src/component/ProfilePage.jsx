@@ -1,7 +1,4 @@
-import React from 'react'
 import ProfilePageHeader from '../page/Profilepage/ProfilePageHeader'
-import ChatSeaction from '../page/Profilepage/ChatSeaction'
-import { useSelector } from 'react-redux'
 
 export default function ProfilePage() {
 

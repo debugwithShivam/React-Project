@@ -1,5 +1,5 @@
-import React, { useState } from "react";
-import { Search, BookOpen, Music2, Timer as TimerIcon, CheckSquare, Plus, Trash2, Check } from "lucide-react";
+import React, { useEffect, useState } from "react";
+import { Plus, Trash2, Check } from "lucide-react";
 
 const YELLOW = "#f3c94e";
 
@@ -11,14 +11,15 @@ const bgStyle = {
 };
 
 const glass = { background: "rgba(255,255,255,0.09)", border: "1px solid rgba(255,255,255,0.16)" };
-const glassStrong = { background: "rgba(255,255,255,0.14)", border: "1px solid rgba(255,255,255,0.18)" };
 const glassSoft = { background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.16)" };
 
 export default function Todo() {
-  const [todos, setTodos] = useState([
-
-  ]);
+  const [todos, setTodos] = useState(() => JSON.parse(localStorage.getItem("todos")) || []);
   const [input, setInput] = useState("");
+
+  useEffect(() => {
+    localStorage.setItem("todos", JSON.stringify(todos));
+  }, [todos]);
 
   const addTodo = () => {
     const val = input.trim();
@@ -36,7 +37,7 @@ export default function Todo() {
     <div className="min-h-screen w-full" style={bgStyle}>
       <div className="max-w-[1440px] mx-auto px-12 py-7 pb-20">
 
-        <div className="mt-3 mb-7 flex justify-between">X
+        <div className="mt-3 mb-7 flex justify-between">
           <div>
           <h1 className="text-[34px] font-bold text-white">Todo</h1>
           <p className="mt-1.5 text-[15px] " style={{ color: "rgba(84, 80, 80, 0.7)" }}>
@@ -44,7 +45,7 @@ export default function Todo() {
           </p>
           </div>
           <div>
-            <button className="rounded-3xl bg-white text-black font-semibold p-2" onClick={()=>window.electron.openTodoWindow()} >Todo Page</button>
+            <button className="rounded-3xl bg-white text-black font-semibold p-2" onClick={() => window.electron?.openTodoWindow()} >Todo Page</button>
           </div>
         </div>
 

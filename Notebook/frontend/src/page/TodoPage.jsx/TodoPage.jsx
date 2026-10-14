@@ -14,8 +14,8 @@ export default function TodoPage() {
     })
   }
 
-   function deleteTodo(todoToDelete) {
-    setTodo((prev) => prev.filter((item) => item.todo !== todoToDelete));
+   function deleteTodo(index) {
+    setTodo((prev) => prev.filter((_, i) => i !== index));
   }
   
 
@@ -121,7 +121,8 @@ export default function TodoPage() {
                 transition
               "
               onClick={()=>{
-                createTodo(list)
+                if (!list.trim()) return
+                createTodo(list.trim())
                 setList("")
               }}
               style={{
@@ -134,9 +135,9 @@ export default function TodoPage() {
 
           <div className="m-1 h-61  overflow-y-auto">
             {todo.map((item,i)=>(
-              <div className="items-center pl-2 pr-2 h-8 flex justify-between">
-              <p  key={i}>{item.todo}</p>
-              <button onClick={()=>deleteTodo(item.todo)} ><Trash/></button>
+              <div key={i} className="items-center pl-2 pr-2 h-8 flex justify-between">
+              <p>{item.todo}</p>
+              <button onClick={()=>deleteTodo(i)} ><Trash/></button>
               </div>
             ))}
           </div>

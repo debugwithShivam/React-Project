@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import { after, before, test } from "node:test";
+import mongoose from "mongoose";
 import app from "../src/app.js";
 
 
@@ -18,6 +19,7 @@ after(async () => {
   await new Promise((resolve, reject) => {
     server.close((error) => (error ? reject(error) : resolve()));
   });
+  await mongoose.disconnect();
 });
 
 test("health endpoint reports service status", async () => {

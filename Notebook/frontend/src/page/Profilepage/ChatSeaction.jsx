@@ -1,22 +1,19 @@
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useRef, useState } from 'react'
 import {
     ArrowLeft,
     Search,
     Phone,
     Video,
     MoreVertical,
-    Paperclip,
-    Smile,
-    Send,
 } from "lucide-react";
 import { Link } from 'react-router-dom';
-import { getProfileData } from './getProfiledata';
 import { useSelector, useDispatch } from 'react-redux';
 import { setSelecUser } from '../../Redux/Slice';
 import { useSocket } from '../../context/Socket'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import axios from 'axios';
 import SendMessage from './SendMessage';
+import useConversations from './useConversations';
 import VITE_API_URL from '../../config/backend_API_URL';
 
 
@@ -31,16 +28,31 @@ const avatarColors = [
     "bg-indigo-500",
 ];
 
+function formatTime(value) {
+    if (!value) return "";
+
+    const date = new Date(value);
+    const now = new Date();
+
+    if (date.toDateString() === now.toDateString()) {
+        return date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+    }
+
+    return date.toLocaleDateString([], { day: "2-digit", month: "short" });
+}
+
 export default function ChatSeaction() {
     const { onlineUsers, socket } = useSocket()
     const { selectUser } = useSelector((state) => state.state);
+    const currentUser = useSelector((state) => state.state.user);
     const userFirstLetter = selectUser?.name?.[0] ?? "A"
     const isOnline = selectUser ? onlineUsers.has(String(selectUser._id)) : false
     const [conversationId, setConversationId] = useState(null);
+    const [conversationError, setConversationError] = useState(null);
+    const [search, setSearch] = useState("");
+    const messagesEndRef = useRef(null);
     const queryClient = useQueryClient();
     const dispatch = useDispatch()
-
-
 
     async function getMessage() {
         const response = await axios.get(`${VITE_API_URL}/authRouter/messages/${conversationId}`,
@@ -56,24 +68,10 @@ export default function ChatSeaction() {
         enabled: !!conversationId,
     })
 
-    const {
-        data: unreadData,
-    } = useQuery({
-        queryKey: ["unreadMessages"],
-        queryFn: async () => {
-            const response = await axios.get(
-                `${VITE_API_URL}/authRouter/messages/unread`,
-                {
-                    withCredentials: true,
-                }
-            );
-
-            return response.data;
-        },
-    });
+    const { data: conversationsData } = useConversations();
+    const conversations = conversationsData?.data ?? [];
 
     const messages = messagesData?.data ?? [];
-
 
     const createConversation = useMutation({
         mutationFn: async () => {
@@ -90,7 +88,15 @@ export default function ChatSeaction() {
         },
 
         onSuccess: (response) => {
+            setConversationError(null);
             setConversationId(response.data._id);
+        },
+
+        onError: (error) => {
+            setConversationId(null);
+            setConversationError(
+                error.response?.data?.message ?? "Could not open this chat."
+            );
         },
     });
 
@@ -111,8 +117,13 @@ export default function ChatSeaction() {
             queryClient.invalidateQueries({
                 queryKey: ["unreadMessages"],
             });
+
+            queryClient.invalidateQueries({
+                queryKey: ["conversations"],
+            });
         },
     });
+
     useEffect(() => {
         if (!socket) return;
 
@@ -155,6 +166,10 @@ export default function ChatSeaction() {
             queryClient.invalidateQueries({
                 queryKey: ["unreadMessages"],
             });
+
+            queryClient.invalidateQueries({
+                queryKey: ["conversations"],
+            });
         };
 
         socket.on("newMessage", handleNewMessage);
@@ -170,6 +185,9 @@ export default function ChatSeaction() {
 
     useEffect(() => {
         if (!selectUser?._id) return;
+
+        setConversationId(null);
+        setConversationError(null);
         createConversation.mutate();
     }, [selectUser?._id]);
 
@@ -179,22 +197,41 @@ export default function ChatSeaction() {
         markAsReadMutation.mutate(conversationId);
     }, [conversationId]);
 
-    const { data, isLoading, isError, } = getProfileData();
-    const followers = data?.followers ?? [];
-
-    console.log(followers)
-
+    useEffect(() => {
+        messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    }, [messages.length]);
 
     if (!selectUser) {
         return (
-            <div className="w-screen h-screen flex items-center justify-center">
+            <div className="h-[calc(100vh-64px)] flex items-center justify-center">
                 <p>Select a user to start chatting.</p>
             </div>
         );
     }
 
+    const avatarColor =
+        avatarColors[
+        conversations.findIndex(
+            (conversation) =>
+                String(conversation.user?._id) === String(selectUser._id)
+        ) % avatarColors.length
+        ] ?? "bg-red-500";
+
+    const searchTerm = search.trim().toLowerCase();
+    const visibleConversations = searchTerm
+        ? conversations.filter(
+            (conversation) =>
+                (conversation.user?.name ?? "")
+                    .toLowerCase()
+                    .includes(searchTerm) ||
+                (conversation.user?.username ?? "")
+                    .toLowerCase()
+                    .includes(searchTerm)
+        )
+        : conversations;
+
     return (
-        <div className='w-screen h-screen flex'>
+        <div className='h-[calc(100vh-64px)] flex'>
             <div className='w-120 hidden lg:block h-full  bg-black/30'>
                 <div className='flex justify-between p-2 items-center'>
                     <div className='flex gap-3 items-center'>
@@ -214,48 +251,66 @@ export default function ChatSeaction() {
                     </div>
                 </div>
                 <div className='p-3'>
-                    <input type="search" className=' w-full p-2 rounded-3xl placeholder:text-black-300 pl-5 pt-3 pb-3 outline-none' name="" placeholder='Search Conversation' id="" />
+                    <input
+                        type="search"
+                        value={search}
+                        onChange={(event) => setSearch(event.target.value)}
+                        className=' w-full p-2 rounded-3xl placeholder:text-gray-500 pl-5 pt-3 pb-3 outline-none'
+                        placeholder='Search Conversation'
+                    />
                 </div>
                 <div>
-                    {followers.map((person, index) => {
+                    {visibleConversations.length === 0 && (
+                        <p className="p-4 text-sm text-gray-400">
+                            No conversations yet. Follow a user to start chatting.
+                        </p>
+                    )}
+                    {visibleConversations.map((conversation, index) => {
+                        const person = conversation.user;
                         const initial = (
                             person?.name ||
                             person?.username ||
                             "A"
                         )[0].toUpperCase();
-                        const getUnreadCount = (personId) => {
-                            const item = unreadData?.data?.find(
-                                (item) =>
-                                    String(item._id.sender) === String(personId)
-                            );
+                        const isActive =
+                            String(person?._id) === String(selectUser._id);
 
-                            return item?.count ?? 0;
-                        };
-                        const unreadCount = getUnreadCount(person._id);
                         return (
-                            <div key={index} onClick={()=>dispatch(setSelecUser(person))}>
-                                <div className='flex  p-2 m-2 rounded-2xl bg-white/30 gap-2 justify-between'>
-                                    <div className='flex gap-2'>
+                            <div
+                                key={conversation.conversationId}
+                                onClick={() => dispatch(setSelecUser(person))}
+                                className={`flex p-2 m-2 rounded-2xl gap-2 justify-between cursor-pointer ${isActive ? "bg-white/50" : "bg-white/30 hover:bg-white/40"}`}
+                            >
+                                <div className='flex gap-2'>
 
-                                        <div className=' flex justify-center items-center'>
+                                    <div className='flex justify-center items-center'>
+                                        {person?.profilePicture ? (
+                                            <img
+                                                src={person.profilePicture}
+                                                alt=""
+                                                className='w-11 h-11 rounded-full object-cover'
+                                            />
+                                        ) : (
                                             <span className={`p-2 flex justify-center items-center rounded-full w-11 ${avatarColors[index % avatarColors.length]}`}>{initial}</span>
-                                        </div>
-                                        <div>
-                                            <h1 className='font-semibold' >{person?.name}</h1>
-                                            <h1 className='text-sm text-gray-400 '>Bahi kal Milta hai</h1>
-                                        </div>
+                                        )}
                                     </div>
-                                    <div className=''>
-                                        <div className='flex flex-col text-end'>
-                                            <span>
-                                                2:14
+                                    <div className="min-w-0">
+                                        <h1 className='font-semibold' >{person?.name}</h1>
+                                        <h1 className='text-sm text-gray-500 truncate max-w-60'>
+                                            {conversation.lastMessage?.content || "No messages yet"}
+                                        </h1>
+                                    </div>
+                                </div>
+                                <div className=''>
+                                    <div className='flex flex-col text-end'>
+                                        <span className="text-xs text-gray-500">
+                                            {formatTime(conversation.lastMessageAt)}
+                                        </span>
+                                        {conversation.unreadCount > 0 && (
+                                            <span className=" ml-2 shrink-0 text-xs font-semibold bg-orange-500 text-white rounded-full w-5 h-5 flex items-center justify-center">
+                                                {conversation.unreadCount > 99 ? "99+" : conversation.unreadCount}
                                             </span>
-                                            {unreadCount > 0 && (
-                                                <span className=" ml-2 shrink-0 text-xs font-semibold bg-orange-500 text-white rounded-full w-5 h-5 flex items-center justify-center">
-                                                    {unreadCount > 99 ? "99+" : unreadCount}
-                                                </span>
-                                            )}
-                                        </div>
+                                        )}
                                     </div>
                                 </div>
                             </div>
@@ -263,7 +318,7 @@ export default function ChatSeaction() {
                     })}
                 </div>
             </div>
-            <div className='w-full h-full  relative'>
+            <div className='flex-1 h-full flex flex-col'>
                 <div
                     className="
                             flex items-center justify-between
@@ -277,18 +332,26 @@ export default function ChatSeaction() {
 
 
                         <div className="relative shrink-0">
-                            <div
-                                className={`
+                            {selectUser.profilePicture ? (
+                                <img
+                                    src={selectUser.profilePicture}
+                                    alt=""
+                                    className="w-11 h-11 rounded-full object-cover"
+                                />
+                            ) : (
+                                <div
+                                    className={`
                                   w-11 h-11
                                   flex items-center justify-center
                                   rounded-full
                                    border-white/30
                                   text-lg font-semibold
-                                  bg-red-500
+                                  ${avatarColor}
                                 `}
-                            >
-                                {userFirstLetter}
-                            </div>
+                                >
+                                    {userFirstLetter}
+                                </div>
+                            )}
                             {isOnline && (
                                 <span
                                     className="
@@ -340,7 +403,14 @@ export default function ChatSeaction() {
                         </button>
                     </div>
                 </div>
-                <div className='flex-1 overflow-y-auto  h-141 lg:h-147 p-4 space-y-3'>
+
+                {conversationError && (
+                    <p className="px-4 py-2 text-sm text-red-300 bg-red-500/15">
+                        {conversationError}
+                    </p>
+                )}
+
+                <div className='flex-1 overflow-y-auto p-4 space-y-3'>
                     {messagesLoading && (
                         <p className='text-gray-400 text-center'>
                             Loading message...
@@ -351,7 +421,7 @@ export default function ChatSeaction() {
                             Failed to load messages.
                         </p>
                     )}
-                    {!messagesLoading && messages.length === 0 && (
+                    {!messagesLoading && !conversationError && messages.length === 0 && (
                         <div className="h-full flex items-center justify-center">
                             <p className="text-gray-400">
                                 No messages yet.
@@ -359,7 +429,9 @@ export default function ChatSeaction() {
                         </div>
                     )}
                     {messages.map((msg) => {
-                        const isMine = String(msg.sender?._id) !== String(selectUser?._id)
+                        const isMine =
+                            String(msg.sender?._id ?? msg.sender) ===
+                            String(currentUser?.id ?? currentUser?._id);
                         return (
                             <div
                                 key={msg._id}
@@ -369,7 +441,7 @@ export default function ChatSeaction() {
                                     }`}
                             >
                                 <div
-                                    className={`max-w-[70%] px-4 py-2 rounded-2xl bg-orange-500`}>
+                                    className={`max-w-[70%] px-4 py-2 rounded-2xl ${isMine ? "bg-orange-500" : "bg-white/20"}`}>
                                     <p>
                                         {msg.content}
                                     </p>
@@ -386,6 +458,7 @@ export default function ChatSeaction() {
                             </div>
                         );
                     })}
+                    <div ref={messagesEndRef} />
                 </div>
                 <SendMessage
                     conversationId={conversationId}

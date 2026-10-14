@@ -6,7 +6,7 @@ async function getProfile(req, res) {
     try {
         const userId = req.user._id
 
-        const user = await userAuth.findById(userId).select("_id name username email")
+        const user = await userAuth.findById(userId).select("_id name username email bio profilePicture")
 
         if (!user) {
             return res.status(404).json({
@@ -20,13 +20,13 @@ async function getProfile(req, res) {
                 following: userId,
             }).populate(
                     "follower",
-                    "_id name username"
+                    "_id name username profilePicture"
                 ),
             Follow.find({
                 follower: userId,
             }).populate(
                     "following",
-                    "_id name username"
+                    "_id name username profilePicture"
                 ),
         ]);
 

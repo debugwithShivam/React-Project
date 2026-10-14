@@ -122,13 +122,21 @@ export default function UserSearchResult({ user }) {
         <div className=" group flex items-center justify-between rounded-2xl border border-white/55 bg-[#FFF9F4]/80 p-4 shadow-md shadow-black/8 backdrop-blur-xl transition-all duration-200 hover:-translate-y-[1px] hover:bg-[#FFF9F4] hover:shadow-xl" >
 
             <div className="flex items-center gap-3">
-                <div
-                    className=" flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[#D9C2A8] to-[#745269] shadow-md ">
-                    <UserRound
-                        size={22}
-                        className="text-white"
+                {user.profilePicture ? (
+                    <img
+                        src={user.profilePicture}
+                        alt=""
+                        className="h-12 w-12 shrink-0 rounded-full object-cover shadow-md"
                     />
-                </div>
+                ) : (
+                    <div
+                        className=" flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[#D9C2A8] to-[#745269] shadow-md ">
+                        <UserRound
+                            size={22}
+                            className="text-white"
+                        />
+                    </div>
+                )}
 
 
                 <div>

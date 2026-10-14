@@ -1,15 +1,11 @@
 import Note from "../../module/sticky-note.schema.js";
-import jwt from 'jsonwebtoken'
-import config from "../../config/EVConfig.js";
 
 async function updateNotes(req, res) {
     const { id, text, htmlCode, cssCode, jsCode, } = req.body
-    const accessToken = req.cookies.accessToken;
-    console.log(req.body)
 
     try {
-        let updatedNote = await Note.findByIdAndUpdate(
-            id,
+        let updatedNote = await Note.findOneAndUpdate(
+            { _id: id, userId: req.user._id },
             {
                 content: text,
                 html: htmlCode,

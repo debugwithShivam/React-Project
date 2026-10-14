@@ -64,7 +64,7 @@ async function tookenChecker(req, res, next) {
             expires: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000)
         });
 
-        req.user = { id: user.id, email: user.email };
+        req.user = user;
         return next();
     } catch (error) {
         if (error instanceof jwt.JsonWebTokenError || error instanceof jwt.TokenExpiredError) {

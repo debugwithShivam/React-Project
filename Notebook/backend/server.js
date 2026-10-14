@@ -20,7 +20,10 @@ io.use(async (socket, next) => {
       return next(new Error("Authentication required"))
     }
 
-    const accessToken = cookies.split("; ").find((cookie) => cookie.startsWith("accessToken=")).split("=")[1]
+    const accessToken = cookies
+      .split("; ")
+      .find((cookie) => cookie.startsWith("accessToken="))
+      ?.split("=")[1];
 
     if (!accessToken) {
       return next(new Error("Access Token missing"));

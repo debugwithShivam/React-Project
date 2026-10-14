@@ -7,9 +7,8 @@ import {
     UserRoundPlus,
     MessageCircle,
 } from "lucide-react";
-import axios from "axios";
-import { useQuery } from "@tanstack/react-query";
-import { getProfileData } from "./getProfiledata";
+import { useProfileData } from "./getProfiledata";
+import EditProfile from "./EditProfile";
 import Following from "./Following";
 import Followers from "./Followers";
 import Notes from "./Notes";
@@ -22,11 +21,12 @@ export default function ProfilePageHeader() {
     const { data: unreadData, } = useUnreadMessages();
     const totalUnread = unreadData?.total ?? 0;
     const [page, setPage] = useState("Notes")
-    const { user } = useSelector((state) => state.state);
+    const [isEditOpen, setIsEditOpen] = useState(false)
+    const { user: sessionUser } = useSelector((state) => state.state);
 
-    const { data, isLoading, isError } = getProfileData()
+    const { data, isLoading, isError } = useProfileData()
 
-
+    const user = data?.user ?? sessionUser;
     const stats = data?.stats || {};
 
     const initial = (user?.name || user?.username || "A")[0]?.toUpperCase();
@@ -65,9 +65,17 @@ export default function ProfilePageHeader() {
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                     <div className="flex items-center gap-4">
                         <div className="relative shrink-0">
-                            <div className="w-24 h-24 rounded-full bg-gradient-to-br from-indigo-500 to-violet-600 ring-2 ring-white/20 flex items-center justify-center text-4xl font-semibold">
-                                {initial}
-                            </div>
+                            {user?.profilePicture ? (
+                                <img
+                                    src={user.profilePicture}
+                                    alt=""
+                                    className="w-24 h-24 rounded-full object-cover ring-2 ring-white/20"
+                                />
+                            ) : (
+                                <div className="w-24 h-24 rounded-full bg-gradient-to-br from-indigo-500 to-violet-600 ring-2 ring-white/20 flex items-center justify-center text-4xl font-semibold">
+                                    {initial}
+                                </div>
+                            )}
                             <span className="absolute bottom-1 right-1 w-4 h-4 rounded-full bg-emerald-400 ring-2 ring-black/40" />
                         </div>
 
@@ -85,11 +93,18 @@ export default function ProfilePageHeader() {
                                     {user.email}
                                 </p>
                             )}
+                            {user?.bio && (
+                                <p className="text-white/70 text-sm mt-2 max-w-md">
+                                    {user.bio}
+                                </p>
+                            )}
                         </div>
                     </div>
 
                     <div className="flex items-center gap-3">
-                        <button className="flex items-center gap-2 px-4 py-2 rounded-full bg-white/10 hover:bg-white/20 border border-white/10 transition-colors text-sm font-medium">
+                        <button
+                            onClick={() => setIsEditOpen(true)}
+                            className="flex items-center gap-2 px-4 py-2 rounded-full bg-white/10 hover:bg-white/20 border border-white/10 transition-colors text-sm font-medium">
                             <Settings size={18} />
                             <span>Edit profile</span>
                         </button>
@@ -147,6 +162,10 @@ export default function ProfilePageHeader() {
             {page == "Notes" && <Notes />}
             {page == "Followers" && <Followers />}
             {page == "Following" && <Following />}
+            {page == "Messages" && <Messages />}
+            {isEditOpen && (
+                <EditProfile user={user} onClose={() => setIsEditOpen(false)} />
+            )}
         </div>
     );
 }

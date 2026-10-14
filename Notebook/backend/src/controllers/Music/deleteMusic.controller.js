@@ -1,13 +1,23 @@
 import Music from "../../module/music.schema.js";
-import config from "../../config/EVConfig.js";
 
 async function  deleteMusic(req,res) {
     const {id} = req.params;
      try {
-        await Music.findByIdAndDelete(id);
-        res.status(200).json({
+        const deletedTrack = await Music.findOneAndDelete({
+            _id: id,
+            userId: req.user._id,
+        });
+
+        if (!deletedTrack) {
+            return res.status(404).json({
+                success: false,
+                message: "Track not found"
+            });
+        }
+
+        return res.status(200).json({
             success: true,
-            message: "Note deleted"
+            message: "Track deleted"
         });
     } catch (error) {
         res.status(500).json({

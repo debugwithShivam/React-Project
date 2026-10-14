@@ -11,14 +11,6 @@ import { fileURLToPath } from "node:url";
 
 dns.setServers(["8.8.8.8", "8.8.4.4"]);
 
-dns.resolveSrv(
-  "_mongodb._tcp.cluster0.inxslpo.mongodb.net",
-  (err, records) => {
-    console.log(err);
-    console.log(records);
-  }
-);
-
 const app = express();
 const uploadsPath = fileURLToPath(new URL("../uploads", import.meta.url));
 
@@ -38,6 +30,10 @@ app.use(morgan(config.env === "production" ? "combined" : "dev"));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+
+app.get("/api/health", (req, res) => {
+  res.status(200).json({ status: "ok", timestamp: new Date().toISOString() });
+});
 
 app.use("/authRouter", authRouter);
 app.use(notFoundHandler);

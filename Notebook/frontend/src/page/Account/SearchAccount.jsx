@@ -1,8 +1,7 @@
-import React, { useEffect, useState } from 'react'
+import { useState, useEffect } from 'react'
 import axios from 'axios'
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { SearchIcon, Search, X, UserRound } from 'lucide-react'
-import { useSelector } from 'react-redux'
+import { useQuery } from '@tanstack/react-query'
+import { SearchIcon, X } from 'lucide-react'
 import UserSearchResult from './UserSearchResult'
 import VITE_API_URL from '../../config/backend_API_URL'
 
@@ -21,28 +20,22 @@ export default function SearchAccount() {
 
     async function searchUser({ queryKey }) {
         const [, searchQuery] = queryKey
-        try {
-            let response = await axios.get(`${VITE_API_URL}/authRouter/searchUsers`, {
-                params: {
-                    q: searchQuery
-                }, withCredentials: true
-            })
-            return response.data.data
-        } catch (error) {
-            console.log(error)
-        }
+        let response = await axios.get(`${VITE_API_URL}/authRouter/searchUsers`, {
+            params: {
+                q: searchQuery
+            },
+            withCredentials: true
+        })
+        return response.data.data
     }
 
-    const { data = [], isLoading } = useQuery({
+    const { data = [], isLoading, error } = useQuery({
         queryKey: ['user', debouncedQuery],
         queryFn: searchUser,
         enabled: !!debouncedQuery.trim()
     })
 
-
-    
-    if (isLoading) return <h1>Loading...</h1>
-
+    const results = data ?? []
 
     return (
         <>
@@ -115,7 +108,15 @@ export default function SearchAccount() {
 
             <div className="mt-6">
 
-                {query && data.length === 0 && (
+                {isLoading && (
+                    <p className="py-8 text-center text-sm text-[#71616B]">Searching...</p>
+                )}
+
+                {error && !isLoading && (
+                    <p className="py-8 text-center text-sm text-red-500">Couldn't search right now — check your connection and try again.</p>
+                )}
+
+                {debouncedQuery && !isLoading && !error && results.length === 0 && (
                     <div
                         className="
                         rounded-2xl
@@ -160,10 +161,10 @@ export default function SearchAccount() {
                 )}
 
 
-                {data.length > 0 && (
+                {results.length > 0 && (
                     <div className="space-y-3">
 
-                        {data.map((user) => (
+                        {results.map((user) => (
                             <UserSearchResult
                             key={user._id}
                             user={user}

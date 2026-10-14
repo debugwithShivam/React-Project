@@ -53,7 +53,10 @@ async function singIn(req, res) {
             user: {
                 id: user._id,
                 name: user.name,
-                email: user.email
+                username: user.username,
+                email: user.email,
+                bio: user.bio,
+                profilePicture: user.profilePicture
             }
         })
     } catch (error) {

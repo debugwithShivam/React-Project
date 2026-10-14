@@ -1,6 +1,6 @@
 import axios from 'axios'
-import React, { useEffect } from 'react'
-import { useQuery, useQueryClient, useMutation } from '@tanstack/react-query'
+import React, { useEffect, useState } from 'react'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { Trash2, Pencil, Pin, FileText, StickyNote, Clock } from 'lucide-react'
 import VITE_API_URL from '../../config/backend_API_URL'
 
@@ -15,40 +15,44 @@ const noteColors = [
 
 const rotations = ['-rotate-2', 'rotate-1', '-rotate-1', 'rotate-2', 'rotate-0']
 
-export default function NotesContainer() {
+export default function NotesContainer({ search = '' }) {
 
     async function getNotesData() {
-        try {
-            let response = await axios.get(`${VITE_API_URL}/authRouter/getNotes`, { withCredentials: true })
-            console.log(response.data.data);
-            return response.data.data
-        } catch (error) {
-            console.log(error)
-        }
+        let response = await axios.get(`${VITE_API_URL}/authRouter/getNotes`, { withCredentials: true })
+        return response.data.data
     }
 
-    const { data, isLoading, isFetching } = useQuery({
+    const { data, isLoading, error } = useQuery({
         queryKey: ['insertNotes'],
         queryFn: getNotesData
     })
 
     const queryClient = useQueryClient();
+    const [deleteError, setDeleteError] = useState('')
+
+    const notes = data ?? []
+    const query = search.trim().toLowerCase()
+    const visibleNotes = query
+        ? notes.filter((note) =>
+            note.title?.toLowerCase().includes(query) ||
+            note.content?.toLowerCase().includes(query)
+        )
+        : notes
 
     async function handleDelete(id) {
         try {
             await axios.delete(`${VITE_API_URL}/authRouter/deleteNotes/${id}`, { withCredentials: true })
+            setDeleteError('')
             queryClient.invalidateQueries({
                 queryKey: ['insertNotes']
             })
         } catch (error) {
-            console.log(error)
+            setDeleteError(error.response?.data?.message ?? 'Could not delete this note.')
         }
     }
 
     useEffect(() => {
-        window.electron.onNoteCreated(() => {
-            console.log("IPC received");
-
+        window.electron?.onNoteCreated(() => {
             queryClient.invalidateQueries({
                 queryKey: ["insertNotes"],
             });
@@ -67,6 +71,10 @@ export default function NotesContainer() {
                 }
             `}</style>
 
+            {deleteError && (
+                <p className="mb-4 text-sm text-red-200">{deleteError}</p>
+            )}
+
             {isLoading && (
                 <div className="grid grid-cols-[repeat(auto-fill,minmax(240px,1fr))] gap-6">
                     {Array.from({ length: 6 }).map((_, i) => (
@@ -78,16 +86,30 @@ export default function NotesContainer() {
                 </div>
             )}
 
-            {!isLoading && (!data || data.length === 0) && (
+            {!isLoading && error && notes.length === 0 && (
+                <div className="flex flex-col items-center justify-center gap-3 py-16 text-white/60">
+                    <StickyNote size={34} strokeWidth={1.5} />
+                    <p className="text-sm font-medium">Couldn't load your notes — pull to refresh and try again.</p>
+                </div>
+            )}
+
+            {!isLoading && !error && notes.length === 0 && (
                 <div className="flex flex-col items-center justify-center gap-3 py-16 text-white/60">
                     <StickyNote size={34} strokeWidth={1.5} />
                     <p className="text-sm font-medium">No notes yet — write your first one.</p>
                 </div>
             )}
 
-            {!isLoading && data && data.length > 0 && (
+            {!isLoading && !error && notes.length > 0 && visibleNotes.length === 0 && (
+                <div className="flex flex-col items-center justify-center gap-3 py-16 text-white/60">
+                    <StickyNote size={34} strokeWidth={1.5} />
+                    <p className="text-sm font-medium">No notes match your search.</p>
+                </div>
+            )}
+
+            {!isLoading && visibleNotes.length > 0 && (
                 <div className="grid grid-cols-[repeat(auto-fill,minmax(240px,1fr))] gap-6">
-                    {data.map((item, index) => {
+                    {visibleNotes.map((item, index) => {
                         const color = noteColors[index % noteColors.length]
                         const rotate = rotations[index % rotations.length]
 
@@ -109,14 +131,14 @@ export default function NotesContainer() {
 
                                 <div className="absolute top-2 right-2 flex gap-1.5 opacity-0 transition-opacity duration-200 group-hover:opacity-100">
                                     <button
-                                        onClick={() => window.electron.ViewNotes(item._id)}
+                                        onClick={() => window.electron?.ViewNotes(item._id)}
                                         title="View"
                                         className="rounded-full bg-black/10 p-1.5 transition-colors duration-150 hover:bg-black/25"
                                     >
                                         <FileText size={13} className="text-black/70" />
                                     </button>
                                     <button
-                                        onClick={() => window.electron.UpdateNotes(item._id)}
+                                        onClick={() => window.electron?.UpdateNotes(item._id)}
                                         title="Edit"
                                         className="rounded-full bg-black/10 p-1.5 transition-colors duration-150 hover:bg-black/25"
                                     >

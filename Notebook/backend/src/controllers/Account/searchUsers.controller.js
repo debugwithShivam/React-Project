@@ -30,7 +30,7 @@ async function searchUsers(req, res) {
                     }
                 }
             ]
-        }).select("_id name username")
+        }).select("_id name username profilePicture")
 
          return res.status(200).json({
             success: true,
