@@ -1,10 +1,12 @@
 import React from 'react'
 import axios from 'axios'
+import { useNavigate } from 'react-router-dom'
 import { SearchIcon, Search, X, UserRound } from 'lucide-react'
 import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query'
 import VITE_API_URL from '../../config/backend_API_URL'
 export default function UserSearchResult({ user }) {
 
+    const navigate = useNavigate()
     const queryClient = useQueryClient()
     const { data: isFollowing = false, isLoading: followStatusLoading, } = useQuery({
         queryKey: ['follow-status', user._id],
@@ -151,7 +153,7 @@ export default function UserSearchResult({ user }) {
 
             </div>
             <div className='flex gap-5'>
-                <button className=" rounded-xl bg-[#493347] px-4 py-2 text-sm font-semibold text-white shadow-md transition hover:bg-[#352433] active:scale-95">
+                <button onClick={() => navigate(`/UserProfile/${user._id}`)} className=" rounded-xl bg-[#493347] px-4 py-2 text-sm font-semibold text-white shadow-md transition hover:bg-[#352433] active:scale-95">
                     View
                 </button>
                 <button

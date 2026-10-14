@@ -20,13 +20,19 @@ import deleteMusic from '../controllers/Music/deleteMusic.controller.js';
 import getMusic from '../controllers/Music/getMusic.controller.js';
 
 // Middleware
-import upload, { uploadAvatar } from '../middleware/upload.js';
+import upload, { uploadAvatar, uploadPostMedia } from '../middleware/upload.js';
 import tookenChecker from '../middleware/authMiddleware.js';
 
 // Account
 import searchUsers from '../controllers/Account/searchUsers.controller.js';
 import getProfile from '../controllers/Account/getProfile.controller.js';
 import updateProfile from '../controllers/Account/updateProfile.controller.js';
+
+// Posts
+import createPost from '../controllers/Post/createPost.controller.js';
+import deletePost from '../controllers/Post/deletePost.controller.js';
+import togglePostLike from '../controllers/Post/toggleLike.controller.js';
+import getPostById from '../controllers/Post/getPostById.controller.js';
 
 // Follow
 import followUser from '../controllers/User/follow/followUser.controller.js';
@@ -65,6 +71,8 @@ authRouter.get('/getMusic', tookenChecker, getMusic)
 authRouter.get('/searchUsers', tookenChecker, searchUsers)
 authRouter.get("/follow-status/:userId",tookenChecker,getFollowStatus)
 authRouter.get("/profile",tookenChecker,getProfile)
+authRouter.get("/profile/:userId",tookenChecker,getProfile)
+authRouter.get("/post/:id",tookenChecker,getPostById)
 authRouter.get("/messages/unread",tookenChecker,getUnreadCounts);
 authRouter.get("/conversations",tookenChecker,getConversations);
 authRouter.get("/messages/:conversationId",tookenChecker,getMessages);
@@ -82,6 +90,8 @@ authRouter.post('/uploadMusic', tookenChecker, upload.fields([
 authRouter.post('/follow/:userId',tookenChecker,followUser)
 authRouter.post("/conversation/:userId",tookenChecker,getOrCreateConversation);
 authRouter.post("/message",tookenChecker,sendMessage);
+authRouter.post('/createPost', tookenChecker, uploadPostMedia, createPost)
+authRouter.post('/likePost/:id', tookenChecker, togglePostLike)
 
 //patch request 
 authRouter.patch('/updateNotes', tookenChecker, updateNotes)
@@ -94,6 +104,7 @@ authRouter.patch('/updateProfile', tookenChecker, uploadAvatar, updateProfile)
 authRouter.delete('/deleteMusic/:id', tookenChecker, deleteMusic)
 authRouter.delete('/deleteNotes/:id', tookenChecker, deleteNotes)
 authRouter.delete('/unfollow/:userId',tookenChecker, unFollowUser)
+authRouter.delete('/post/:id', tookenChecker, deletePost)
 
 
 export default authRouter

@@ -2,6 +2,7 @@ import mongoose from "mongoose";
 import userAuth from "../../module/User.js";
 import Follow from "../../module/Follow.schema.js";
 import Post from "../../module/post.schema.js";
+import PostLike from "../../module/postLike.schema.js";
 
 
 async function getProfile(req, res) {
@@ -48,21 +49,48 @@ async function getProfile(req, res) {
             })
                 .sort({ createdAt: -1 })
                 .limit(100)
-                .populate("note", "_id title content type"),
+                .populate("note", "_id title content type createdAt"),
         ]);
+
+        const postIds = posts.map((post) => post._id);
+
+        const likes = await PostLike.find({
+            post: { $in: postIds },
+        }).select("post user");
+
+        const likeCountByPost = {};
+        const likedByMe = new Set();
+
+        likes.forEach((like) => {
+            const key = String(like.post);
+            likeCountByPost[key] = (likeCountByPost[key] ?? 0) + 1;
+
+            if (String(like.user) === String(req.user._id)) {
+                likedByMe.add(key);
+            }
+        });
+
+        const postsWithLikes = posts.map((post) => ({
+            ...post.toObject(),
+            likeCount: likeCountByPost[String(post._id)] ?? 0,
+            likedByMe: likedByMe.has(String(post._id)),
+        }));
+
+        const followerUsers = followers.map((item) => item.follower).filter(Boolean);
+        const followingUsers = following.map((item) => item.following).filter(Boolean);
 
           return res.status(200).json({
             success: true,
             isSelf,
             user,
             stats: {
-                followers: followers.length,
-                following: following.length,
+                followers: followerUsers.length,
+                following: followingUsers.length,
                 posts: posts.length,
             },
-            posts,
-            followers: followers.map((item) => item.follower).filter(Boolean),
-            following: following.map((item) => item.following).filter(Boolean),
+            posts: postsWithLikes,
+            followers: followerUsers,
+            following: followingUsers,
         });
 
     } catch (error) {

@@ -15,6 +15,8 @@ import CustomMusicPlayer from "../page/Music/CustomMusicPlayer.jsx";
 import SearchUser from "../component/SearchUser.jsx";
 import ProfilePage from "../component/ProfilePage.jsx";
 import ChatSeaction from "../page/Profilepage/ChatSeaction.jsx";
+import UserProfilePage from "../page/Profilepage/UserProfilePage.jsx";
+import ViewPost from "../page/Profilepage/ViewPost.jsx";
 import TodoPage from "../page/TodoPage.jsx/TodoPage.jsx";
 
 const router = createHashRouter([
@@ -68,6 +70,14 @@ const router = createHashRouter([
           {
             path: "ProfilePage",
             element: <ProfilePage />,
+          },
+          {
+            path: "UserProfile/:id",
+            element: <UserProfilePage />,
+          },
+          {
+            path: "ViewPost/:id",
+            element: <ViewPost />,
           },
           {
             path: "ChatSeaction",

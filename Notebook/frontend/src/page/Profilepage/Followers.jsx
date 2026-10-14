@@ -158,7 +158,7 @@ export default function Followers() {
 
     if (isLoading) {
         return (
-            <div className="w-4/5 lg:w-3/5 m-4 h-80 md:h-45 lg:h-88 flex items-center justify-center">
+            <div className="w-4/5 lg:w-3/5 m-4 min-h-[300px] flex items-center justify-center">
                 <p className="text-gray-300">
                     Loading followers...
                 </p>
@@ -168,7 +168,7 @@ export default function Followers() {
 
     if (isError) {
         return (
-            <div className="w-4/5 lg:w-3/5 m-4 h-80 md:h-45 lg:h-88 flex items-center justify-center">
+            <div className="w-4/5 lg:w-3/5 m-4 min-h-[300px] flex items-center justify-center">
                 <p className="text-red-400">
                     Failed to load followers.
                 </p>
@@ -179,7 +179,7 @@ export default function Followers() {
     const followers = data?.followers ?? [];
 
     return (
-        <div className="w-4/5 lg:w-3/5 m-4 h-80 md:h-45 lg:h-88 overflow-y-auto scrollbar-thin">
+        <div className="w-4/5 lg:w-3/5 m-4 min-h-[300px] pb-4">
 
             {followers.length === 0 ? (
                 <div className="h-full flex items-center justify-center">

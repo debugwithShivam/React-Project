@@ -20,6 +20,12 @@ const postSchema = new mongoose.Schema(
             trim: true,
         },
 
+        title: {
+            type: String,
+            default: "",
+            trim: true,
+        },
+
         mediaUrl: {
             type: String,
             default: null,

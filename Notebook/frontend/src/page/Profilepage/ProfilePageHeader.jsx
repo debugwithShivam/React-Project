@@ -39,7 +39,7 @@ export default function ProfilePageHeader() {
     ];
 
     const statItems = [
-        { label: "Notes", value: stats.notes ?? 0 },
+        { label: "Posts", value: stats.posts ?? 0 },
         { label: "Followers", value: stats.followers ?? 0 },
         { label: "Following", value: stats.following ?? 0 },
     ];
@@ -59,7 +59,7 @@ export default function ProfilePageHeader() {
     }
 
     return (
-        <div className="flex flex-col  w-screen  items-center">
+        <div className="flex flex-col w-full items-center pb-6">
             <div className="bg-black/50 backdrop-blur-xl border border-white/10 shadow-2xl shadow-black/40 w-4/5 lg:w-3/5 m-4 rounded-3xl p-6 text-white">
                 {/* Top: avatar, name, actions */}
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">

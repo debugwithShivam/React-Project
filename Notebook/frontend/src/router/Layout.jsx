@@ -37,10 +37,10 @@ export default function Layout() {
   }
 
   return (
-    <div className="relative">
+    <div className="relative flex h-screen flex-col overflow-hidden">
       <img
         src={imageConfig.backgroungImage}
-        className="absolute h-screen w-screen"
+        className="absolute inset-0 h-full w-full object-cover"
         alt=""
       />
 
@@ -196,7 +196,7 @@ export default function Layout() {
         </div>
       </nav>
 
-      <main className="relative z-10">
+      <main className="relative z-10 flex-1 overflow-y-auto">
         <Outlet />
       </main>
     </div>

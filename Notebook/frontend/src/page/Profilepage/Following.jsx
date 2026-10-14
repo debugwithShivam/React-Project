@@ -32,7 +32,7 @@ export default function Following() {
 
   if (isLoading) {
     return (
-      <div className="w-4/5 lg:w-3/5 m-4 h-80 md:h-45 lg:h-88 flex items-center justify-center">
+      <div className="w-4/5 lg:w-3/5 m-4 min-h-[300px] flex items-center justify-center">
         <p className="text-gray-300">Loading following...</p>
       </div>
     );
@@ -40,7 +40,7 @@ export default function Following() {
 
   if (isError) {
     return (
-      <div className="w-4/5 lg:w-3/5 m-4 h-80 md:h-45 lg:h-88 flex items-center justify-center">
+      <div className="w-4/5 lg:w-3/5 m-4 min-h-[300px] flex items-center justify-center">
         <p className="text-red-400">Failed to load following.</p>
       </div>
     );
@@ -49,7 +49,7 @@ export default function Following() {
   const following = data?.following ?? [];
 
   return (
-    <div className="w-4/5 lg:w-3/5 m-4 h-80 md:h-45 lg:h-88 overflow-y-auto scrollbar-thin">
+    <div className="w-4/5 lg:w-3/5 m-4 min-h-[300px] pb-4">
 
       {following.length === 0 ? (
         <div className="h-full flex items-center justify-center">
@@ -118,6 +118,7 @@ export default function Following() {
                   onClick={() => {
                     unfollowMutation.mutate(person?._id);
                   }}
+                  title="Unfollow"
                   className="
                                 shrink-0
                                 border-1
@@ -127,14 +128,14 @@ export default function Following() {
                                 gap-2
                                 rounded-full
                                 bg-white/45
-                                hover:opacity-90
+                                hover:bg-red-500/70
                                 active:scale-95
                                 transition
                                 "
                 >
-                  <span>{unfollowMutation.isPending
+                  <span>{unfollowMutation.isPending && String(unfollowMutation.variables) === String(person?._id)
                     ? "..."
-                    : "Following"}</span>
+                    : "Unfollow"}</span>
                 </button>
                 <Link to='/ChatSeaction'>
                   <div

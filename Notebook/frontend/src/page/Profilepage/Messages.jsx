@@ -33,7 +33,9 @@ export default function Messages() {
   const dispatch = useDispatch();
   const navigate = useNavigate();
 
-  const conversations = data?.data ?? [];
+  const conversations = (data?.data ?? []).filter(
+    (conversation) => conversation.unreadCount > 0
+  );
 
   const openChat = (user) => {
     dispatch(setSelecUser(user));
@@ -43,7 +45,7 @@ export default function Messages() {
   if (isLoading) {
     return (
       <div className="w-4/5 lg:w-3/5 m-4 h-80 flex items-center justify-center">
-        <p className="text-gray-300">Loading conversations...</p>
+        <p className="text-gray-300">Loading messages...</p>
       </div>
     );
   }
@@ -57,10 +59,10 @@ export default function Messages() {
   }
 
   return (
-    <div className="w-4/5 lg:w-3/5 m-4 h-80 md:h-45 lg:h-88 overflow-y-auto scrollbar-thin">
+    <div className="w-4/5 lg:w-3/5 m-4 min-h-[300px] pb-4">
       {conversations.length === 0 ? (
         <div className="h-full flex items-center justify-center">
-          <p className="text-gray-400">No conversations yet.</p>
+          <p className="text-gray-400">No unread messages.</p>
         </div>
       ) : (
         conversations.map((conversation, index) => (
@@ -70,11 +72,19 @@ export default function Messages() {
             className="m-2 p-2 rounded-2xl bg-white/25 backdrop-blur-sm flex items-center justify-between gap-3 cursor-pointer hover:bg-white/35 transition"
           >
             <div className="flex items-center gap-3 min-w-0">
-              <div
-                className={`w-12 h-12 shrink-0 flex items-center justify-center rounded-full border-2 border-white/30 text-xl font-semibold text-white ${avatarColors[index % avatarColors.length]}`}
-              >
-                {(conversation.user?.name || conversation.user?.username || "A")[0].toUpperCase()}
-              </div>
+              {conversation.user?.profilePicture ? (
+                <img
+                  src={conversation.user.profilePicture}
+                  alt=""
+                  className="w-12 h-12 shrink-0 rounded-full object-cover border-2 border-white/30"
+                />
+              ) : (
+                <div
+                  className={`w-12 h-12 shrink-0 flex items-center justify-center rounded-full border-2 border-white/30 text-xl font-semibold text-white ${avatarColors[index % avatarColors.length]}`}
+                >
+                  {(conversation.user?.name || conversation.user?.username || "A")[0].toUpperCase()}
+                </div>
+              )}
 
               <div className="min-w-0">
                 <h2 className="font-semibold truncate">{conversation.user?.name}</h2>
@@ -88,11 +98,9 @@ export default function Messages() {
               <span className="text-xs text-gray-400">
                 {formatTime(conversation.lastMessageAt || conversation.lastMessage?.createdAt)}
               </span>
-              {conversation.unreadCount > 0 && (
-                <span className="min-w-5 h-5 px-1.5 rounded-full bg-orange-500 text-white text-xs font-bold flex items-center justify-center">
-                  {conversation.unreadCount > 99 ? "99+" : conversation.unreadCount}
-                </span>
-              )}
+              <span className="min-w-5 h-5 px-1.5 rounded-full bg-orange-500 text-white text-xs font-bold flex items-center justify-center">
+                {conversation.unreadCount > 99 ? "99+" : conversation.unreadCount}
+              </span>
             </div>
           </div>
         ))

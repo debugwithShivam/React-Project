@@ -22,7 +22,7 @@ function uploadBufferToCloudinary(buffer, options) {
 
 async function createPost(req, res) {
     try {
-        const { caption = "", visibility, noteId } = req.body ?? {};
+        const { caption = "", title = "", visibility, noteId } = req.body ?? {};
         const mediaFile = req.file;
 
         if (!mediaFile && !noteId) {
@@ -71,6 +71,7 @@ async function createPost(req, res) {
             userId: req.user._id,
             type: mediaUrl ? "image" : "note",
             caption: String(caption).trim(),
+            title: String(title).trim() || note?.title || "",
             mediaUrl,
             note: note?._id ?? null,
             visibility: visibility === "private" ? "private" : "public",
