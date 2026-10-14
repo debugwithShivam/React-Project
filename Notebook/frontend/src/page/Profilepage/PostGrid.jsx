@@ -2,7 +2,17 @@ import axios from "axios";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { Globe, Lock, Trash2, Heart, Eye, Clock, Pin } from "lucide-react";
+import {
+    Globe,
+    Lock,
+    Trash2,
+    Heart,
+    Eye,
+    Clock,
+    Pin,
+    Image as ImageIcon,
+    Notebook,
+} from "lucide-react";
 import VITE_API_URL from "../../config/backend_API_URL";
 
 const noteColors = [
@@ -15,6 +25,24 @@ const noteColors = [
 ]
 
 const rotations = ['-rotate-2', 'rotate-1', '-rotate-1', 'rotate-2', 'rotate-0']
+
+function noteTitle(post) {
+    return post.title || post.noteSnapshot?.title || post.note?.title || "Note";
+}
+
+function noteBody(post) {
+    const source = post.noteSnapshot ?? post.note;
+
+    if (!source) return "This note is no longer available.";
+
+    return (
+        source.content?.trim() ||
+        source.html?.trim() ||
+        source.css?.trim() ||
+        source.javascript?.trim() ||
+        "This note is empty."
+    );
+}
 
 function LikeButton({ post }) {
     const queryClient = useQueryClient();
@@ -56,6 +84,7 @@ export default function PostGrid({ posts, canDelete = false }) {
     const queryClient = useQueryClient();
     const navigate = useNavigate();
     const [error, setError] = useState("");
+    const [filter, setFilter] = useState(null);
 
     const deletePost = useMutation({
         mutationFn: async (postId) => {
@@ -74,7 +103,11 @@ export default function PostGrid({ posts, canDelete = false }) {
         },
     });
 
-    if (!posts || posts.length === 0) {
+    const all = posts ?? [];
+    const imagePosts = all.filter((post) => post.mediaUrl);
+    const notePosts = all.filter((post) => !post.mediaUrl);
+
+    if (all.length === 0) {
         return (
             <p className="py-12 text-center text-sm text-white/50">
                 Nothing posted yet.
@@ -82,12 +115,53 @@ export default function PostGrid({ posts, canDelete = false }) {
         );
     }
 
+    const activeFilter = filter ?? (imagePosts.length > 0 ? "image" : "note");
+    const visible = activeFilter === "image" ? imagePosts : notePosts;
+
+    function openPost(post) {
+        if (window.electron?.ViewPost) {
+            window.electron.ViewPost(post._id);
+        } else {
+            navigate(`/ViewPost/${post._id}`);
+        }
+    }
+
     return (
         <div className="px-1 pb-4">
             {error && <p className="mb-3 text-sm text-red-300/80">{error}</p>}
 
+            <div className="mb-4 flex gap-1 rounded-2xl bg-black/30 p-1.5">
+                {[
+                    { id: "image", label: "Images", icon: ImageIcon, count: imagePosts.length },
+                    { id: "note", label: "Notes", icon: Notebook, count: notePosts.length },
+                ].map((item) => (
+                    <button
+                        key={item.id}
+                        type="button"
+                        onClick={() => setFilter(item.id)}
+                        className={`flex flex-1 items-center justify-center gap-2 rounded-xl px-4 py-2 text-sm font-medium transition-colors ${
+                            activeFilter === item.id
+                                ? "bg-white/20 text-white"
+                                : "text-white/60 hover:text-white"
+                        }`}
+                    >
+                        <item.icon size={15} />
+                        {item.label}
+                        <span className="text-xs text-white/40">{item.count}</span>
+                    </button>
+                ))}
+            </div>
+
+            {visible.length === 0 && (
+                <p className="py-12 text-center text-sm text-white/50">
+                    {activeFilter === "image"
+                        ? "No image posts yet."
+                        : "No note posts yet."}
+                </p>
+            )}
+
             <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
-                {posts.map((post, index) => (
+                {visible.map((post, index) => (
                     <div
                         key={post._id}
                         className="overflow-hidden rounded-2xl border border-white/10 bg-white/5"
@@ -114,7 +188,7 @@ export default function PostGrid({ posts, canDelete = false }) {
                                 <div className="absolute top-2 right-2 flex gap-1.5">
                                     <button
                                         type="button"
-                                        onClick={() => navigate(`/ViewPost/${post._id}`)}
+                                        onClick={() => openPost(post)}
                                         title="View"
                                         aria-label="View note"
                                         className="rounded-full bg-black/10 p-1.5 transition-colors duration-150 hover:bg-black/25"
@@ -136,15 +210,15 @@ export default function PostGrid({ posts, canDelete = false }) {
                                 </div>
 
                                 <h3 className="mb-2 truncate pr-20 text-lg font-bold text-black">
-                                    {post.title || post.note?.title || "Note"}
+                                    {noteTitle(post)}
                                 </h3>
                                 <p className="line-clamp-4 text-sm leading-relaxed whitespace-pre-wrap text-black/75">
-                                    {post.note?.content || "This note is empty."}
+                                    {noteBody(post)}
                                 </p>
 
                                 <span className="mt-3 flex items-center justify-end gap-1 text-xs font-medium text-black/50">
                                     <Clock size={11} />
-                                    {new Date(post.note?.createdAt ?? post.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                    {new Date(post.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                                 </span>
                             </div>
                         )}

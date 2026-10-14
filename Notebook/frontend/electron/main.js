@@ -30,6 +30,15 @@ function loadPage(window, route = "") {
   }
 }
 
+const NOTE_WINDOW_SIZE = {
+  width: 400,
+  height: 400,
+  minWidth: 300,
+  minHeight: 300,
+  movable: true,
+  resizable: true,
+};
+
 function createWindow() {
   mainWindow = new BrowserWindow({
     width: 800,
@@ -55,11 +64,8 @@ function createWindow() {
 
 ipcMain.on("open-note-window", () => {
   const child = new BrowserWindow({
-    width: 450,
-    height: 450,
-    // parent: mainWindow,
+    ...NOTE_WINDOW_SIZE,
     icon: stickyNotes,
-    // resizable: false,
     webPreferences: {
       preload: preloadPath,
       contextIsolation: true,
@@ -67,17 +73,13 @@ ipcMain.on("open-note-window", () => {
       webSecurity: false,
     },
   });
-  child.webContents.openDevTools()
   loadPage(child, "CreateNotes");
 });
 
 ipcMain.on("UpdateNotes", (event, id) => {
   const updateNote = new BrowserWindow({
-    width: 450,
-    height: 450,
-    // parent: mainWindow,
+    ...NOTE_WINDOW_SIZE,
     icon: stickyNotes,
-    // resizable: false,
     webPreferences: {
       preload: preloadPath,
       contextIsolation: true,
@@ -85,19 +87,15 @@ ipcMain.on("UpdateNotes", (event, id) => {
       webSecurity: false,
     },
   });
-  updateNote.webContents.openDevTools()
-
   loadPage(updateNote, `UpdateNotes/${id}`);
 });
 
 ipcMain.on("ViewNotes", (event, id) => {
   const updateNote = new BrowserWindow({
-    width: 450,
-    height: 450,
+    ...NOTE_WINDOW_SIZE,
     icon: stickyNotes,
     alwaysOnTop: true,
     frame: false,
-    movable: true,
     transparent: true,
     webPreferences: {
       preload: preloadPath,
@@ -109,6 +107,26 @@ ipcMain.on("ViewNotes", (event, id) => {
   updateNote.setAlwaysOnTop(true, "screen-saver");
   // updateNote.webContents.openDevTools()
   loadPage(updateNote, `ViewNotes/${id}`);
+});
+
+ipcMain.on("ViewPost", (event, id) => {
+  const postWindow = new BrowserWindow({
+    ...NOTE_WINDOW_SIZE,
+    icon: stickyNotes,
+    alwaysOnTop: true,
+    frame: false,
+    transparent: true,
+    hasShadow: false,
+    webPreferences: {
+      preload: preloadPath,
+      contextIsolation: true,
+      nodeIntegration: false,
+      webSecurity: false,
+    },
+  });
+
+  postWindow.setAlwaysOnTop(true, "screen-saver");
+  loadPage(postWindow, `ViewPost/${id}`);
 });
 
 ipcMain.on("CustomMusicPlayer", (event, id) => {

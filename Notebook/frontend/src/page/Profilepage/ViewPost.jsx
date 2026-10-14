@@ -47,13 +47,18 @@ export default function ViewPost() {
     },
   });
 
-  const note = data?.note;
-  const contentVal = note?.content ?? "";
-  const htmlVal = note?.html ?? "";
-  const cssVal = note?.css ?? "";
-  const jsVal = note?.javascript ?? "";
+  // The snapshot is what was posted; the live note only exists for the Edit link.
+  const source = data?.noteSnapshot ?? data?.note;
+  const liveNote = data?.note;
+
+  const contentVal = source?.content ?? "";
+  const htmlVal = source?.html ?? "";
+  const cssVal = source?.css ?? "";
+  const jsVal = source?.javascript ?? "";
 
   const availableTabs = useMemo(() => {
+    if (!source) return [];
+
     const tabs = [];
     if (contentVal.trim() !== DEFAULTS.content.trim())
       tabs.push({ key: 'content', label: 'Note', icon: <FileText size={13} /> });
@@ -64,7 +69,7 @@ export default function ViewPost() {
     if (jsVal.trim() !== DEFAULTS.javascript.trim())
       tabs.push({ key: 'javascript', label: 'JS', icon: <Code2 size={13} /> });
     return tabs;
-  }, [contentVal, htmlVal, cssVal, jsVal]);
+  }, [source, contentVal, htmlVal, cssVal, jsVal]);
 
   useEffect(() => {
     if (availableTabs.length > 0 && !availableTabs.some((tab) => tab.key === activeTab)) {
@@ -74,9 +79,25 @@ export default function ViewPost() {
 
   const contentMap = { content: contentVal, html: htmlVal, css: cssVal, javascript: jsVal };
 
+  function handleClose() {
+    if (window.electron?.closeNoteWindow) {
+      window.electron.closeNoteWindow();
+    } else {
+      navigate(-1);
+    }
+  }
+
+  function handleEdit() {
+    if (window.electron?.UpdateNotes) {
+      window.electron.UpdateNotes(liveNote._id);
+    } else {
+      navigate(`/UpdateNotes/${liveNote._id}`);
+    }
+  }
+
   if (isLoading) {
     return (
-      <div className="mx-5 my-4 flex min-h-[75vh] items-center justify-center rounded-xl bg-yellow-200">
+      <div className="flex h-screen w-screen items-center justify-center bg-yellow-200">
         <p className="text-sm text-gray-600">Loading...</p>
       </div>
     );
@@ -84,13 +105,13 @@ export default function ViewPost() {
 
   if (error || !data) {
     return (
-      <div className="mx-5 my-4 flex min-h-[75vh] flex-col items-center justify-center gap-4 rounded-xl bg-yellow-200">
+      <div className="flex h-screen w-screen flex-col items-center justify-center gap-4 bg-yellow-200">
         <p className="text-sm text-gray-700">
           {error?.response?.data?.message ?? "This post cannot be shown."}
         </p>
         <button
-          onClick={() => navigate(-1)}
-          className="rounded-full bg-black/10 px-4 py-1.5 text-sm text-gray-700 hover:bg-black/20"
+          onClick={handleClose}
+          className="no-drag rounded-full bg-black/10 px-4 py-1.5 text-sm text-gray-700 hover:bg-black/20"
         >
           Go back
         </button>
@@ -99,21 +120,21 @@ export default function ViewPost() {
   }
 
   return (
-    <div className="relative mx-5 my-4 flex min-h-[75vh] flex-col overflow-hidden rounded-xl bg-gradient-to-b from-yellow-200 to-yellow-300 shadow-2xl">
+    <div className="relative flex h-screen w-screen flex-col overflow-hidden rounded-xl bg-gradient-to-b from-yellow-200 to-yellow-300 shadow-2xl">
 
       <div className="absolute -top-2 left-6 h-4 w-4 rotate-12 rounded-full bg-yellow-500 shadow-md" />
 
-      <div className="flex items-center justify-between px-4 pb-1 pt-3">
+      <div className="drag-region flex items-center justify-between px-4 pb-1 pt-3">
         <button
-          onClick={() => navigate(-1)}
+          onClick={handleClose}
           title="Close"
           aria-label="Close"
-          className="rounded-full bg-yellow-100/70 p-1.5 transition hover:bg-yellow-100"
+          className="no-drag rounded-full bg-yellow-100/70 p-1.5 transition hover:bg-yellow-100"
         >
           <X size={16} className="text-gray-700" />
         </button>
 
-        <div className="flex items-center gap-2">
+        <div className="no-drag flex items-center gap-2">
           <button
             onClick={() => likePost.mutate()}
             disabled={likePost.isPending}
@@ -128,9 +149,9 @@ export default function ViewPost() {
             {data.likeCount ?? 0}
           </button>
 
-          {data.isOwner && note && (
+          {data.isOwner && liveNote && (
             <button
-              onClick={() => navigate(`/UpdateNotes/${note._id}`)}
+              onClick={handleEdit}
               title="Edit"
               aria-label="Edit note"
               className="flex items-center gap-1.5 rounded-full bg-yellow-100/70 px-3 py-1.5 text-xs text-gray-700 transition hover:bg-yellow-100"
@@ -142,13 +163,13 @@ export default function ViewPost() {
         </div>
       </div>
 
-      <div className="px-4 pb-1">
+      <div className="drag-region px-4 pb-1">
         <h1 className="truncate text-base font-bold text-gray-900">
-          {data.title || note?.title || data.caption || "Untitled"}
+          {data.title || source?.title || data.caption || "Untitled"}
         </h1>
       </div>
 
-      <div className="flex items-center gap-3 px-4 pb-2 text-xs text-gray-600">
+      <div className="drag-region flex items-center gap-3 px-4 pb-2 text-xs text-gray-600">
         <span className="flex items-center gap-1">
           {data.userId?.profilePicture ? (
             <img
@@ -171,7 +192,7 @@ export default function ViewPost() {
       </div>
 
       {availableTabs.length > 1 && (
-        <div className="flex flex-wrap gap-2 px-4 pb-2 pt-1">
+        <div className="no-drag flex flex-wrap gap-2 px-4 pb-2 pt-1">
           {availableTabs.map((tab) => (
             <button
               key={tab.key}
@@ -189,29 +210,27 @@ export default function ViewPost() {
         </div>
       )}
 
-      <div className="hide-scrollbar flex-1 overflow-auto px-4 pb-4">
-        {!note && (
+      <div className="no-drag hide-scrollbar flex-1 overflow-auto px-4 pb-4">
+        {!source && (
           data.mediaUrl
             ? <img src={data.mediaUrl} alt="" className="max-h-full w-full rounded-lg object-contain" />
-            : <p className="text-sm text-gray-600">This post has no note content.</p>
+            : <p className="text-sm text-gray-600">This note is no longer available.</p>
         )}
 
-        {note && activeTab && (
+        {source && activeTab && (
           activeTab === 'content'
             ? <p className="text-sm leading-relaxed whitespace-pre-wrap text-gray-800">{contentMap[activeTab]}</p>
             : <pre className="rounded-lg bg-white/50 p-3 font-mono text-xs whitespace-pre-wrap text-gray-800">{contentMap[activeTab]}</pre>
         )}
 
-        {note && availableTabs.length === 0 && (
+        {source && availableTabs.length === 0 && (
           <p className="text-sm italic text-gray-500">This note is empty.</p>
         )}
       </div>
 
-      <div className="px-4 pb-3 text-right">
+      <div className="drag-region px-4 pb-3 text-right">
         <span className="text-[11px] text-gray-600">
-          {note?.updatedAt
-            ? new Date(note.updatedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-            : ''}
+          {new Date(data.updatedAt ?? data.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
         </span>
       </div>
     </div>

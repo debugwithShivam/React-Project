@@ -10,6 +10,7 @@ contextBridge.exposeInMainWorld("electron", {
   onNoteCreated:(callback)=>ipcRenderer.on("note-create",callback),
   UpdateNotes:(id)=>ipcRenderer.send('UpdateNotes',id),
   ViewNotes:(id)=>ipcRenderer.send('ViewNotes',id),
+  ViewPost:(id)=>ipcRenderer.send('ViewPost',id),
   closeNoteWindow: () => ipcRenderer.send("closeNoteWindow"),
 });
 

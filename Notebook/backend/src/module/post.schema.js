@@ -38,6 +38,16 @@ const postSchema = new mongoose.Schema(
             default: null,
         },
 
+        // Copy of the note taken at posting time, so a posted note keeps
+        // showing even after the personal note is edited or deleted.
+        noteSnapshot: {
+            title: { type: String, default: "" },
+            content: { type: String, default: "" },
+            html: { type: String, default: "" },
+            css: { type: String, default: "" },
+            javascript: { type: String, default: "" },
+        },
+
         visibility: {
             type: String,
             enum: ["public", "private"],

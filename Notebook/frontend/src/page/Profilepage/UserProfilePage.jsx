@@ -1,13 +1,17 @@
 import axios from "axios";
+import { useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useDispatch } from "react-redux";
 import { ArrowLeft, MessageCircle, UserRoundPlus, UserRoundCheck } from "lucide-react";
 import VITE_API_URL from "../../config/backend_API_URL";
 import PostGrid from "./PostGrid";
+import PeopleList from "./PeopleList";
 import useFollowStatus from "./useFollowStatus";
 import useFollowMutation from "./useFollowMutation";
 import { setSelecUser } from "../../Redux/Slice";
+
+const tabs = ["Posts", "Followers", "Following"];
 
 async function getUserProfile(userId) {
     const response = await axios.get(
@@ -22,6 +26,7 @@ export default function UserProfilePage() {
     const dispatch = useDispatch();
     const navigate = useNavigate();
     const queryClient = useQueryClient();
+    const [tab, setTab] = useState("Posts");
 
     const { data, isLoading, isError } = useQuery({
         queryKey: ["profile", id],
@@ -168,30 +173,59 @@ export default function UserProfilePage() {
                 </div>
 
                 <div className="flex items-center mt-6 pt-5 border-t border-white/10">
-                    {[
-                        { label: "Posts", value: stats.posts ?? 0 },
-                        { label: "Followers", value: stats.followers ?? 0 },
-                        { label: "Following", value: stats.following ?? 0 },
-                    ].map((item, i) => (
-                        <div key={item.label} className="flex items-center">
+                    {tabs.map((label, i) => (
+                        <div key={label} className="flex items-center">
                             {i > 0 && (
                                 <span className="w-px h-10 bg-white/10 mx-4" />
                             )}
-                            <div className="flex flex-col items-center min-w-[64px]">
+                            <button
+                                type="button"
+                                onClick={() => setTab(label)}
+                                className={`flex min-w-[64px] flex-col items-center rounded-xl px-2 py-1 transition-colors hover:bg-white/10 ${tab === label ? "bg-white/10" : ""}`}
+                            >
                                 <span className="text-2xl font-bold">
-                                    {item.value}
+                                    {stats[label.toLowerCase()] ?? 0}
                                 </span>
                                 <span className="text-white/50 text-xs uppercase tracking-wide">
-                                    {item.label}
+                                    {label}
                                 </span>
-                            </div>
+                            </button>
                         </div>
                     ))}
                 </div>
             </div>
 
             <div className="w-4/5 lg:w-3/5 mt-6">
-                <PostGrid posts={data.posts ?? []} />
+                <div className="mb-4 flex items-center gap-1 rounded-2xl bg-black/30 p-1.5">
+                    {tabs.map((item) => (
+                        <button
+                            key={item}
+                            type="button"
+                            onClick={() => setTab(item)}
+                            className={`flex-1 rounded-xl px-4 py-2 text-sm font-medium transition-colors ${
+                                tab === item
+                                    ? "bg-white/20 text-white"
+                                    : "text-white/60 hover:text-white"
+                            }`}
+                        >
+                            {item}
+                        </button>
+                    ))}
+                </div>
+
+                {tab === "Posts" && <PostGrid posts={data.posts ?? []} />}
+                {tab === "Followers" && (
+                    <PeopleList
+                        people={data.followers ?? []}
+                        emptyText="No followers yet."
+                    />
+                )}
+                {tab === "Following" && (
+                    <PeopleList
+                        people={data.following ?? []}
+                        emptyText="Not following anyone yet."
+                    />
+                )}
             </div>
         </div>
     );

@@ -44,7 +44,7 @@ async function createPost(req, res) {
             note = await Note.findOne({
                 _id: noteId,
                 userId: req.user._id,
-            }).select("_id title content");
+            });
 
             if (!note) {
                 return res.status(404).json({
@@ -74,6 +74,15 @@ async function createPost(req, res) {
             title: String(title).trim() || note?.title || "",
             mediaUrl,
             note: note?._id ?? null,
+            noteSnapshot: note
+                ? {
+                    title: note.title ?? "",
+                    content: note.content ?? "",
+                    html: note.html ?? "",
+                    css: note.css ?? "",
+                    javascript: note.javascript ?? "",
+                }
+                : undefined,
             visibility: visibility === "private" ? "private" : "public",
         });
 
