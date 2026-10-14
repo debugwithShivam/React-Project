@@ -1,4 +1,5 @@
 import Note from "../../module/sticky-note.schema.js";
+import Post from "../../module/post.schema.js";
 
 async function updateNotes(req, res) {
     const { id, text, htmlCode, cssCode, jsCode, } = req.body
@@ -21,6 +22,20 @@ async function updateNotes(req, res) {
                 message: "Note not found",
             });
         }
+
+        // Posts carry a copy of the note, so keep that copy in step with edits.
+        await Post.updateMany(
+            { note: updatedNote._id },
+            {
+                noteSnapshot: {
+                    title: updatedNote.title ?? "",
+                    content: updatedNote.content ?? "",
+                    html: updatedNote.html ?? "",
+                    css: updatedNote.css ?? "",
+                    javascript: updatedNote.javascript ?? "",
+                },
+            }
+        );
 
         return res.status(200).json({
             success: true,

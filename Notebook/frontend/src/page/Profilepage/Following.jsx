@@ -1,6 +1,6 @@
 import React from "react";
 import { useProfileData } from "./getProfiledata";
-import { MessageCircle } from "lucide-react";
+import { Eye, MessageCircle } from "lucide-react";
 import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import useFollowMutation from './useFollowMutation'
 import { useDispatch } from "react-redux";
@@ -113,6 +113,27 @@ export default function Following() {
               </div>
 
               <div className="flex justify-center items-center gap-3">
+
+                <Link
+                  to={`/UserProfile/${person?._id}`}
+                  title="View profile"
+                  className="
+                                shrink-0
+                                border-1
+                                h-10
+                                px-4
+                                flex items-center justify-center
+                                gap-2
+                                rounded-full
+                                bg-white/45
+                                hover:bg-indigo-500/70
+                                active:scale-95
+                                transition
+                                "
+                >
+                  <Eye size={16} />
+                  <span>View</span>
+                </Link>
 
                 <button
                   onClick={() => {

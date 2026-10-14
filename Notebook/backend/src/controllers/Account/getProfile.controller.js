@@ -49,9 +49,17 @@ async function getProfile(req, res) {
                 ...(isSelf ? {} : { visibility: "public" }),
             })
                 .sort({ createdAt: -1 })
-                .limit(100)
-                .populate("note", "_id title content html css javascript type createdAt"),
+                .limit(100),
         ]);
+
+        if (isSelf) {
+            // The live note belongs to its owner only; other visitors see the
+            // copy that was stored on the post.
+            await Post.populate(posts, {
+                path: "note",
+                select: "_id title content html css javascript type createdAt",
+            });
+        }
 
         const postIds = posts.map((post) => post._id);
 
@@ -85,6 +93,7 @@ async function getProfile(req, res) {
 
         const postsWithLikes = posts.map((post) => ({
             ...post.toObject(),
+            note: isSelf ? post.note : null,
             likeCount: likeCountByPost[String(post._id)] ?? 0,
             likedByMe: likedByMe.has(String(post._id)),
             commentCount: commentCountByPost[String(post._id)] ?? 0,

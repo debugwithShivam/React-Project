@@ -35,6 +35,7 @@ import togglePostLike from '../controllers/Post/toggleLike.controller.js';
 import getPostById from '../controllers/Post/getPostById.controller.js';
 import addPostComment from '../controllers/Post/addComment.controller.js';
 import deletePostComment from '../controllers/Post/deleteComment.controller.js';
+import getPostComments from '../controllers/Post/getComments.controller.js';
 
 // Follow
 import followUser from '../controllers/User/follow/followUser.controller.js';
@@ -75,6 +76,7 @@ authRouter.get("/follow-status/:userId",tookenChecker,getFollowStatus)
 authRouter.get("/profile",tookenChecker,getProfile)
 authRouter.get("/profile/:userId",tookenChecker,getProfile)
 authRouter.get("/post/:id",tookenChecker,getPostById)
+authRouter.get("/comments/:id", tookenChecker, getPostComments)
 authRouter.get("/messages/unread",tookenChecker,getUnreadCounts);
 authRouter.get("/conversations",tookenChecker,getConversations);
 authRouter.get("/messages/:conversationId",tookenChecker,getMessages);

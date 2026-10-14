@@ -16,7 +16,6 @@ async function getPostById(req, res) {
         }
 
         const post = await Post.findById(postId)
-            .populate("note")
             .populate("userId", "_id name username profilePicture");
 
         if (!post) {
@@ -35,6 +34,12 @@ async function getPostById(req, res) {
             });
         }
 
+        // Only the poster may read or edit the live note behind a post;
+        // everyone else gets the copy taken when the post was made.
+        if (isOwner) {
+            await post.populate("note");
+        }
+
         const [likeCount, likedByMe, comments] = await Promise.all([
             PostLike.countDocuments({ post: postId }),
             PostLike.exists({ post: postId, user: currentUserId }),
@@ -48,6 +53,7 @@ async function getPostById(req, res) {
             success: true,
             data: {
                 ...post.toObject(),
+                note: isOwner ? post.note : null,
                 isOwner,
                 likeCount,
                 likedByMe: !!likedByMe,

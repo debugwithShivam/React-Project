@@ -20,15 +20,50 @@ function uploadBufferToCloudinary(buffer, options) {
     });
 }
 
+const NOTE_DEFAULTS = {
+    content: "",
+    html: "<!-- Write HTML -->",
+    css: "/* Write CSS */",
+    javascript: 'console.log("Hello")',
+};
+
+function hasNoteContent(fields) {
+    return Object.keys(NOTE_DEFAULTS).some(
+        (key) => String(fields[key] ?? "").trim() !== NOTE_DEFAULTS[key]
+    );
+}
+
 async function createPost(req, res) {
     try {
-        const { caption = "", title = "", visibility, noteId } = req.body ?? {};
+        const {
+            caption = "",
+            title = "",
+            visibility,
+            noteId,
+            noteContent,
+            noteHtml,
+            noteCss,
+            noteJavascript,
+            saveToNotes,
+        } = req.body ?? {};
         const mediaFile = req.file;
 
-        if (!mediaFile && !noteId) {
+        const keepInPersonalNotes = !["0", "false"].includes(
+            String(saveToNotes ?? "1").toLowerCase()
+        );
+
+        const inlineNoteFields = {
+            content: noteContent,
+            html: noteHtml,
+            css: noteCss,
+            javascript: noteJavascript,
+        };
+        const writesNewNote = !mediaFile && !noteId && hasNoteContent(inlineNoteFields);
+
+        if (!mediaFile && !noteId && !writesNewNote) {
             return res.status(400).json({
                 success: false,
-                message: "Add an image or pick one of your notes to post",
+                message: "Add an image, pick one of your notes, or write a note to post",
             });
         }
 
@@ -54,6 +89,29 @@ async function createPost(req, res) {
             }
         }
 
+        // A note written straight from the post box is saved as a normal
+        // personal note too, so it stays editable after posting — unless the
+        // user chose to post it without keeping a copy.
+        if (writesNewNote && keepInPersonalNotes) {
+            const hasText = String(inlineNoteFields.content ?? "").trim() !== "";
+            const hasCode = hasNoteContent({
+                content: "",
+                html: inlineNoteFields.html,
+                css: inlineNoteFields.css,
+                javascript: inlineNoteFields.javascript,
+            });
+
+            note = await Note.create({
+                userId: req.user._id,
+                title: String(title).trim(),
+                type: hasText && hasCode ? "Both" : hasCode ? "code" : "text",
+                content: inlineNoteFields.content ?? "",
+                html: inlineNoteFields.html ?? NOTE_DEFAULTS.html,
+                css: inlineNoteFields.css ?? NOTE_DEFAULTS.css,
+                javascript: inlineNoteFields.javascript ?? NOTE_DEFAULTS.javascript,
+            });
+        }
+
         let mediaUrl = null;
         if (mediaFile) {
             const mediaResult = await uploadBufferToCloudinary(
@@ -67,20 +125,34 @@ async function createPost(req, res) {
             mediaUrl = mediaResult.secure_url;
         }
 
+        // A "post only" note has no personal note to point at, so the post keeps
+        // the written text as its own copy.
+        const snapshotSource =
+            note ??
+            (writesNewNote
+                ? {
+                    title: String(title).trim(),
+                    content: inlineNoteFields.content ?? "",
+                    html: inlineNoteFields.html ?? "",
+                    css: inlineNoteFields.css ?? "",
+                    javascript: inlineNoteFields.javascript ?? "",
+                }
+                : null);
+
         const post = await Post.create({
             userId: req.user._id,
             type: mediaUrl ? "image" : "note",
             caption: String(caption).trim(),
-            title: String(title).trim() || note?.title || "",
+            title: String(title).trim() || snapshotSource?.title || "",
             mediaUrl,
             note: note?._id ?? null,
-            noteSnapshot: note
+            noteSnapshot: snapshotSource
                 ? {
-                    title: note.title ?? "",
-                    content: note.content ?? "",
-                    html: note.html ?? "",
-                    css: note.css ?? "",
-                    javascript: note.javascript ?? "",
+                    title: snapshotSource.title ?? "",
+                    content: snapshotSource.content ?? "",
+                    html: snapshotSource.html ?? "",
+                    css: snapshotSource.css ?? "",
+                    javascript: snapshotSource.javascript ?? "",
                 }
                 : undefined,
             visibility: visibility === "private" ? "private" : "public",

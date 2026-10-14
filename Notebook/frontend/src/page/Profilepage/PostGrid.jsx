@@ -1,7 +1,7 @@
 import axios from "axios";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
     Globe,
     Lock,
@@ -13,6 +13,7 @@ import {
     Image as ImageIcon,
     Notebook,
     MessageCircle,
+    Send,
     WifiOff,
 } from "lucide-react";
 import VITE_API_URL from "../../config/backend_API_URL";
@@ -95,7 +96,7 @@ function LikeButton({ post }) {
     );
 }
 
-function PostImage({ post, onOpen }) {
+function PostImage({ post }) {
     const [failed, setFailed] = useState(false);
 
     if (failed) {
@@ -105,26 +106,174 @@ function PostImage({ post, onOpen }) {
                 <p className="text-xs text-white/60">
                     This image needs an internet connection.
                 </p>
-                <button
-                    type="button"
-                    onClick={onOpen}
-                    className="rounded-full bg-white/10 px-3 py-1 text-xs text-white/70 hover:bg-white/20"
-                >
-                    Open post
-                </button>
             </div>
         );
     }
 
     return (
-        <button type="button" onClick={onOpen} className="block h-60 w-full overflow-hidden">
-            <img
-                src={post.mediaUrl}
-                alt=""
-                onError={() => setFailed(true)}
-                className="h-full w-full object-cover transition-transform duration-300 hover:scale-[1.02]"
-            />
-        </button>
+        <img
+            src={post.mediaUrl}
+            alt=""
+            onError={() => setFailed(true)}
+            className="h-60 w-full object-cover"
+        />
+    );
+}
+
+function PostComments({ post }) {
+    const queryClient = useQueryClient();
+    const [open, setOpen] = useState(false);
+    const [text, setText] = useState("");
+    const [online, setOnline] = useState(() => navigator.onLine);
+
+    useEffect(() => {
+        const goOnline = () => setOnline(true);
+        const goOffline = () => setOnline(false);
+        window.addEventListener("online", goOnline);
+        window.addEventListener("offline", goOffline);
+        return () => {
+            window.removeEventListener("online", goOnline);
+            window.removeEventListener("offline", goOffline);
+        };
+    }, []);
+
+    const refresh = () => {
+        queryClient.invalidateQueries({ queryKey: ["comments", post._id] });
+        queryClient.invalidateQueries({ queryKey: ["profile"] });
+    };
+
+    const { data: comments = [], isLoading } = useQuery({
+        queryKey: ["comments", post._id],
+        enabled: open,
+        queryFn: async () => {
+            const response = await axios.get(
+                `${VITE_API_URL}/authRouter/comments/${post._id}`,
+                { withCredentials: true }
+            );
+            return response.data.data;
+        },
+    });
+
+    const addComment = useMutation({
+        mutationFn: async (value) => {
+            const response = await axios.post(
+                `${VITE_API_URL}/authRouter/comment/${post._id}`,
+                { text: value },
+                { withCredentials: true }
+            );
+            return response.data;
+        },
+        onSuccess: () => {
+            setText("");
+            refresh();
+        },
+    });
+
+    const removeComment = useMutation({
+        mutationFn: async (commentId) => {
+            const response = await axios.delete(
+                `${VITE_API_URL}/authRouter/comment/${commentId}`,
+                { withCredentials: true }
+            );
+            return response.data;
+        },
+        onSuccess: refresh,
+    });
+
+    const count = post.commentCount ?? 0;
+
+    function submit(event) {
+        event.preventDefault();
+        const value = text.trim();
+        if (!value || addComment.isPending) return;
+        addComment.mutate(value);
+    }
+
+    return (
+        <div className="border-t border-white/10 px-4 py-2">
+            <button
+                type="button"
+                onClick={() => setOpen((value) => !value)}
+                className="flex items-center gap-1.5 text-xs text-white/60 transition-colors hover:text-white"
+            >
+                <MessageCircle size={14} />
+                {count} {count === 1 ? "comment" : "comments"}
+            </button>
+
+            {open && (
+                <div className="mt-2">
+                    {isLoading && <p className="text-xs text-white/50">Loading comments...</p>}
+
+                    {!isLoading && comments.length === 0 && (
+                        <p className="text-xs italic text-white/50">No comments yet. Be the first.</p>
+                    )}
+
+                    <div className="space-y-2">
+                        {comments.map((comment) => (
+                            <div key={comment._id} className="flex items-start gap-2">
+                                {comment.user?.profilePicture ? (
+                                    <img
+                                        src={comment.user.profilePicture}
+                                        alt=""
+                                        className="mt-0.5 h-5 w-5 shrink-0 rounded-full object-cover"
+                                    />
+                                ) : (
+                                    <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-white/15 text-[10px] font-bold text-white/80">
+                                        {(comment.user?.name || comment.user?.username || "?").slice(0, 1)}
+                                    </span>
+                                )}
+                                <div className="min-w-0 flex-1">
+                                    <p className="text-xs font-semibold text-white/80">
+                                        {comment.user?.name || comment.user?.username || "Unknown"}
+                                    </p>
+                                    <p className="text-sm break-words whitespace-pre-wrap text-white/70">
+                                        {comment.text}
+                                    </p>
+                                </div>
+                                {comment.canDelete && (
+                                    <button
+                                        type="button"
+                                        onClick={() => removeComment.mutate(comment._id)}
+                                        disabled={removeComment.isPending}
+                                        aria-label="Delete comment"
+                                        className="shrink-0 rounded-full bg-white/10 p-1.5 text-white/60 transition-colors hover:bg-red-500/70 hover:text-white disabled:opacity-50"
+                                    >
+                                        <Trash2 size={12} />
+                                    </button>
+                                )}
+                            </div>
+                        ))}
+                    </div>
+
+                    <form onSubmit={submit} className="mt-3 flex items-center gap-2">
+                        <input
+                            value={text}
+                            onChange={(event) => setText(event.target.value)}
+                            disabled={!online || addComment.isPending}
+                            placeholder={online ? "Write a comment..." : "Comments need an internet connection"}
+                            className="min-w-0 flex-1 rounded-full bg-white/10 px-3 py-1.5 text-sm text-white outline-none placeholder:text-white/40 disabled:opacity-60"
+                        />
+                        <button
+                            type="submit"
+                            disabled={!online || !text.trim() || addComment.isPending}
+                            aria-label="Post comment"
+                            className="flex shrink-0 items-center gap-1 rounded-full bg-white/15 px-3 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-white/25 disabled:opacity-50"
+                        >
+                            <Send size={13} />
+                            Send
+                        </button>
+                    </form>
+
+                    {addComment.isError && (
+                        <p className="mt-2 text-xs text-red-300/80">
+                            {online
+                                ? addComment.error?.response?.data?.message ?? "Could not add your comment."
+                                : "You are offline. Connect to the internet to comment."}
+                        </p>
+                    )}
+                </div>
+            )}
+        </div>
     );
 }
 
@@ -215,7 +364,7 @@ export default function PostGrid({ posts, canDelete = false }) {
                         className="overflow-hidden rounded-2xl border border-white/10 bg-white/5"
                     >
                         {post.mediaUrl ? (
-                            <PostImage post={post} onOpen={() => openPost(post)} />
+                            <PostImage post={post} />
                         ) : (
                             <div
                                 className={`relative min-h-[190px] rounded-lg p-4 pt-6 shadow-lg ${noteColors[index % noteColors.length].bg} ${rotations[index % rotations.length]} transition-all duration-300 ease-out hover:rotate-0`}
@@ -295,16 +444,6 @@ export default function PostGrid({ posts, canDelete = false }) {
                             </div>
 
                             <div className="flex shrink-0 items-center gap-2">
-                                <button
-                                    type="button"
-                                    onClick={() => openPost(post)}
-                                    aria-label="View comments"
-                                    className="flex shrink-0 items-center gap-1.5 rounded-full bg-white/10 px-2.5 py-1 text-xs text-white/60 transition-colors hover:bg-white/20"
-                                >
-                                    <MessageCircle size={14} />
-                                    {post.commentCount ?? 0}
-                                </button>
-
                                 <LikeButton post={post} />
 
                                 {canDelete && post.mediaUrl && (
@@ -320,6 +459,8 @@ export default function PostGrid({ posts, canDelete = false }) {
                                 )}
                             </div>
                         </div>
+
+                        <PostComments post={post} />
                     </div>
                 ))}
             </div>

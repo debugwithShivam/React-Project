@@ -1,8 +1,11 @@
 import axios from 'axios'
 import React, { useEffect, useState } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { Trash2, Pencil, Pin, FileText, StickyNote, Clock } from 'lucide-react'
+import { useNavigate } from 'react-router-dom'
+import { useDispatch } from 'react-redux'
+import { Trash2, Pencil, Pin, FileText, Send, StickyNote, Clock } from 'lucide-react'
 import VITE_API_URL from '../../config/backend_API_URL'
+import { setPostDraftNoteId } from '../../Redux/Slice'
 
 const noteColors = [
     { bg: 'bg-yellow-200/85', pin: 'text-yellow-600', fold: 'bg-yellow-900/10' },
@@ -28,6 +31,8 @@ export default function NotesContainer({ search = '' }) {
     })
 
     const queryClient = useQueryClient();
+    const dispatch = useDispatch();
+    const navigate = useNavigate();
     const [deleteError, setDeleteError] = useState('')
 
     const notes = data ?? []
@@ -49,6 +54,11 @@ export default function NotesContainer({ search = '' }) {
         } catch (error) {
             setDeleteError(error.response?.data?.message ?? 'Could not delete this note.')
         }
+    }
+
+    function handlePost(id) {
+        dispatch(setPostDraftNoteId(id))
+        navigate('/ProfilePage')
     }
 
     useEffect(() => {
@@ -130,6 +140,13 @@ export default function NotesContainer({ search = '' }) {
                                 />
 
                                 <div className="absolute top-2 right-2 flex gap-1.5 opacity-0 transition-opacity duration-200 group-hover:opacity-100">
+                                    <button
+                                        onClick={() => handlePost(item._id)}
+                                        title="Post on your profile"
+                                        className="rounded-full bg-black/10 p-1.5 transition-colors duration-150 hover:bg-indigo-500/80"
+                                    >
+                                        <Send size={13} className="text-black/70" />
+                                    </button>
                                     <button
                                         onClick={() => window.electron?.ViewNotes(item._id)}
                                         title="View"

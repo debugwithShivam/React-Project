@@ -22,6 +22,7 @@ const initialState = {
   indexToggle: false,
   selectUser: JSON.parse(localStorage.getItem("selectUser")) || null,
   TimerPage: JSON.parse(localStorage.getItem("TimerPage")) || null,
+  postDraftNoteId: null,
 };
 
 const noteBookSlice = createSlice({
@@ -115,6 +116,9 @@ const noteBookSlice = createSlice({
         "TimerPage",
         JSON.stringify(action.payload)
       );
+    },
+    setPostDraftNoteId: (state, action) => {
+      state.postDraftNoteId = action.payload;
     }
   },
 });
@@ -142,7 +146,8 @@ export const {
   indexToggle,
   setUser,
   setSelecUser,
-  setTimerPage
+  setTimerPage,
+  setPostDraftNoteId
 } = noteBookSlice.actions;
 
 export default noteBookSlice.reducer;

@@ -33,6 +33,10 @@ const router = createHashRouter([
     element: <ViewNotes/>,
   },
   {
+    path: "ViewPost/:id",
+    element: <ViewPost/>,
+  },
+  {
     path: "CustomMusicPlayer",
     element: <CustomMusicPlayer/>,
   },
@@ -74,10 +78,6 @@ const router = createHashRouter([
           {
             path: "UserProfile/:id",
             element: <UserProfilePage />,
-          },
-          {
-            path: "ViewPost/:id",
-            element: <ViewPost />,
           },
           {
             path: "ChatSeaction",
