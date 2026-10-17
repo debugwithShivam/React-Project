@@ -49,6 +49,15 @@ import getMessages from '../controllers/User/Conversation/getMessages.controller
 import getConversations from '../controllers/User/Conversation/getConversations.controller.js';
 import markMessagesAsRead from '../controllers/User/Conversation/markMessagesAsRead.controller.js';
 import getUnreadCounts from '../controllers/User/Conversation/getUnreadCounts.controller.js';
+import clearChat from '../controllers/User/Conversation/clearChat.controller.js';
+import deleteMessage from '../controllers/User/Conversation/deleteMessage.controller.js';
+
+// Todos
+import getTodos from '../controllers/Todos/getTodos.controller.js';
+import insertTodo from '../controllers/Todos/insertTodo.controller.js';
+import updateTodo from '../controllers/Todos/updateTodo.controller.js';
+import deleteTodo from '../controllers/Todos/deleteTodo.controller.js';
+import clearCompletedTodos from '../controllers/Todos/clearCompletedTodos.controller.js';
 
 const authRouter = Router();
 
@@ -80,6 +89,7 @@ authRouter.get("/comments/:id", tookenChecker, getPostComments)
 authRouter.get("/messages/unread",tookenChecker,getUnreadCounts);
 authRouter.get("/conversations",tookenChecker,getConversations);
 authRouter.get("/messages/:conversationId",tookenChecker,getMessages);
+authRouter.get('/getTodos', tookenChecker, getTodos)
 
 // POST Requets
 authRouter.post('/createAccount', authorization)
@@ -97,11 +107,13 @@ authRouter.post("/message",tookenChecker,sendMessage);
 authRouter.post('/createPost', tookenChecker, uploadPostMedia, createPost)
 authRouter.post('/likePost/:id', tookenChecker, togglePostLike)
 authRouter.post('/comment/:id', tookenChecker, addPostComment)
+authRouter.post('/insertTodo', tookenChecker, insertTodo)
 authRouter.delete('/comment/:id', tookenChecker, deletePostComment)
 
 //patch request 
 authRouter.patch('/updateNotes', tookenChecker, updateNotes)
 authRouter.patch('/updateMusic', tookenChecker, updateMusic)
+authRouter.patch('/updateTodo', tookenChecker, updateTodo)
 authRouter.patch("/messages/:conversationId/read",tookenChecker,markMessagesAsRead);
 authRouter.patch('/updateProfile', tookenChecker, uploadAvatar, updateProfile)
 
@@ -111,6 +123,10 @@ authRouter.delete('/deleteMusic/:id', tookenChecker, deleteMusic)
 authRouter.delete('/deleteNotes/:id', tookenChecker, deleteNotes)
 authRouter.delete('/unfollow/:userId',tookenChecker, unFollowUser)
 authRouter.delete('/post/:id', tookenChecker, deletePost)
+authRouter.delete('/deleteTodo/:id', tookenChecker, deleteTodo)
+authRouter.delete('/clearCompletedTodos', tookenChecker, clearCompletedTodos)
+authRouter.delete('/clearChat/:conversationId', tookenChecker, clearChat)
+authRouter.delete('/message/:id', tookenChecker, deleteMessage)
 
 
 export default authRouter

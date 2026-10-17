@@ -1,5 +1,6 @@
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import { Plus, Trash2, Check } from "lucide-react";
+import useTodos from "../hooks/useTodos";
 
 const YELLOW = "#f3c94e";
 
@@ -14,24 +15,27 @@ const glass = { background: "rgba(255,255,255,0.09)", border: "1px solid rgba(25
 const glassSoft = { background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.16)" };
 
 export default function Todo() {
-  const [todos, setTodos] = useState(() => JSON.parse(localStorage.getItem("todos")) || []);
+  const {
+    todos,
+    isLoading,
+    isError,
+    errorMessage,
+    addTodo,
+    toggleTodo,
+    deleteTodo,
+    clearCompleted,
+  } = useTodos();
   const [input, setInput] = useState("");
 
-  useEffect(() => {
-    localStorage.setItem("todos", JSON.stringify(todos));
-  }, [todos]);
-
-  const addTodo = () => {
+  function submit() {
     const val = input.trim();
-    if (!val) return;
-    setTodos((t) => [...t, { id: Date.now(), text: val, done: false }]);
+    if (!val || addTodo.isPending) return;
+    addTodo.mutate(val);
     setInput("");
-  };
-
-  const toggleTodo = (id) => setTodos((t) => t.map((x) => (x.id === id ? { ...x, done: !x.done } : x)));
-  const deleteTodo = (id) => setTodos((t) => t.filter((x) => x.id !== id));
+  }
 
   const left = todos.filter((t) => !t.done).length;
+  const completedCount = todos.length - left;
 
   return (
     <div className="min-h-screen w-full" style={bgStyle}>
@@ -58,14 +62,15 @@ export default function Todo() {
               type="text"
               value={input}
               onChange={(e) => setInput(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && addTodo()}
+              onKeyDown={(e) => e.key === "Enter" && submit()}
               placeholder="What do you need to do?"
               className="flex-1 rounded-2xl px-5 py-4 text-[15px] outline-none text-white placeholder-white/40"
               style={glassSoft}
             />
             <button
-              onClick={addTodo}
-              className="flex items-center gap-2 px-6 rounded-2xl font-bold text-sm transition-transform active:scale-[0.97]"
+              onClick={submit}
+              disabled={addTodo.isPending}
+              className="flex items-center gap-2 px-6 rounded-2xl font-bold text-sm transition-transform active:scale-[0.97] disabled:opacity-60"
               style={{
                 background: `linear-gradient(160deg, #f7d576, ${YELLOW})`,
                 color: "#3c2c05",
@@ -76,20 +81,29 @@ export default function Todo() {
             </button>
           </div>
 
+          {isError && (
+            <p className="mb-4 text-sm" style={{ color: "#ffd3d3" }}>{errorMessage}</p>
+          )}
+
           <div className="flex flex-col gap-3  h-79 overflow-y-auto">
-            {todos.length === 0 && (
+            {isLoading && (
+              <div className="text-center text-sm py-10" style={{ color: "rgba(255,255,255,0.48)" }}>
+                Loading your tasks...
+              </div>
+            )}
+            {!isLoading && todos.length === 0 && (
               <div className="text-center text-sm py-10" style={{ color: "rgba(255,255,255,0.48)" }}>
                 Nothing here. Add a task above to get moving.
               </div>
             )}
             {todos.map((t) => (
               <div
-                key={t.id}
+                key={t._id}
                 className="flex items-center gap-4 rounded-2xl px-5 py-4"
                 style={glassSoft}
               >
                 <button
-                  onClick={() => toggleTodo(t.id)}
+                  onClick={() => toggleTodo.mutate(t)}
                   className="w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 transition-colors"
                   style={
                     t.done
@@ -109,7 +123,7 @@ export default function Todo() {
                   {t.text}
                 </span>
                 <button
-                  onClick={() => deleteTodo(t.id)}
+                  onClick={() => deleteTodo.mutate(t._id)}
                   className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0"
                   style={{ ...glassSoft, color: "rgba(255,255,255,0.5)" }}
                 >
@@ -127,8 +141,9 @@ export default function Todo() {
               {left} task{left !== 1 ? "s" : ""} left
             </span>
             <button
-              onClick={() => setTodos((t) => t.filter((x) => !x.done))}
-              className="font-semibold"
+              onClick={() => clearCompleted.mutate()}
+              disabled={completedCount === 0 || clearCompleted.isPending}
+              className="font-semibold disabled:opacity-40"
               style={{ color: "rgba(255,255,255,0.72)" }}
             >
               Clear completed

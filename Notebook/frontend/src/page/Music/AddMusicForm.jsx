@@ -225,7 +225,7 @@ const handleCoverChange = (file) => {
         {/* footer */}
         <div className="relative flex items-center justify-between gap-4 pt-1">
           <p className="text-slate-500 text-xs">
-            {isFormValid ? "Ready to upload" : "Fill in all fields to continue"}
+            {isFormValid ? "Ready to upload" : "Title, audio file and cover are required"}
           </p>
 
           <button

@@ -5,6 +5,8 @@ import {
     Phone,
     Video,
     MoreVertical,
+    Trash2,
+    Eraser,
 } from "lucide-react";
 import { Link } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux';
@@ -50,6 +52,8 @@ export default function ChatSeaction() {
     const [conversationId, setConversationId] = useState(null);
     const [conversationError, setConversationError] = useState(null);
     const [search, setSearch] = useState("");
+    const [chatMenuOpen, setChatMenuOpen] = useState(false);
+    const [chatActionError, setChatActionError] = useState(null);
     const messagesEndRef = useRef(null);
     const queryClient = useQueryClient();
     const dispatch = useDispatch()
@@ -113,7 +117,44 @@ export default function ChatSeaction() {
             return response.data;
         },
 
-        onSuccess: () => {
+        onSuccess: (_data, readConversationId) => {
+            // Zero the badge locally, otherwise an in-flight GET can put the old
+            // unread count back on screen after this chat is opened.
+            queryClient.setQueryData(
+                ["conversations"],
+                (oldData) => {
+                    if (!oldData?.data) return oldData;
+
+                    return {
+                        ...oldData,
+                        data: oldData.data.map((conversation) =>
+                            String(conversation.conversationId ?? conversation._id) ===
+                                String(readConversationId)
+                                ? { ...conversation, unreadCount: 0 }
+                                : conversation
+                        ),
+                    };
+                }
+            );
+
+            queryClient.setQueryData(
+                ["unreadMessages"],
+                (oldData) => {
+                    if (!oldData?.data) return oldData;
+
+                    const kept = oldData.data.filter(
+                        (item) =>
+                            String(item._id?.conversation) !== String(readConversationId)
+                    );
+
+                    return {
+                        ...oldData,
+                        total: kept.reduce((sum, item) => sum + item.count, 0),
+                        data: kept,
+                    };
+                }
+            );
+
             queryClient.invalidateQueries({
                 queryKey: ["unreadMessages"],
             });
@@ -121,6 +162,68 @@ export default function ChatSeaction() {
             queryClient.invalidateQueries({
                 queryKey: ["conversations"],
             });
+        },
+    });
+
+    const clearChatMutation = useMutation({
+        mutationFn: async () => {
+            const response = await axios.delete(
+                `${VITE_API_URL}/authRouter/clearChat/${conversationId}`,
+                { withCredentials: true }
+            );
+
+            return response.data;
+        },
+
+        onSuccess: () => {
+            setChatActionError(null);
+            queryClient.setQueryData(["messages", conversationId], {
+                success: true,
+                data: [],
+            });
+            queryClient.invalidateQueries({ queryKey: ["conversations"] });
+            setChatMenuOpen(false);
+        },
+
+        onError: (error) => {
+            setChatMenuOpen(false);
+            setChatActionError(
+                error.response?.data?.message ?? "Could not clear this chat."
+            );
+        },
+    });
+    const deleteMessageMutation = useMutation({
+        mutationFn: async (messageId) => {
+            const response = await axios.delete(
+                `${VITE_API_URL}/authRouter/message/${messageId}`,
+                { withCredentials: true }
+            );
+
+            return response.data;
+        },
+
+        onSuccess: (_data, messageId) => {
+            setChatActionError(null);
+            queryClient.setQueryData(
+                ["messages", conversationId],
+                (oldData) => {
+                    if (!oldData?.data) return oldData;
+
+                    return {
+                        ...oldData,
+                        data: oldData.data.filter(
+                            (message) => String(message._id) !== String(messageId)
+                        ),
+                    };
+                }
+            );
+            queryClient.invalidateQueries({ queryKey: ["conversations"] });
+        },
+
+        onError: (error) => {
+            setChatActionError(
+                error.response?.data?.message ?? "Could not delete this message."
+            );
         },
     });
 
@@ -188,6 +291,7 @@ export default function ChatSeaction() {
 
         setConversationId(null);
         setConversationError(null);
+        setChatActionError(null);
         createConversation.mutate();
     }, [selectUser?._id]);
 
@@ -200,6 +304,14 @@ export default function ChatSeaction() {
     useEffect(() => {
         messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
     }, [messages.length]);
+
+    useEffect(() => {
+        if (!chatMenuOpen) return;
+
+        const closeOnClick = () => setChatMenuOpen(false);
+        document.addEventListener("click", closeOnClick);
+        return () => document.removeEventListener("click", closeOnClick);
+    }, [chatMenuOpen]);
 
     if (!selectUser) {
         return (
@@ -392,21 +504,68 @@ export default function ChatSeaction() {
                         >
                             <Video size={16} />
                         </button>
-                        <button
-                            className="
+                        <div className="relative">
+                            <button
+                                onClick={(event) => {
+                                    event.stopPropagation();
+                                    setChatMenuOpen((open) => !open);
+                                }}
+                                aria-label="Chat options"
+                                className="
                                 w-9 h-9 flex items-center justify-center
                                 rounded-full bg-white/10 hover:bg-white/20
                                 transition
                               "
-                        >
-                            <MoreVertical size={16} />
-                        </button>
+                            >
+                                <MoreVertical size={16} />
+                            </button>
+
+                            {chatMenuOpen && (
+                                <div
+                                    className="
+                                    absolute right-0 top-11 z-20 w-52 rounded-2xl
+                                    border border-white/15 bg-black/80 p-2 shadow-xl backdrop-blur-md
+                                  "
+                                >
+                                    <button
+                                        onClick={() => {
+                                            if (
+                                                window.confirm(
+                                                    "Clear this whole chat for you? This cannot be undone."
+                                                )
+                                            ) {
+                                                clearChatMutation.mutate();
+                                            }
+                                        }}
+                                        disabled={clearChatMutation.isPending}
+                                        className="
+                                        flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left text-sm
+                                        text-white/85 transition-colors hover:bg-white/15 disabled:opacity-50
+                                      "
+                                    >
+                                        <Eraser size={14} />
+                                        {clearChatMutation.isPending
+                                            ? "Clearing..."
+                                            : "Clear chat"}
+                                    </button>
+                                    <p className="px-3 pb-1 pt-2 text-xs text-white/45">
+                                        Removes every message in this chat, for both of you.
+                                    </p>
+                                </div>
+                            )}
+                        </div>
                     </div>
                 </div>
 
                 {conversationError && (
                     <p className="px-4 py-2 text-sm text-red-300 bg-red-500/15">
                         {conversationError}
+                    </p>
+                )}
+
+                {chatActionError && (
+                    <p className="px-4 py-2 text-sm text-red-300 bg-red-500/15">
+                        {chatActionError}
                     </p>
                 )}
 
@@ -441,19 +600,37 @@ export default function ChatSeaction() {
                                     }`}
                             >
                                 <div
-                                    className={`max-w-[70%] px-4 py-2 rounded-2xl ${isMine ? "bg-orange-500" : "bg-white/20"}`}>
+                                    className={`group/msg max-w-[70%] px-4 py-2 rounded-2xl ${isMine ? "bg-orange-500" : "bg-white/20"}`}>
                                     <p>
                                         {msg.content}
                                     </p>
 
-                                    <span className="text-[10px] opacity-60">
-                                        {new Date(
-                                            msg.createdAt
-                                        ).toLocaleTimeString([], {
-                                            hour: "2-digit",
-                                            minute: "2-digit",
-                                        })}
-                                    </span>
+                                    <div className="flex items-end justify-between gap-3">
+                                        <span className="text-[10px] opacity-60">
+                                            {new Date(
+                                                msg.createdAt
+                                            ).toLocaleTimeString([], {
+                                                hour: "2-digit",
+                                                minute: "2-digit",
+                                            })}
+                                        </span>
+
+                                        {isMine && (
+                                            <button
+                                                onClick={() => deleteMessageMutation.mutate(msg._id)}
+                                                disabled={deleteMessageMutation.isPending}
+                                                aria-label="Delete message"
+                                                title="Delete message"
+                                                className="
+                                                    opacity-0 transition-opacity group-hover/msg:opacity-100
+                                                    rounded-full bg-black/20 p-1 text-white hover:bg-black/40
+                                                    disabled:opacity-40
+                                                "
+                                            >
+                                                <Trash2 size={12} />
+                                            </button>
+                                        )}
+                                    </div>
                                 </div>
                             </div>
                         );

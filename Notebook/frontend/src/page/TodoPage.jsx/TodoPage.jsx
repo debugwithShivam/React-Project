@@ -1,23 +1,21 @@
 import React, { useState } from "react";
-import {Trash} from 'lucide-react'
+import { Trash, Check } from "lucide-react";
+import useTodos from "../../hooks/useTodos";
 
 export default function TodoPage() {
-  const [todo,setTodo]=useState([])
-  const [list,setList] = useState('')
+  const { todos, isLoading, isError, errorMessage, addTodo, toggleTodo, deleteTodo } = useTodos();
+  const [list, setList] = useState('');
+
   const handleClose = () => {
     window.electron?.closeTodoWindow?.();
   };
 
-  function createTodo(todo){
-    setTodo((prev)=>{
-      return [...prev,{todo:todo}]
-    })
+  function submit() {
+    const value = list.trim();
+    if (!value || addTodo.isPending) return;
+    addTodo.mutate(value);
+    setList("");
   }
-
-   function deleteTodo(index) {
-    setTodo((prev) => prev.filter((_, i) => i !== index));
-  }
-  
 
   return (
     <div className="w-screen h-screen ">
@@ -106,6 +104,7 @@ export default function TodoPage() {
               "
               value={list}
               onChange={(e)=>setList(e.target.value)}
+              onKeyDown={(e)=> e.key === "Enter" && submit()}
               placeholder="What needs to be done?"
               style={{
                 WebkitAppRegion: "no-drag",
@@ -119,12 +118,10 @@ export default function TodoPage() {
                 text-white
                 hover:bg-white/20
                 transition
+                disabled:opacity-50
               "
-              onClick={()=>{
-                if (!list.trim()) return
-                createTodo(list.trim())
-                setList("")
-              }}
+              disabled={addTodo.isPending || !list.trim()}
+              onClick={submit}
               style={{
                 WebkitAppRegion: "no-drag",
               }}
@@ -133,11 +130,46 @@ export default function TodoPage() {
             </button>
           </div>
 
+          {isError && <p className="pt-3 text-xs text-red-300">{errorMessage}</p>}
+
           <div className="m-1 h-61  overflow-y-auto">
-            {todo.map((item,i)=>(
-              <div key={i} className="items-center pl-2 pr-2 h-8 flex justify-between">
-              <p>{item.todo}</p>
-              <button onClick={()=>deleteTodo(i)} ><Trash/></button>
+            {isLoading && <p className="pl-2 pt-3 text-xs text-white/50">Loading your tasks...</p>}
+
+            {!isLoading && todos.length === 0 && (
+              <p className="pl-2 pt-3 text-xs text-white/50">No tasks yet. Add one above.</p>
+            )}
+
+            {todos.map((item)=>(
+              <div key={item._id} className="items-center pl-2 pr-2 h-9 flex justify-between gap-3">
+                <button
+                  onClick={() => toggleTodo.mutate(item)}
+                  aria-label={item.done ? "Mark as not done" : "Mark as done"}
+                  className="flex min-w-0 flex-1 items-center gap-2 text-left"
+                  style={{ WebkitAppRegion: "no-drag" }}
+                >
+                  <span
+                    className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full border ${
+                      item.done ? "border-white/70 bg-white/80 text-black" : "border-white/35 text-transparent"
+                    }`}
+                  >
+                    <Check size={12} strokeWidth={3} />
+                  </span>
+                  <span
+                    className={`truncate text-sm ${
+                      item.done ? "text-white/45 line-through" : "text-white"
+                    }`}
+                  >
+                    {item.text}
+                  </span>
+                </button>
+                <button
+                  onClick={() => deleteTodo.mutate(item._id)}
+                  aria-label="Delete task"
+                  className="shrink-0 rounded-full p-1.5 text-white/60 transition-colors hover:bg-white/20 hover:text-white"
+                  style={{ WebkitAppRegion: "no-drag" }}
+                >
+                  <Trash size={14} />
+                </button>
               </div>
             ))}
           </div>
